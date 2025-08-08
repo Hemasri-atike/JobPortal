@@ -5,6 +5,8 @@ import Header from './pages/navbar/Header';
 import Category from './pages/jobcategory/Category';
 import Login from './login/Login';
 import Register from './login/Register';
+import Cvmanager from './pages/cvdetails/Cvmanager';
+import Dashboard from './pages/dashboard/Dashboard';
 
 
 const App = () => {
@@ -18,6 +20,8 @@ const App = () => {
       <Route path='/category' element={<Category/>}/>
       <Route path="/login" element={<Login/>}/>
          <Route path="/signup" element={<Register/>}/>
+          <Route path="/upload-cv" element={<Cvmanager/>}/>
+            <Route path="/dashboard" element={<Dashboard/>}/>
       
 
     

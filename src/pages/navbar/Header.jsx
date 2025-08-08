@@ -111,9 +111,18 @@ const Header = () => {
 
         {/* Right Side Actions */}
         <div className="hidden xl:flex items-center space-x-2 sm:space-x-3 lg:space-x-4">
-          <button className="text-gray-500 hover:text-blue-600 text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-md transition-colors">
+          {/* <button className="text-gray-500 hover:text-blue-600 text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-md transition-colors">
             Upload CV
-          </button>
+          </button> */}
+         
+
+<Link 
+  to="/upload-cv" 
+  className="text-gray-500 hover:text-blue-600 text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-md transition-colors"
+>
+  Upload CV
+</Link>
+
           <Link
             to="/login"
             className="text-gray-500 hover:text-blue-600 text-xs lg:text-sm px-2 lg:px-3 py-1 rounded-md transition-colors"
