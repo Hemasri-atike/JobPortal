@@ -1,10 +1,25 @@
 import React from 'react'
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import Home from './pages/home/Home';                                                                                                                   
+import Header from './pages/navbar/Header';
+import Category from './pages/jobcategory/Category';
+
 
 const App = () => {
   return (
-    <div>
-      <h3>App</h3>
-    </div>
+   <>
+  <BrowserRouter>
+    <Routes>
+      <Route path="/" element={<Home />} />
+      <Route path="/nav"element={<Header/>}/>
+
+      <Route path='/category' element={<Category/>}/>
+    
+
+      
+    </Routes>
+  </BrowserRouter>
+   </>
   )
 }
 
