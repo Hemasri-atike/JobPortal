@@ -107,7 +107,7 @@ const Category = () => {
             return (
               <div
                 key={category.id}
-                className="p-4 sm:p-6 bg-white rounded-lg border hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-1"
+                className="p-4 sm:p-6 bg-white rounded-lg  hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-1"
               >
                 <div className="flex items-center space-x-3 sm:space-x-4">
                   <div

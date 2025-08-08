@@ -114,7 +114,7 @@ const Featured = () => {
           {jobs.map((job) => (
             <div
               key={job.id}
-              className="p-4 sm:p-6 border rounded-lg hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-1 bg-white"
+              className="p-4 sm:p-6  rounded-lg hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-1 bg-white"
             >
               {/* Job Header */}
               <div className="flex flex-col sm:flex-row items-start justify-between mb-4 space-y-3 sm:space-y-0">

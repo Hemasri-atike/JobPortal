@@ -3,6 +3,8 @@ import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Home from './pages/home/Home';                                                                                                                   
 import Header from './pages/navbar/Header';
 import Category from './pages/jobcategory/Category';
+import Login from './login/Login';
+import Register from './login/Register';
 
 
 const App = () => {
@@ -14,6 +16,10 @@ const App = () => {
       <Route path="/nav"element={<Header/>}/>
 
       <Route path='/category' element={<Category/>}/>
+      <Route path="/login" element={<Login/>}/>
+         <Route path="/signup" element={<Register/>}/>
+      
+
     
 
       
