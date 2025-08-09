@@ -43,18 +43,18 @@ const Footer = () => {
             <div className="lg:col-span-2 xl:col-span-1">
               <div className="flex items-center space-x-2 mb-4 sm:mb-6">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center">
-                  <span className="text-white font-bold text-sm sm:text-lg">M</span>
+                  <span className="text-white font-bold text-sm sm:text-lg">I</span>
                 </div>
-                <span className="text-xl sm:text-2xl font-bold text-gray-900">MnTechs</span>
+                <span className="text-xl sm:text-2xl font-bold text-gray-900">hire</span>
               </div>
               <div className="space-y-2 sm:space-y-3 text-gray-600 text-sm sm:text-base">
                 <p className="font-semibold text-gray-900">Call us</p>
                 <p className="text-blue-600 font-semibold">123 456 7890</p>
                 <address className="not-italic leading-relaxed">
-                  329 Queensberry Street, North Melbourne VIC<br />
-                  3051, Australia.
+                  401, 8-3-6-5/1/1/4, Astral Hasini Residency, J.P. Nagar,
+                   Yella Reddy Guda, Hyderabad - 500073, Telangana
                 </address>
-                <p>support@MnTechs.com</p>
+                <p>support@Ihire.com</p>
               </div>
             </div>
 
@@ -129,7 +129,7 @@ const Footer = () => {
       <div className="py-4 sm:py-6 border-t border-gray-200">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4 text-gray-600 text-xs sm:text-sm">
-            <p>&copy; 2024 MnTechs. All Rights Reserved.</p>
+            <p>&copy; 2024 Ihire. All Rights Reserved.</p>
             <div className="flex items-center gap-4 sm:gap-6">
               <a href="#" className="hover:text-blue-600 transition-colors">Privacy Policy</a>
               <a href="#" className="hover:text-blue-600 transition-colors">Terms & Conditions</a>

@@ -7,7 +7,7 @@ const Register = () => {
       <div className="w-full max-w-md bg-white shadow-lg rounded-lg p-8">
         {/* Title */}
         <h2 className="text-2xl font-bold text-gray-800 text-center mb-6">
-          Create an  Free Job Portal Account
+          Create an  Free Ihire Account
         </h2>
 
         {/* Form */}

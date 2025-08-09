@@ -13,6 +13,7 @@ import Applied from './pages/cvdetails/appliedjobs/Applied';
 import JobAlert from './pages/cvdetails/jobalerts/JobAlert';
 import Shortlist from './pages/cvdetails/shortlist/Shortlist';
 import CvUpload from './pages/cvdetails/cv/CvUpload';
+import EmpProfile from './components/Employee/EmpProfile';
 
 
 const App = () => {
@@ -22,6 +23,9 @@ const App = () => {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/nav"element={<Header/>}/>
+      {/* Employee */}
+          <Route path='/empprofile' element={<EmpProfile/>}/>
+
 
       <Route path='/category' element={<Category/>}/>
       <Route path="/login" element={<Login/>}/>

@@ -36,13 +36,31 @@ const Home = () => {
                 </p>
               </div>
 
-              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
-                <button className="px-6 py-3 bg-blue-600 text-white rounded-lg text-lg font-medium hover:bg-blue-700 transition">
+              {/* Search Bar */}
+              <div className="flex flex-col sm:flex-row bg-white rounded-lg shadow-lg p-2 gap-2 sm:gap-0 sm:divide-x divide-gray-200 max-w-2xl mx-auto lg:mx-0">
+                <input
+                  type="text"
+                  placeholder="Job title, keywords, or company"
+                  className="flex-1 px-4 py-3 outline-none text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="City or postcode"
+                  className="flex-1 px-4 py-3 outline-none text-sm"
+                />
+                <button className="px-6 py-3 bg-blue-600 text-white rounded-lg sm:rounded-l-none text-sm font-medium hover:bg-blue-700 transition">
                   Find Jobs
                 </button>
+              </div>
 
+              {/* Popular Searches */}
+              <p className="text-sm text-muted-foreground">
+                Popular Searches : Designer, Developer, Web, IOS, PHP, Senior, Engineer
+              </p>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
                 <Button size="lg" variant="outline">
-                  Upload Resume
+                  Upload Your CV
                 </Button>
               </div>
 

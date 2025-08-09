@@ -11,8 +11,8 @@ const Header = () => {
     { name: "Find Jobs", dropdown: ["Browse Jobs", "Job Alerts", "Saved Jobs"] },
     { name: "Employers", dropdown: ["Post a Job", "Manage Listings", "Search Candidates"] },
     { name: "Candidates", dropdown: ["Profile", "Resume Builder", "Applications"] },
-    { name: "Blog", dropdown: ["Latest News", "Tips & Advice", "Success Stories"] },
-    { name: "Pages", dropdown: ["About Us", "Pricing", "FAQs"] },
+    // { name: "Blog", dropdown: ["Latest News", "Tips & Advice", "Success Stories"] },
+    // { name: "Pages", dropdown: ["About Us", "Pricing", "FAQs"] },
   ];
 
   return (
@@ -30,9 +30,9 @@ const Header = () => {
 <div className="flex items-center space-x-2">
   <Link to="/" className="flex items-center space-x-2">
     <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-600 rounded-full flex items-center justify-center">
-      <span className="text-white font-bold text-sm sm:text-lg">M</span>
+      <span className="text-white font-bold text-sm sm:text-lg">I</span>
     </div>
-    <span className="text-xl sm:text-2xl font-bold text-gray-900">Job Portal</span>
+    <span className="text-xl sm:text-2xl font-bold text-gray-900">hire</span>
   </Link>
 </div>
 
