@@ -17,10 +17,10 @@ const Sidebar = () => {
     { icon: <FaHome />, label: "Dashboard", path: "/dashboard" },
     { icon: <FaUser />, label: "My Profile", path: "/profile" },
     { icon: <FaFileAlt />, label: "My Resume", path: "/resume" },
-    { icon: <FaClipboardList />, label: "Applied Jobs", path: "/applied-jobs" },
+    { icon: <FaClipboardList />, label: "Applied Jobs", path: "/applied" },
     { icon: <FaBell />, label: "Job Alerts", path: "/job-alerts" },
     { icon: <FaStar />, label: "Shortlisted Jobs", path: "/shortlisted-jobs" },
-    { icon: <FaIdBadge />, label: "CV Manager", path: "/cv-manager", active: true },
+    { icon: <FaIdBadge />, label: "CV Manager", path: "/cvmanager" },
     { icon: <FaBox />, label: "Packages", path: "/packages" },
     { icon: <FaCommentDots />, label: "Messages", path: "/messages" },
   ];

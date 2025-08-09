@@ -8,6 +8,11 @@ import Register from './login/Register';
 import Cvmanager from './pages/cvdetails/Cvmanager';
 import Dashboard from './pages/dashboard/Dashboard';
 import Profile from './pages/cvdetails/profile/Profile';
+import Myresume from './pages/cvdetails/resumes/Myresume';
+import Applied from './pages/cvdetails/appliedjobs/Applied';
+import JobAlert from './pages/cvdetails/jobalerts/JobAlert';
+import Shortlist from './pages/cvdetails/shortlist/Shortlist';
+import CvUpload from './pages/cvdetails/cv/CvUpload';
 
 
 const App = () => {
@@ -24,6 +29,19 @@ const App = () => {
           <Route path="/upload-cv" element={<Cvmanager/>}/>
             <Route path="/dashboard" element={<Dashboard/>}/>
               <Route path="/profile" element={<Profile/>}/>
+                 <Route path="/resume" element={<Myresume/>}/>
+                  <Route path="/applied" element={<Applied/>}/>
+                     
+                          <Route path="/job-alerts" element={<JobAlert/>}/>
+                           <Route path="/shortlisted-jobs" element={<Shortlist/>}/>
+                            <Route path="/cvmanager" element={<CvUpload/>}/>
+                         
+
+                             
+
+
+
+
 
       
 
