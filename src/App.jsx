@@ -7,6 +7,7 @@ import Login from './login/Login';
 import Register from './login/Register';
 import Cvmanager from './pages/cvdetails/Cvmanager';
 import Dashboard from './pages/dashboard/Dashboard';
+import Profile from './pages/cvdetails/profile/Profile';
 
 
 const App = () => {
@@ -22,6 +23,8 @@ const App = () => {
          <Route path="/signup" element={<Register/>}/>
           <Route path="/upload-cv" element={<Cvmanager/>}/>
             <Route path="/dashboard" element={<Dashboard/>}/>
+              <Route path="/profile" element={<Profile/>}/>
+
       
 
     
