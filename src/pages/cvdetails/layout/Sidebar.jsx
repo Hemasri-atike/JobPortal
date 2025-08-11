@@ -15,7 +15,7 @@ import {
 const Sidebar = () => {
   const sidebarItems = [
     { icon: <FaHome />, label: "Dashboard", path: "/dashboard" },
-    { icon: <FaUser />, label: "My Profile", path: "/profile" },
+    { icon: <FaUser />, label: "My Profile", path: "/cadprofile" },
     { icon: <FaFileAlt />, label: "My Resume", path: "/resume" },
     { icon: <FaClipboardList />, label: "Applied Jobs", path: "/applied" },
     { icon: <FaBell />, label: "Job Alerts", path: "/job-alerts" },

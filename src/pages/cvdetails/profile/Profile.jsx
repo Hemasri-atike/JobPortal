@@ -1,60 +1,68 @@
-import React from "react";
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const Profile = () => {
-  return (
-    <div className="bg-gray-50 min-h-screen p-6">
-      {/* Profile Card */}
-      <div className="max-w-3xl mx-auto bg-white shadow-md rounded-xl p-6">
-        {/* Profile Image & Name */}
-        <div className="flex flex-col items-center">
-          <img
-            src="https://via.placeholder.com/120"
-            alt="Profile"
-            className="w-32 h-32 rounded-full border-4 border-blue-500 object-cover"
-          />
-          <h2 className="mt-4 text-2xl font-bold text-gray-800">Hemasri Atike</h2>
-          <p className="text-gray-500">Java Developer</p>
-        </div>
+  const [profile, setProfile] = useState({
+    name: "John Doe",
+    email: "johndoe@example.com",
+    phone: "+91 9876543210",
+    designation: "Senior Software Engineer",
+    company: "Tech Solutions Pvt Ltd",
+    location: "Hyderabad, India",
+    about:
+      "Passionate software engineer with 5+ years of experience in full-stack development and team management.",
+  });
 
-        {/* Profile Details */}
-        <div className="mt-6 space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-500 text-sm">Email</p>
-              <p className="font-medium">hemasri@example.com</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Phone</p>
-              <p className="font-medium">+91 98765 43210</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Location</p>
-              <p className="font-medium">Hyderabad, India</p>
-            </div>
-            <div>
-              <p className="text-gray-500 text-sm">Experience</p>
-              <p className="font-medium">2 Years</p>
+  return (
+    <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-10">
+      <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
+        {/* Header Section */}
+        <div className="bg-blue-600 p-6 text-white">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+            <img
+              src="https://via.placeholder.com/120"
+              alt="Profile"
+              className="w-24 h-24 rounded-full border-4 border-white"
+            />
+            <div className="text-center sm:text-left">
+              <h2 className="text-2xl font-bold">{profile.name}</h2>
+              <p className="text-sm">{profile.designation}</p>
+              <p className="text-sm">{profile.company}</p>
+              <p className="text-sm">{profile.location}</p>
             </div>
           </div>
         </div>
 
-        {/* Bio Section */}
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold text-gray-700">About Me</h3>
-          <p className="mt-2 text-gray-600 text-sm">
-            I am a passionate Java developer with expertise in building scalable web applications,
-            backend APIs, and working on modern JavaScript frameworks like React.js.
-          </p>
+        {/* Details Section */}
+        <div className="p-6 space-y-4">
+          <div>
+            <h3 className="font-semibold text-gray-700">Email</h3>
+            <p className="text-gray-600">{profile.email}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-700">Phone</h3>
+            <p className="text-gray-600">{profile.phone}</p>
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-700">About</h3>
+            <p className="text-gray-600">{profile.about}</p>
+          </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="mt-6 flex gap-4 justify-center">
-          <button className="px-4 py-2 bg-blue-500 text-white rounded-lg shadow hover:bg-blue-600">
+        {/* Actions */}
+        <div className="p-6 border-t flex justify-between">
+          <Link
+            to="/dashboard"
+            className="bg-gray-200 hover:bg-gray-300 text-gray-800 px-4 py-2 rounded-lg text-sm font-medium"
+          >
+            Back to Dashboard
+          </Link>
+          <Link
+            to="/caddetails"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium"
+          >
             Edit Profile
-          </button>
-          <button className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg shadow hover:bg-gray-300">
-            Upload CV
-          </button>
+          </Link>
         </div>
       </div>
     </div>
