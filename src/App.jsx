@@ -19,6 +19,7 @@ import JobSearch from './components/job/JobSearch';
 import EmpPosting from './components/Employee/EmpPosting';
 import CadidateDetails from './components/candidate/CadidateDetails';
 import Company from './components/companies/Company';
+import UserType from './login/UserType';
 
 
 
@@ -28,7 +29,16 @@ const App = () => {
    <>
   <BrowserRouter>
     <Routes>
-      <Route path="/" element={<Home />} />
+    <Route path="/" element={<UserType />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+
+
+
+
+
+
+      <Route path="/home" element={<Home />} />
       <Route path="/nav"element={<Header/>}/>
       {/* Employee */}
           <Route path='/empprofile' element={<EmpProfile/>}/>
@@ -48,8 +58,8 @@ const App = () => {
 
 
       <Route path='/category' element={<Category/>}/>
-      <Route path="/login" element={<Login/>}/>
-         <Route path="/register" element={<Register/>}/>
+      {/* <Route path="/login" element={<Login/>}/>
+         <Route path="/register" element={<Register/>}/> */}
           <Route path="/upload-cv" element={<Cvmanager/>}/>
             <Route path="/dashboard" element={<Dashboard/>}/>
               <Route path="/cadprofile" element={<Profile/>}/>

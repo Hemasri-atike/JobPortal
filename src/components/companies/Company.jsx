@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import Header from '../../pages/navbar/Header';
+import Footer from '../../pages/footer/Footer';
 
 const Company= () => {
   const [companies] = useState([
@@ -13,6 +15,8 @@ const Company= () => {
   ]);
 
   return (
+   <> 
+   <Header/> 
     <section
       style={{
         padding: '4rem 0',
@@ -184,6 +188,8 @@ const Company= () => {
         </div>
       </div>
     </section>
+    <Footer/>
+    </>
   );
 };
 

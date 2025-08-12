@@ -1,6 +1,5 @@
-import React, { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { BarLoader } from 'react-spinners';
-import { Link } from 'react-router-dom';
 import {
   Search,
   ChevronDown,
@@ -14,10 +13,10 @@ import {
   Globe,
   Building,
   Users,
-  DoorOpen,
-  DoorClosed,
 } from 'lucide-react';
 import Header from '../../pages/navbar/Header';
+import JobCard from '../../components/ui/JobCard';
+import Footer from "../../pages/footer/Footer"
 
 // Mock data for jobs and companies
 const mockJobs = [
@@ -59,46 +58,6 @@ const mockJobs = [
   },
 ];
 
-// Sample featured jobs for the cards
-const featuredJobs = [
-  {
-    id: 'featured-1',
-    title: 'Senior UI/UX Designer',
-    company: 'CreativeLabs',
-    location: 'Mumbai',
-    salaryMin: 700000,
-    salaryMax: 1000000,
-    jobType: 'Full Time',
-    experienceLevel: '5+ years',
-    skills: ['Figma', 'Adobe XD', 'UI/UX'],
-    workMode: 'Remote',
-    postedDate: '2025-08-10',
-    isOpen: true,
-    applications: [{ id: 'app3' }, { id: 'app4' }],
-    description: 'Design intuitive user interfaces for cutting-edge applications.',
-    requirements: 'Expertise in Figma, Adobe XD, and user research.',
-    benefits: ['Remote Work', 'Equity Options'],
-  },
-  {
-    id: 'featured-2',
-    title: 'Data Scientist',
-    company: 'AIInnovate',
-    location: 'Delhi',
-    salaryMin: 800000,
-    salaryMax: 1200000,
-    jobType: 'Full Time',
-    experienceLevel: '3-5 years',
-    skills: ['Python', 'Machine Learning', 'SQL'],
-    workMode: 'Hybrid',
-    postedDate: '2025-08-05',
-    isOpen: true,
-    applications: [{ id: 'app5' }],
-    description: 'Analyze data to drive AI-powered solutions.',
-    requirements: 'Strong background in machine learning and data analysis.',
-    benefits: ['Health Insurance', 'Learning Stipend'],
-  },
-];
-
 const mockCompanies = [
   { id: '1', name: 'TechCorp', logo_url: 'https://via.placeholder.com/48' },
   { id: '2', name: 'DataWorks', logo_url: 'https://via.placeholder.com/48' },
@@ -128,8 +87,8 @@ const JobSearch = () => {
   const [locationFilter, setLocationFilter] = useState('');
   const [company_id, setCompany_id] = useState('');
   const [filters, setFilters] = useState({
-    city: 'Hyderabad',
-    jobRole: 'IT / Hardware / Network Engineer',
+    city: '',
+    jobRole: '',
     salary: '',
     jobType: '',
     experience: '',
@@ -139,9 +98,18 @@ const JobSearch = () => {
     companyName: '',
     vacancies: '',
   });
+  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
-  // Mock loading state
-  const loading = false;
+  // Simulate API load
+  useEffect(() => {
+    setTimeout(() => {
+      setCompanies(mockCompanies);
+      setJobs(mockJobs);
+      setLoading(false);
+    }, 1000);
+  }, []);
 
   // Handle search
   const handleSearch = (e) => {
@@ -170,13 +138,13 @@ const JobSearch = () => {
   };
 
   // Filter jobs
-  const filteredJobs = mockJobs.filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
     const matchesSearch = searchQuery
       ? job.title.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
     const matchesLocation = locationFilter ? job.location === locationFilter : true;
     const matchesCompany = company_id
-      ? job.company === mockCompanies.find((c) => c.id === company_id)?.name
+      ? job.company === companies.find((c) => c.id === company_id)?.name
       : true;
     const matchesCity = filters.city
       ? job.location.toLowerCase().includes(filters.city.toLowerCase())
@@ -249,7 +217,7 @@ const JobSearch = () => {
                 name="search-query"
                 className="flex-1 h-12 text-md"
               />
-              <Button type="submit" className="h-12 w-full sm:w-32">
+              <Button type="submit" className="h-12 w-full sm:w-32 flex items-center justify-center">
                 <Search size={18} className="mr-1" /> Search
               </Button>
             </form>
@@ -272,7 +240,7 @@ const JobSearch = () => {
                 className="w-full sm:w-1/3 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Filter by Company</option>
-                {mockCompanies.map(({ id, name }) => (
+                {companies.map(({ id, name }) => (
                   <option key={id} value={id}>
                     {name}
                   </option>
@@ -285,89 +253,6 @@ const JobSearch = () => {
               >
                 Clear Filters
               </Button>
-            </div>
-          </div>
-
-          {/* Featured Jobs Section */}
-          <div className="mb-8">
-            <h3 className="text-xl font-semibold text-gray-900 mb-4">Featured Jobs</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {featuredJobs.map((job) => (
-                <div
-                  key={job.id}
-                  className="bg-white p-4 rounded-md shadow-md border border-blue-200 bg-blue-50"
-                >
-                  <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
-                    <div className="flex-1">
-                      <Link to={`/jobs/${job.id}`}>
-                        <h3 className="text-lg font-semibold text-blue-700 hover:underline">
-                          {job.title}
-                        </h3>
-                      </Link>
-                      <p className="text-gray-700 text-sm">
-                        {job.salaryMin && job.salaryMax
-                          ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()} /month`
-                          : 'Salary not disclosed'}
-                      </p>
-                      <p className="text-gray-500 text-sm">{job.company}</p>
-                      <div className="flex items-center text-gray-500 text-sm mt-1">
-                        <MapPin size={14} className="mr-1" /> {job.location}
-                      </div>
-                      <div className="flex items-center text-gray-500 text-sm mt-1">
-                        <Briefcase size={14} className="mr-1" />{' '}
-                        {job.applications?.length || 0} Applicants
-                      </div>
-                      <div className="flex items-center text-gray-500 text-sm mt-1">
-                        {job.isOpen ? (
-                          <>
-                            <DoorOpen size={14} className="mr-1" /> Open
-                          </>
-                        ) : (
-                          <>
-                            <DoorClosed size={14} className="mr-1" /> Closed
-                          </>
-                        )}
-                      </div>
-                      {job.skills?.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mt-3">
-                          {job.skills.map((skill) => (
-                            <span
-                              key={skill}
-                              className="px-2 py-1 bg-gray-100 rounded-md text-xs"
-                            >
-                              {skill}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {job.benefits?.length > 0 && (
-                        <p className="mt-2 text-sm text-gray-600">{job.benefits.join(', ')}</p>
-                      )}
-                      {job.description && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-bold text-gray-700">About the Job</h4>
-                          <p className="text-sm text-gray-600">{job.description}</p>
-                        </div>
-                      )}
-                      {job.requirements && (
-                        <div className="mt-4">
-                          <h4 className="text-sm font-bold text-gray-700">
-                            What We Are Looking For
-                          </h4>
-                          <p className="text-sm text-gray-600">{job.requirements}</p>
-                        </div>
-                      )}
-                    </div>
-                    {job.company?.logo_url && (
-                      <img
-                        src={job.company.logo_url}
-                        alt={job.company}
-                        className="h-12 w-12 object-contain"
-                      />
-                    )}
-                  </div>
-                </div>
-              ))}
             </div>
           </div>
 
@@ -552,86 +437,13 @@ const JobSearch = () => {
               {loading ? (
                 <BarLoader className="mt-4 mx-auto" width="100%" color="#36d7b7" />
               ) : (
-                <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredJobs.length > 0 ? (
                     filteredJobs.map((job) => (
-                      <div
-                        key={job.id}
-                        className="bg-white p-4 rounded-md shadow-sm border border-gray-100"
-                      >
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-start">
-                          <div className="flex-1">
-                            <Link to={`/jobs/${job.id}`}>
-                              <h3 className="text-lg font-semibold text-blue-700 hover:underline">
-                                {job.title}
-                              </h3>
-                            </Link>
-                            <p className="text-gray-700 text-sm">
-                              {job.salaryMin && job.salaryMax
-                                ? `₹ ${job.salaryMin.toLocaleString()} - ${job.salaryMax.toLocaleString()} /month`
-                                : 'Salary not disclosed'}
-                            </p>
-                            <p className="text-gray-500 text-sm">{job.company}</p>
-                            <div className="flex items-center text-gray-500 text-sm mt-1">
-                              <MapPin size={14} className="mr-1" /> {job.location}
-                            </div>
-                            <div className="flex items-center text-gray-500 text-sm mt-1">
-                              <Briefcase size={14} className="mr-1" />{' '}
-                              {job.applications?.length || 0} Applicants
-                            </div>
-                            <div className="flex items-center text-gray-500 text-sm mt-1">
-                              {job.isOpen ? (
-                                <>
-                                  <DoorOpen size={14} className="mr-1" /> Open
-                                </>
-                              ) : (
-                                <>
-                                  <DoorClosed size={14} className="mr-1" /> Closed
-                                </>
-                              )}
-                            </div>
-                            {job.skills?.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mt-3">
-                                {job.skills.map((skill) => (
-                                  <span
-                                    key={skill}
-                                    className="px-2 py-1 bg-gray-100 rounded-md text-xs"
-                                  >
-                                    {skill}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                            {job.benefits?.length > 0 && (
-                              <p className="mt-2 text-sm text-gray-600">{job.benefits.join(', ')}</p>
-                            )}
-                            {job.description && (
-                              <div className="mt-4">
-                                <h4 className="text-sm font-bold text-gray-700">About the Job</h4>
-                                <p className="text-sm text-gray-600">{job.description}</p>
-                              </div>
-                            )}
-                            {job.requirements && (
-                              <div className="mt-4">
-                                <h4 className="text-sm font-bold text-gray-700">
-                                  What We Are Looking For
-                                </h4>
-                                <p className="text-sm text-gray-600">{job.requirements}</p>
-                              </div>
-                            )}
-                          </div>
-                          {job.company?.logo_url && (
-                            <img
-                              src={job.company.logo_url}
-                              alt={job.company}
-                              className="h-12 w-12 object-contain"
-                            />
-                          )}
-                        </div>
-                      </div>
+                      <JobCard key={job.id} job={job} />
                     ))
                   ) : (
-                    <div className="text-center text-gray-600">No Jobs Found 😢</div>
+                    <div className="text-center text-gray-600 col-span-full">No Jobs Found 😢</div>
                   )}
                 </div>
               )}
@@ -639,6 +451,7 @@ const JobSearch = () => {
           </div>
         </div>
       </div>
+      <Footer/>
     </>
   );
 };

@@ -17,7 +17,7 @@ const Footer = () => {
   return (
     <footer className="bg-white border-t border-gray-200">
       {/* CTA Section */}
-      <div className="py-12 sm:py-16 lg:py-20 bg-gray-50">
+      {/* <div className="py-12 sm:py-16 lg:py-20 bg-gray-50">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="max-w-lg mx-auto text-center lg:text-left lg:mx-0">
             <h3 className="text-xl sm:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
@@ -32,7 +32,7 @@ const Footer = () => {
             </button>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Main Footer */}
       <div className="py-8 sm:py-12 lg:py-16">
