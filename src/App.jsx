@@ -18,6 +18,7 @@ import EmpDashboard from './components/Employee/EmpDashboard';
 import JobSearch from './components/job/JobSearch';
 import EmpPosting from './components/Employee/EmpPosting';
 import CadidateDetails from './components/candidate/CadidateDetails';
+import Company from './components/companies/Company';
 
 
 
@@ -40,6 +41,10 @@ const App = () => {
 
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
+    <Route path='/companies' element={<Company/>}/>
+  
+
+
 
 
       <Route path='/category' element={<Category/>}/>
