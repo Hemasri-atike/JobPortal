@@ -1,5 +1,6 @@
 import React from "react";
 import { Briefcase, PlusCircle, Users, Building } from "lucide-react";
+import { Link } from "react-router-dom"; 
 import Header from "../../pages/navbar/Header";
 import SidebarMenu from "../../pages/cvdetails/layout/Sidebar";
 
@@ -24,9 +25,12 @@ const EmpDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-800">
                 Employee Dashboard
               </h1>
-              <button className="mt-3 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+              <Link
+                to="/empposting" 
+                className="mt-3 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg"
+              >
                 Post a Job
-              </button>
+              </Link>
             </header>
 
             {/* Dashboard Sections */}

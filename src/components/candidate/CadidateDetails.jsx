@@ -14,14 +14,18 @@ const CandidateDetails = () => {
     interYear: "",
     tenthBoard: "",
     tenthYear: "",
-    experience: "",
+    experience: "", // Existing field, will keep for compatibility
+    companyName: "", // New field for Experience step
+    jobTitle: "", // New field for Experience step
+    duration: "", // New field for Experience step
+    responsibilities: "", // New field for Experience step
     currentLocation: "",
     preferredLocation: "",
     resume: null,
   });
 
   const handleNext = () => {
-    if (step < 4) setStep(step + 1);
+    if (step < 5) setStep(step + 1); // Updated to account for 5 steps
   };
 
   const handlePrev = () => {
@@ -58,7 +62,7 @@ const CandidateDetails = () => {
     // Add more universities as needed
   ];
 
-  const steps = ["Personal", "Education", "Location", "Resume"];
+  const steps = ["Personal", "Education", "Experience", "Location", "Resume"]; // Added Experience step
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
@@ -187,7 +191,6 @@ const CandidateDetails = () => {
                 required
               />
               <input
-                applications
                 type="text"
                 name="interYear"
                 placeholder="Year of Completion (e.g., 2019)"
@@ -233,8 +236,47 @@ const CandidateDetails = () => {
           </div>
         )}
 
-        {/* Step 3: Location */}
+        {/* Step 3: Experience */}
         {step === 3 && (
+          <div className="space-y-4">
+            <h3 className="text-md font-semibold mb-2">Work Experience Details</h3>
+            <input
+              type="text"
+              name="companyName"
+              placeholder="Company Name (e.g., TechCorp)"
+              value={formData.companyName}
+              onChange={handleChange}
+              className="border p-2 w-full rounded"
+            />
+            <input
+              type="text"
+              name="jobTitle"
+              placeholder="Job Title (e.g., Software Engineer)"
+              value={formData.jobTitle}
+              onChange={handleChange}
+              className="border p-2 w-full rounded mt-2"
+            />
+            <input
+              type="text"
+              name="duration"
+              placeholder="Duration (e.g., Jan 2020 - Dec 2022)"
+              value={formData.duration}
+              onChange={handleChange}
+              className="border p-2 w-full rounded mt-2"
+            />
+            <textarea
+              name="responsibilities"
+              placeholder="Key Responsibilities (e.g., Developed web applications, led team projects)"
+              value={formData.responsibilities}
+              onChange={handleChange}
+              className="border p-2 w-full rounded mt-2"
+              rows="4"
+            />
+          </div>
+        )}
+
+        {/* Step 4: Location */}
+        {step === 4 && (
           <div className="space-y-4">
             <input
               type="text"
@@ -257,8 +299,8 @@ const CandidateDetails = () => {
           </div>
         )}
 
-        {/* Step 4: Resume */}
-        {step === 4 && (
+        {/* Step 5: Resume */}
+        {step === 5 && (
           <div className="space-y-4">
             <input
               type="file"
@@ -282,7 +324,7 @@ const CandidateDetails = () => {
               Previous
             </button>
           )}
-          {step < 4 ? (
+          {step < 5 ? (
             <button
               type="button"
               onClick={handleNext}
