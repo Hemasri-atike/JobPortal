@@ -14,7 +14,7 @@ const Dashboard = () => {
 
         {/* Dashboard Content */}
         <main className="flex-1 p-6">
-          <h4 className="text-2xl font-semibold text-gray-800 mb-6">Howdy, Jerome!!</h4>
+          <h4 className="text-2xl font-semibold text-gray-800 mb-6">Welcome Hari!</h4>
           <p className="text-gray-600 mb-6">Ready to jump back in?</p>
 
           {/* Stats Cards */}

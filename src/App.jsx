@@ -20,6 +20,7 @@ import EmpPosting from './components/Employee/EmpPosting';
 import CadidateDetails from './components/candidate/CadidateDetails';
 import Company from './components/companies/Company';
 import UserType from './login/UserType';
+import Applicants from './components/Employee/Applicants';
 
 
 
@@ -44,6 +45,8 @@ const App = () => {
           <Route path='/empprofile' element={<EmpProfile/>}/>
           <Route path='/empdashboard' element={<EmpDashboard/>}/>
               <Route path='/empposting' element={<EmpPosting/>}/>
+                  <Route path='/applicants' element={<Applicants/>}/>
+
 
               {/* candidate */}
               <Route path='/caddetails' element={<CadidateDetails/>}/>

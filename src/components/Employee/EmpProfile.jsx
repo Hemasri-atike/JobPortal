@@ -1,161 +1,224 @@
 import React, { useState } from "react";
 
-const EmpProfile = () => {
-  const [fullName, setFullName] = useState("");
-  const [gender, setGender] = useState("");
-  const [education, setEducation] = useState("");
-  const [experience, setExperience] = useState("");
-  const [city, setCity] = useState("");
+export default function EmpProfile() {
+  const [educations, setEducations] = useState([]);
+  const [educationInput, setEducationInput] = useState({ degree: "", institute: "", year: "" });
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!fullName) {
-      alert("Please enter your full name");
-      return;
+  const [experiences, setExperiences] = useState([]);
+  const [experienceInput, setExperienceInput] = useState({ role: "", company: "", duration: "" });
+
+  const [skills, setSkills] = useState([]);
+  const [skillInput, setSkillInput] = useState("");
+
+  const [locations, setLocations] = useState([]);
+  const [locationInput, setLocationInput] = useState("");
+
+  const [resume, setResume] = useState(null);
+
+  const addEducation = () => {
+    if (educationInput.degree && educationInput.institute && educationInput.year) {
+      setEducations([...educations, educationInput]);
+      setEducationInput({ degree: "", institute: "", year: "" });
     }
-    console.log({
-      fullName,
-      gender,
-      education,
-      experience,
-      city,
-    });
   };
 
-  const buttonClasses =
-    "px-4 py-2 border rounded-full text-sm hover:bg-blue-500 hover:text-white transition";
+  const addExperience = () => {
+    if (experienceInput.role && experienceInput.company && experienceInput.duration) {
+      setExperiences([...experiences, experienceInput]);
+      setExperienceInput({ role: "", company: "", duration: "" });
+    }
+  };
+
+  const addSkill = () => {
+    if (skillInput && !skills.includes(skillInput)) {
+      setSkills([...skills, skillInput]);
+      setSkillInput("");
+    }
+  };
+
+  const addLocation = () => {
+    if (locationInput && !locations.includes(locationInput)) {
+      setLocations([...locations, locationInput]);
+      setLocationInput("");
+    }
+  };
 
   return (
-    <div className="bg-gray-50 min-h-screen flex justify-center items-start py-8">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white shadow-lg rounded-xl p-6 w-full max-w-2xl"
-      >
-        {/* Progress bar */}
-        <div className="flex justify-center mb-6">
-          <div className="flex gap-4 w-full max-w-sm">
-            <div className="flex-1 h-1 bg-teal-400 rounded"></div>
-            <div className="flex-1 h-1 bg-teal-200 rounded"></div>
-            <div className="flex-1 h-1 bg-teal-200 rounded"></div>
-            <div className="flex-1 h-1 bg-teal-200 rounded"></div>
-          </div>
-        </div>
-
-        <h2 className="text-xl font-bold mb-4">Make your profile</h2>
-
-        {/* Full Name */}
-        <label className="block font-medium">Full Name</label>
+    <div className="max-w-4xl mx-auto p-6 bg-white shadow-lg rounded-lg space-y-8">
+      {/* Basic Info */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Basic Info</h2>
         <input
           type="text"
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
-          placeholder="Enter Full Name"
-          className={`w-full border rounded px-3 py-2 mt-1 ${
-            !fullName ? "border-red-500" : "border-gray-300"
-          }`}
+          placeholder="Full Name"
+          className="border p-2 w-full mb-2 rounded"
         />
-        {!fullName && (
-          <p className="text-red-500 text-sm">Enter Full Name</p>
-        )}
+        <input
+          type="text"
+          placeholder="Headline"
+          className="border p-2 w-full mb-2 rounded"
+        />
+        <input
+          type="file"
+          className="border p-2 w-full mb-2 rounded"
+        />
+      </section>
 
-        {/* Gender */}
-        <div className="mt-4">
-          <label className="block font-medium">Gender</label>
-          <div className="flex gap-3 mt-2">
-            <button
-              type="button"
-              onClick={() => setGender("Male")}
-              className={`${buttonClasses} ${
-                gender === "Male" ? "bg-blue-500 text-white" : ""
-              }`}
-            >
-              Male
-            </button>
-            <button
-              type="button"
-              onClick={() => setGender("Female")}
-              className={`${buttonClasses} ${
-                gender === "Female" ? "bg-blue-500 text-white" : ""
-              }`}
-            >
-              Female
-            </button>
-          </div>
-        </div>
-
-        {/* Education */}
-        <div className="mt-4">
-          <label className="block font-medium">Education level</label>
-          <div className="flex flex-wrap gap-3 mt-2">
-            {["Below 10th", "10th Pass", "12th Pass", "Diploma", "Graduate", "Post Graduate"].map(
-              (level) => (
-                <button
-                  key={level}
-                  type="button"
-                  onClick={() => setEducation(level)}
-                  className={`${buttonClasses} ${
-                    education === level ? "bg-blue-500 text-white" : ""
-                  }`}
-                >
-                  {level}
-                </button>
-              )
-            )}
-          </div>
-        </div>
-
-        {/* Work Experience */}
-        <div className="mt-4">
-          <label className="block font-medium">Work Experience</label>
-          <div className="flex gap-3 mt-2">
-            <button
-              type="button"
-              onClick={() => setExperience("Experienced")}
-              className={`${buttonClasses} ${
-                experience === "Experienced" ? "bg-blue-500 text-white" : ""
-              }`}
-            >
-              I have experience
-            </button>
-            <button
-              type="button"
-              onClick={() => setExperience("Fresher")}
-              className={`${buttonClasses} ${
-                experience === "Fresher" ? "bg-blue-500 text-white" : ""
-              }`}
-            >
-              I am a fresher
-            </button>
-          </div>
-        </div>
-
-        {/* City */}
-        <div className="mt-4">
-          <label className="block font-medium">Which city do you want to work in?</label>
+      {/* Education */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4 flex justify-between items-center">
+          Education
+          <button
+            className="bg-blue-500 text-white px-3 py-1 rounded"
+            onClick={addEducation}
+          >
+            Add
+          </button>
+        </h2>
+        <div className="flex gap-2 mb-2">
           <input
             type="text"
-            value={city}
-            onChange={(e) => setCity(e.target.value)}
-            placeholder="Enter city name"
-            className="w-full border border-gray-300 rounded px-3 py-2 mt-1"
+            placeholder="Degree"
+            value={educationInput.degree}
+            onChange={(e) => setEducationInput({ ...educationInput, degree: e.target.value })}
+            className="border p-2 flex-1 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Institute"
+            value={educationInput.institute}
+            onChange={(e) => setEducationInput({ ...educationInput, institute: e.target.value })}
+            className="border p-2 flex-1 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Year"
+            value={educationInput.year}
+            onChange={(e) => setEducationInput({ ...educationInput, year: e.target.value })}
+            className="border p-2 w-28 rounded"
           />
         </div>
+        <ul className="list-disc pl-5">
+          {educations.map((edu, idx) => (
+            <li key={idx}>{edu.degree} - {edu.institute} ({edu.year})</li>
+          ))}
+        </ul>
+      </section>
 
-        {/* Next Button */}
-        <div className="mt-6 text-right">
+      {/* Experience */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4 flex justify-between items-center">
+          Experience
           <button
-            type="submit"
-            className={`px-6 py-2 rounded-lg text-white ${
-              fullName ? "bg-blue-500 hover:bg-blue-600" : "bg-gray-300 cursor-not-allowed"
-            }`}
-            disabled={!fullName}
+            className="bg-blue-500 text-white px-3 py-1 rounded"
+            onClick={addExperience}
           >
-            Next &gt;&gt;&gt;
+            Add
+          </button>
+        </h2>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Role"
+            value={experienceInput.role}
+            onChange={(e) => setExperienceInput({ ...experienceInput, role: e.target.value })}
+            className="border p-2 flex-1 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Company"
+            value={experienceInput.company}
+            onChange={(e) => setExperienceInput({ ...experienceInput, company: e.target.value })}
+            className="border p-2 flex-1 rounded"
+          />
+          <input
+            type="text"
+            placeholder="Duration"
+            value={experienceInput.duration}
+            onChange={(e) => setExperienceInput({ ...experienceInput, duration: e.target.value })}
+            className="border p-2 w-28 rounded"
+          />
+        </div>
+        <ul className="list-disc pl-5">
+          {experiences.map((exp, idx) => (
+            <li key={idx}>{exp.role} at {exp.company} ({exp.duration})</li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Skills */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Skills</h2>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Enter a skill"
+            value={skillInput}
+            onChange={(e) => setSkillInput(e.target.value)}
+            className="border p-2 flex-1 rounded"
+          />
+          <button
+            className="bg-green-500 text-white px-3 py-1 rounded"
+            onClick={addSkill}
+          >
+            +
           </button>
         </div>
-      </form>
+        <div className="flex flex-wrap gap-2">
+          {skills.map((skill, idx) => (
+            <span
+              key={idx}
+              className="bg-gray-200 px-3 py-1 rounded-full text-sm"
+            >
+              {skill}
+            </span>
+          ))}
+        </div>
+      </section>
+
+      {/* Preferred Locations */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Preferred Locations</h2>
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Enter location"
+            value={locationInput}
+            onChange={(e) => setLocationInput(e.target.value)}
+            className="border p-2 flex-1 rounded"
+          />
+          <button
+            className="bg-green-500 text-white px-3 py-1 rounded"
+            onClick={addLocation}
+          >
+            +
+          </button>
+        </div>
+        <ul className="list-disc pl-5">
+          {locations.map((loc, idx) => (
+            <li key={idx}>{loc}</li>
+          ))}
+        </ul>
+      </section>
+
+      {/* Resume */}
+      <section>
+        <h2 className="text-2xl font-bold mb-4">Resume</h2>
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={(e) => setResume(e.target.files[0])}
+          className="border p-2 w-full rounded"
+        />
+        {resume && <p className="mt-2 text-sm text-gray-600">Uploaded: {resume.name}</p>}
+      </section>
+
+      {/* Save Button */}
+      <div className="text-right">
+        <button className="bg-blue-600 text-white px-6 py-2 rounded">
+          Save Profile
+        </button>
+      </div>
     </div>
   );
-};
-
-export default EmpProfile;
+}

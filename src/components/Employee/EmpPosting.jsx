@@ -1,13 +1,42 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 
 const EmpPosting = () => {
+  const [formData, setFormData] = useState({
+    title: '',
+    companyName: '',
+    location: '',
+    vacancies: '',
+    jobType: '',
+    experienceLevel: '',
+    minSalary: '',
+    maxSalary: '',
+    skills: '',
+    description: '',
+    startDate: '', // New field for application deadline start date
+    endDate: '', // New field for application deadline end date
+  });
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    console.log(formData);
+    alert('Job posted successfully!');
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-4xl mx-auto bg-white shadow-md rounded-xl p-6">
         <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">Post a Job</h2>
 
-        <form className="space-y-6">
+        <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Job Title */}
           <div>
             <label htmlFor="title" className="block text-gray-700 font-medium mb-1">
@@ -18,7 +47,10 @@ const EmpPosting = () => {
               id="title"
               name="title"
               placeholder="e.g. Frontend Developer"
+              value={formData.title}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              required
             />
           </div>
 
@@ -32,7 +64,10 @@ const EmpPosting = () => {
               id="companyName"
               name="companyName"
               placeholder="e.g. Google"
+              value={formData.companyName}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              required
             />
           </div>
 
@@ -46,7 +81,10 @@ const EmpPosting = () => {
               id="location"
               name="location"
               placeholder="e.g. Hyderabad, India"
+              value={formData.location}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              required
             />
           </div>
 
@@ -61,7 +99,10 @@ const EmpPosting = () => {
               name="vacancies"
               placeholder="e.g. 5"
               min="1"
+              value={formData.vacancies}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              required
             />
           </div>
 
@@ -74,7 +115,10 @@ const EmpPosting = () => {
               <select
                 id="jobType"
                 name="jobType"
+                value={formData.jobType}
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                required
               >
                 <option value="">Select job type</option>
                 <option value="Full-Time">Full-Time</option>
@@ -90,7 +134,10 @@ const EmpPosting = () => {
               <select
                 id="experienceLevel"
                 name="experienceLevel"
+                value={formData.experienceLevel}
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                required
               >
                 <option value="">Select experience level</option>
                 <option value="Fresher">Fresher</option>
@@ -113,6 +160,8 @@ const EmpPosting = () => {
                 name="minSalary"
                 placeholder="e.g. 30000"
                 min="0"
+                value={formData.minSalary}
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -126,6 +175,8 @@ const EmpPosting = () => {
                 name="maxSalary"
                 placeholder="e.g. 80000"
                 min="0"
+                value={formData.maxSalary}
+                onChange={handleChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               />
             </div>
@@ -141,6 +192,8 @@ const EmpPosting = () => {
               id="skills"
               name="skills"
               placeholder="e.g. React, Node.js, MySQL"
+              value={formData.skills}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             />
           </div>
@@ -155,8 +208,42 @@ const EmpPosting = () => {
               name="description"
               placeholder="Enter detailed job description..."
               rows="4"
+              value={formData.description}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
             />
+          </div>
+
+          {/* Application Deadline */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="startDate" className="block text-gray-700 font-medium mb-1">
+                Application Deadline Start Date
+              </label>
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                value={formData.startDate}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label htmlFor="endDate" className="block text-gray-700 font-medium mb-1">
+                Application Deadline End Date
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                value={formData.endDate}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
           </div>
 
           {/* Submit Button */}

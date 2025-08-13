@@ -33,7 +33,7 @@ const Login = () => {
   }
 
   const from = location.state?.from?.pathname || 
-    (userType === 'employee' ? '/employee-dashboard' : '/candidate-dashboard');
+    (userType === 'employee' ? '/empdashboard' : '/dashboard');
 
   const handleSubmit = async (e) => {
     e.preventDefault();

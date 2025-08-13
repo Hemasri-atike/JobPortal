@@ -7,25 +7,32 @@ const CandidateDetails = () => {
     email: "",
     phone: "",
     graduationDegree: "",
+    graduationState: "",
     graduationUniversity: "",
+    graduationCollege: "", // New field for graduation college
     graduationYear: "",
     interBoard: "",
+    interState: "",
+    interStateBoard: "",
+    interCollege: "", // New field for intermediate college
     interStream: "",
     interYear: "",
     tenthBoard: "",
+    tenthState: "",
+    tenthCollege: "", // New field for tenth college
     tenthYear: "",
-    experience: "", // Existing field, will keep for compatibility
-    companyName: "", // New field for Experience step
-    jobTitle: "", // New field for Experience step
-    duration: "", // New field for Experience step
-    responsibilities: "", // New field for Experience step
+    experience: "",
+    companyName: "",
+    jobTitle: "",
+    duration: "",
+    responsibilities: "",
     currentLocation: "",
     preferredLocation: "",
     resume: null,
   });
 
   const handleNext = () => {
-    if (step < 5) setStep(step + 1); // Updated to account for 5 steps
+    if (step < 5) setStep(step + 1);
   };
 
   const handlePrev = () => {
@@ -34,10 +41,42 @@ const CandidateDetails = () => {
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
-    setFormData({
-      ...formData,
-      [name]: files ? files[0] : value,
-    });
+    // Reset dependent fields when state or board changes
+    if (name === "graduationState") {
+      setFormData({
+        ...formData,
+        graduationState: value,
+        graduationUniversity: "", // Reset university when state changes
+        [name]: value,
+      });
+    } else if (name === "interBoard") {
+      setFormData({
+        ...formData,
+        interBoard: value,
+        interStateBoard: value !== "State Board" ? "" : formData.interStateBoard, // Clear state board if not State Board
+        [name]: value,
+      });
+    } else if (name === "interState") {
+      setFormData({
+        ...formData,
+        interState: value,
+        interBoard: "", // Reset board when state changes
+        interStateBoard: "", // Reset state board when state changes
+        [name]: value,
+      });
+    } else if (name === "tenthState") {
+      setFormData({
+        ...formData,
+        tenthState: value,
+        tenthBoard: "", // Reset board when state changes
+        [name]: value,
+      });
+    } else {
+      setFormData({
+        ...formData,
+        [name]: files ? files[0] : value,
+      });
+    }
   };
 
   const handleSubmit = (e) => {
@@ -46,23 +85,71 @@ const CandidateDetails = () => {
     alert("Form submitted successfully!");
   };
 
-  // Sample list of universities (replace with your actual list)
-  const universities = [
-    "Select University",
-    "Harvard University",
-    "Stanford University",
-    "Massachusetts Institute of Technology",
-    "University of Oxford",
-    "University of Cambridge",
-    "Indian Institute of Technology, Delhi",
-    "Indian Institute of Technology, Bombay",
-    "University of Delhi",
-    "Jawaharlal Nehru University",
-    "Anna University",
-    // Add more universities as needed
+  // List of states (for state board and education state selection)
+  const states = [
+    "Select State",
+    "Telangana",
+    "Andhra Pradesh",
+    "Karnataka",
+    "Tamil Nadu",
+    // Add more states as needed
   ];
 
-  const steps = ["Personal", "Education", "Experience", "Location", "Resume"]; // Added Experience step
+  // List of Telangana universities (unchanged)
+  const telanganaUniversities = [
+    "Select University",
+    "Osmania University",
+    "Jawaharlal Nehru Technological University",
+    "Kakatiya University",
+    "University of Hyderabad",
+    "Maulana Azad National Urdu University",
+    "English and Foreign Languages University",
+    "Sammakka Sarakka Central Tribal University",
+    "Dr. B.R. Ambedkar Open University",
+    "NALSAR University of Law",
+    "Nizam’s Institute of Medical Sciences",
+    "Mahatma Gandhi University",
+    "Palamuru University",
+    "Potti Sreeramulu Telugu University",
+    "Professor Jayashankar Telangana State Agricultural University",
+    "P.V. Narasimha Rao Telangana Veterinary University",
+    "Rajiv Gandhi University of Knowledge Technologies",
+    "Satavahana University",
+    "Sri Konda Laxman Telangana State Horticultural University",
+    "Telangana University",
+    "Anurag University",
+    "Mahindra University",
+    "Malla Reddy University",
+    "SR University",
+    "Woxsen University",
+    "Chaitanya (Deemed to be University)",
+    "ICFAI Foundation for Higher Education",
+    "International Institute of Information Technology",
+    "Guru Nanak University",
+    "Kaveri University",
+    "MNR University",
+    "NICMAR University of Construction Studies",
+    "Sreenidhi University",
+  ];
+
+  // List of boards
+  const boards = [
+    "Select Board",
+    "CBSE",
+    "ICSE",
+    "State Board",
+  ];
+
+  // List of state boards
+  const stateBoards = [
+    "Select State Board",
+    ...states.filter((state) => state !== "Select State").map((state) => `${state} State Board`),
+  ];
+
+  // Dynamic universities based on selected state
+  const universities = formData.graduationState === "Telangana" ? telanganaUniversities : ["Select University"];
+
+  const steps = ["Personal", "Education", "Experience", "Location", "Resume"];
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-white shadow-lg rounded-lg">
@@ -142,11 +229,29 @@ const CandidateDetails = () => {
                 required
               />
               <select
+                name="graduationState"
+                value={formData.graduationState}
+                onChange={handleChange}
+                className="border p-2 w-full rounded mt-2"
+                required
+              >
+                {states.map((state, index) => (
+                  <option
+                    key={index}
+                    value={state === "Select State" ? "" : state}
+                    disabled={state === "Select State"}
+                  >
+                    {state}
+                  </option>
+                ))}
+              </select>
+              <select
                 name="graduationUniversity"
                 value={formData.graduationUniversity}
                 onChange={handleChange}
                 className="border p-2 w-full rounded mt-2"
                 required
+                disabled={!formData.graduationState}
               >
                 {universities.map((university, index) => (
                   <option
@@ -158,6 +263,14 @@ const CandidateDetails = () => {
                   </option>
                 ))}
               </select>
+              <input
+                type="text"
+                name="graduationCollege"
+                placeholder="College Name (e.g., Osmania Engineering College)"
+                value={formData.graduationCollege}
+                onChange={handleChange}
+                className="border p-2 w-full rounded mt-2"
+              />
               <input
                 type="text"
                 name="graduationYear"
@@ -172,14 +285,67 @@ const CandidateDetails = () => {
             {/* Intermediate Details */}
             <div>
               <h3 className="text-md font-semibold mb-2">Intermediate Details</h3>
-              <input
-                type="text"
-                name="interBoard"
-                placeholder="Board (e.g., CBSE, State Board)"
-                value={formData.interBoard}
+              <select
+                name="interState"
+                value={formData.interState}
                 onChange={handleChange}
                 className="border p-2 w-full rounded"
                 required
+              >
+                {states.map((state, index) => (
+                  <option
+                    key={index}
+                    value={state === "Select State" ? "" : state}
+                    disabled={state === "Select State"}
+                  >
+                    {state}
+                  </option>
+                ))}
+              </select>
+              <select
+                name="interBoard"
+                value={formData.interBoard}
+                onChange={handleChange}
+                className="border p-2 w-full rounded mt-2"
+                required
+                disabled={!formData.interState}
+              >
+                {boards.map((board, index) => (
+                  <option
+                    key={index}
+                    value={board === "Select Board" ? "" : board}
+                    disabled={board === "Select Board"}
+                  >
+                    {board}
+                  </option>
+                ))}
+              </select>
+              {formData.interBoard === "State Board" && (
+                <select
+                  name="interStateBoard"
+                  value={formData.interStateBoard}
+                  onChange={handleChange}
+                  className="border p-2 w-full rounded mt-2"
+                  required
+                >
+                  {stateBoards.map((stateBoard, index) => (
+                    <option
+                      key={index}
+                      value={stateBoard === "Select State Board" ? "" : stateBoard}
+                      disabled={stateBoard === "Select State Board"}
+                    >
+                      {stateBoard}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <input
+                type="text"
+                name="interCollege"
+                placeholder="College Name (e.g., St. Mary's Junior College)"
+                value={formData.interCollege}
+                onChange={handleChange}
+                className="border p-2 w-full rounded mt-2"
               />
               <input
                 type="text"
@@ -204,14 +370,39 @@ const CandidateDetails = () => {
             {/* Tenth Details */}
             <div>
               <h3 className="text-md font-semibold mb-2">Tenth Details</h3>
+              <select
+                name="tenthState"
+                value={formData.tenthState}
+                onChange={handleChange}
+                className="border p-2 w-full rounded"
+                required
+              >
+                {states.map((state, index) => (
+                  <option
+                    key={index}
+                    value={state === "Select State" ? "" : state}
+                    disabled={state === "Select State"}
+                  >
+                    {state}
+                  </option>
+                ))}
+              </select>
               <input
                 type="text"
                 name="tenthBoard"
                 placeholder="Board (e.g., CBSE, ICSE)"
                 value={formData.tenthBoard}
                 onChange={handleChange}
-                className="border p-2 w-full rounded"
+                className="border p-2 w-full rounded mt-2"
                 required
+              />
+              <input
+                type="text"
+                name="tenthCollege"
+                placeholder="School Name (e.g., Hyderabad Public School)"
+                value={formData.tenthCollege}
+                onChange={handleChange}
+                className="border p-2 w-full rounded mt-2"
               />
               <input
                 type="text"

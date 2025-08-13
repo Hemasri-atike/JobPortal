@@ -27,7 +27,7 @@ const Company= () => {
         style={{
           maxWidth: '1280px',
           margin: '0 auto',
-          padding: '0 1.5rem', // Equivalent to container-padding
+          padding: '0 1.5rem', 
         }}
       >
         <div

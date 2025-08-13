@@ -1,4 +1,3 @@
-import React from "react";
 import { Briefcase, PlusCircle, Users, Building } from "lucide-react";
 import { Link } from "react-router-dom"; 
 import Header from "../../pages/navbar/Header";
@@ -42,9 +41,9 @@ const EmpDashboard = () => {
                 <p className="text-gray-600 mb-4">
                   Browse and view all job opportunities available in the system.
                 </p>
-                <button className="text-blue-600 hover:underline">
+                <Link to="/joblistings" className="text-blue-600 hover:underline">
                   View Jobs →
-                </button>
+                </Link>
               </div>
 
               {/* Job Postings */}
@@ -54,9 +53,9 @@ const EmpDashboard = () => {
                 <p className="text-gray-600 mb-4">
                   Manage the jobs you have posted and edit details as needed.
                 </p>
-                <button className="text-green-600 hover:underline">
+                <Link to="/empposting" className="text-green-600 hover:underline">
                   Manage Postings →
-                </button>
+                </Link>
               </div>
 
               {/* Applicants Management */}
@@ -68,9 +67,9 @@ const EmpDashboard = () => {
                 <p className="text-gray-600 mb-4">
                   Review applications and contact potential candidates.
                 </p>
-                <button className="text-purple-600 hover:underline">
+                <Link to="/applicants" className="text-purple-600 hover:underline">
                   View Applicants →
-                </button>
+                </Link>
               </div>
 
               {/* Company Profile */}
@@ -80,9 +79,9 @@ const EmpDashboard = () => {
                 <p className="text-gray-600 mb-4">
                   Update your company’s details, logo, and contact information.
                 </p>
-                <button className="text-orange-600 hover:underline">
+                <Link to="/empprofile" className="text-orange-600 hover:underline">
                   Edit Profile →
-                </button>
+                </Link>
               </div>
             </div>
           </main>
