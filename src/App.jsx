@@ -21,6 +21,10 @@ import CadidateDetails from './components/candidate/CadidateDetails';
 import Company from './components/companies/Company';
 import UserType from './login/UserType';
 import Applicants from './components/Employee/Applicants';
+import Compdetails from "./components/Employee/Compdetails"
+import Joblisting from './components/common/Joblisting';
+
+
 
 
 
@@ -55,6 +59,8 @@ const App = () => {
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
     <Route path='/companies' element={<Company/>}/>
+     <Route path='/cmpprofile' element={<Compdetails />}/>
+
   
 
 
@@ -72,6 +78,8 @@ const App = () => {
                           <Route path="/job-alerts" element={<JobAlert/>}/>
                            <Route path="/shortlisted-jobs" element={<Shortlist/>}/>
                             <Route path="/cvmanager" element={<CvUpload/>}/>
+                               <Route path="/joblistings" element={<Joblisting/>}/>
+
                          
 
                              

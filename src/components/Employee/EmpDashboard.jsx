@@ -79,7 +79,7 @@ const EmpDashboard = () => {
                 <p className="text-gray-600 mb-4">
                   Update your company’s details, logo, and contact information.
                 </p>
-                <Link to="/empprofile" className="text-orange-600 hover:underline">
+                <Link to="/cmpprofile" className="text-orange-600 hover:underline">
                   Edit Profile →
                 </Link>
               </div>

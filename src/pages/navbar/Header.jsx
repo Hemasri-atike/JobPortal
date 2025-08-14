@@ -4,6 +4,37 @@ import { Link } from 'react-router-dom';
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
+  // Navigation links configuration
+  const navLinks = [
+    { to: '/jobsearch', label: 'Find Jobs' },
+    // { to: '/companies', label: 'Companies' }, // Uncomment when needed
+    // { to: '/about', label: 'About' }, // Uncomment when needed
+  ];
+
+  // Action buttons configuration
+  const actionLinks = [
+    // { to: '/upload-cv', label: 'Upload CV', isButton: false }, // Uncomment when needed
+    { to: '/', label: 'Login', isButton: false },
+    { to: '/jobsearch', label: 'Find a Job', isButton: true },
+    { to: '/empposting', label: 'Hire Staff', isButton: true },
+  ];
+
+  // Common link rendering function
+  const renderLink = ({ to, label, isButton }, isMobile = false) => (
+    <Link
+      key={to}
+      to={to}
+      className={`${
+        isButton
+          ? 'bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 font-semibold'
+          : 'text-black hover:text-yellow-300'
+      } transition-colors text-sm ${isMobile ? 'py-2 px-3 text-left' : ''}`}
+      onClick={() => isMobile && setIsMenuOpen(false)}
+    >
+      {label}
+    </Link>
+  );
+
   return (
     <header className="bg-white border-b border-gray-100 sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -18,52 +49,12 @@ const Header = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link
-              to="/jobsearch"
-              className="text-black hover:text-yellow-300 transition-colors"
-            >
-              Find Jobs
-            </Link>
-            {/* <Link
-              to="/companies"
-              className="text-black hover:text-yellow-300 transition-colors"
-            >
-              Companies
-            </Link> */}
-            {/* <Link
-              to="/about"
-              className="text-black hover:text-yellow-300 transition-colors"
-            >
-              About
-            </Link> */}
+            {navLinks.map((link) => renderLink(link))}
           </div>
 
-          {/* Action Buttons */}
+          {/* Desktop Action Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            {/* <Link
-              to="/upload-cv"
-              className="text-black hover:text-yellow-300 px-3 py-1 rounded-md transition-colors text-sm"
-            >
-              Upload CV
-            </Link> */}
-            <Link
-              to="/"
-              className="text-black hover:text-yellow-300 px-3 py-1 rounded-md transition-colors text-sm"
-            >
-              Login
-            </Link>
-            <Link
-              to="/empposting"
-              className="bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 transition-colors text-sm font-semibold"
-            >
-              Post a Job
-            </Link>
-            <Link
-              to="/hirestaff"
-              className="bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 transition-colors text-sm font-semibold"
-            >
-              Hire Staff
-            </Link>
+            {actionLinks.map((link) => renderLink(link))}
           </div>
 
           {/* Mobile Menu Button */}
@@ -71,20 +62,21 @@ const Header = () => {
             className="md:hidden p-2 rounded-lg hover:bg-gray-200 transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
             aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+            aria-expanded={isMenuOpen}
           >
             <div className="w-6 h-6 flex flex-col justify-center items-center">
               <span
-                className={`bg-black block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${
+                className={`bg-black h-0.5 w-6 rounded-sm transition-all duration-300 ease-out ${
                   isMenuOpen ? 'rotate-45 translate-y-1' : '-translate-y-0.5'
                 }`}
               ></span>
               <span
-                className={`bg-black block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm my-0.5 ${
+                className={`bg-black h-0.5 w-6 rounded-sm my-0.5 transition-all duration-300 ease-out ${
                   isMenuOpen ? 'opacity-0' : 'opacity-100'
                 }`}
               ></span>
               <span
-                className={`bg-black block transition-all duration-300 ease-out h-0.5 w-6 rounded-sm ${
+                className={`bg-black h-0.5 w-6 rounded-sm transition-all duration-300 ease-out ${
                   isMenuOpen ? '-rotate-45 -translate-y-1' : 'translate-y-0.5'
                 }`}
               ></span>
@@ -96,56 +88,9 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden py-4 border-t border-gray-100 bg-white animate-fade-in">
             <div className="flex flex-col space-y-4">
-              <Link
-                to="/jobs"
-                className="text-black hover:text-yellow-300 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Find Jobs
-              </Link>
-              {/* <Link
-                to="/companies"
-                className="text-black hover:text-yellow-300 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                Companies
-              </Link> */}
-              {/* <Link
-                to="/about"
-                className="text-black hover:text-yellow-300 transition-colors py-2"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                About
-              </Link> */}
+              {navLinks.map((link) => renderLink(link, true))}
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
-                {/* <Link
-                  to="/upload-cv"
-                  className="text-black hover:text-yellow-300 px-3 py-2 rounded-md transition-colors text-left text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Upload CV
-                </Link> */}
-                <Link
-                  to="/login"
-                  className="text-black hover:text-yellow-300 px-3 py-2 rounded-md transition-colors text-left text-sm"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Login
-                </Link>
-                <Link
-                  to="/login?type=employee"
-                  className="bg-yellow-400 text-[#1E3A8A] px-4 py-2 rounded-md hover:bg-yellow-500 transition-colors text-left text-sm font-semibold"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Post a Job
-                </Link>
-                <Link
-                  to="/hirestaff"
-                  className="bg-yellow-400 text-[#1E3A8A] px-4 py-2 rounded-md hover:bg-yellow-500 transition-colors text-left text-sm font-semibold"
-                  onClick={() => setIsMenuOpen(false)}
-                >
-                  Hire Staff
-                </Link>
+                {actionLinks.map((link) => renderLink(link, true))}
               </div>
             </div>
           </div>

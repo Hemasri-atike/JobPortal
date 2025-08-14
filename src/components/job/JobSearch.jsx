@@ -222,7 +222,7 @@ const JobSearch = () => {
               </Button>
             </form>
             <div className="flex flex-col sm:flex-row gap-3 items-center">
-              <select
+              {/* <select
                 value={locationFilter}
                 onChange={(e) => setLocationFilter(e.target.value)}
                 className="w-full sm:w-1/3 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -233,8 +233,8 @@ const JobSearch = () => {
                     {loc}
                   </option>
                 ))}
-              </select>
-              <select
+              </select> */}
+              {/* <select
                 value={company_id}
                 onChange={(e) => setCompany_id(e.target.value)}
                 className="w-full sm:w-1/3 border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -245,14 +245,14 @@ const JobSearch = () => {
                     {name}
                   </option>
                 ))}
-              </select>
-              <Button
+              </select> */}
+              {/* <Button
                 type="button"
                 className="w-full sm:w-auto px-4 py-2 text-sm bg-red-600 hover:bg-red-700"
                 onClick={clearFilters}
               >
                 Clear Filters
-              </Button>
+              </Button> */}
             </div>
           </div>
 
