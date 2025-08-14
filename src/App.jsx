@@ -23,6 +23,7 @@ import UserType from './login/UserType';
 import Applicants from './components/Employee/Applicants';
 import Compdetails from "./components/Employee/Compdetails"
 import Joblisting from './components/common/Joblisting';
+import Messages from './components/candidate/Messages';
 
 
 
@@ -54,6 +55,8 @@ const App = () => {
 
               {/* candidate */}
               <Route path='/caddetails' element={<CadidateDetails/>}/>
+                     <Route path='/cadmessages' element={<Messages/>}/>
+
 
 
 {/* Job Search */}

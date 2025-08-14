@@ -112,7 +112,7 @@ const Dashboard = () => {
               <div className="text-gray-500">Recruiter Actions</div>
               <div className="text-2xl font-bold text-yellow-500">15</div>
             </Link>
-            <Link to="/messages" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <Link to="/cadmessages" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
               <div className="text-gray-500">Messages</div>
               <div className="text-2xl font-bold text-blue-500">74</div>
             </Link>

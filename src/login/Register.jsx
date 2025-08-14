@@ -293,7 +293,7 @@ const Register = () => {
             <span className="border-t border-gray-300 w-full"></span>
           </div>
 
-          <button
+          {/* <button
             type="button"
             className="w-full flex items-center justify-center border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition duration-200"
           >
@@ -303,7 +303,7 @@ const Register = () => {
               className="w-5 h-5 mr-2"
             />
             Sign up with Google
-          </button>
+          </button> */}
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
