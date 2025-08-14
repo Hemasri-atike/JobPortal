@@ -100,7 +100,7 @@ const Dashboard = () => {
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <Link to="/applied-jobs" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
+            <Link to="/applied" className="bg-white p-4 rounded-lg shadow hover:shadow-md transition-shadow">
               <div className="text-gray-500">Applied Jobs</div>
               <div className="text-2xl font-bold text-gray-800">22</div>
             </Link>
