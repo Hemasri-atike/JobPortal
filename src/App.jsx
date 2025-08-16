@@ -19,32 +19,24 @@ import JobSearch from './components/job/JobSearch';
 import EmpPosting from './components/Employee/EmpPosting';
 import CadidateDetails from './components/candidate/CadidateDetails';
 import Company from './components/companies/Company';
-import UserType from './login/UserType';
+// import UserType from './login/UserType';
 import Applicants from './components/Employee/Applicants';
 import Compdetails from "./components/Employee/Compdetails"
 import Joblisting from './components/common/Joblisting';
 import Messages from './components/candidate/Messages';
-
-
-
-
-
+import Application from './components/job/Application';
 
 const App = () => {
   return (
    <>
   <BrowserRouter>
     <Routes>
-    <Route path="/" element={<UserType />} />
+    {/* <Route path="/" element={<UserType />} /> */}
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+                <Route path="/jobapplication" element={<Application />} />
 
-
-
-
-
-
-      <Route path="/home" element={<Home />} />
+      <Route path="/" element={<Home />} />
       <Route path="/nav"element={<Header/>}/>
       {/* Employee */}
           <Route path='/empprofile' element={<EmpProfile/>}/>
@@ -57,18 +49,10 @@ const App = () => {
               <Route path='/caddetails' element={<CadidateDetails/>}/>
                      <Route path='/cadmessages' element={<Messages/>}/>
 
-
-
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
     <Route path='/companies' element={<Company/>}/>
      <Route path='/cmpprofile' element={<Compdetails />}/>
-
-  
-
-
-
-
       <Route path='/category' element={<Category/>}/>
       {/* <Route path="/login" element={<Login/>}/>
          <Route path="/register" element={<Register/>}/> */}
@@ -83,19 +67,7 @@ const App = () => {
                             <Route path="/cvmanager" element={<CvUpload/>}/>
                                <Route path="/joblistings" element={<Joblisting/>}/>
 
-                         
-
-                             
-
-
-
-
-
-      
-
-    
-
-      
+                    
     </Routes>
   </BrowserRouter>
    </>

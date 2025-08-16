@@ -1,10 +1,8 @@
-
-import React from 'react';
 import { Link } from 'react-router-dom';
 
 const UserType = () => {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
+    <div className="min-h-screen flex items-center justify-center px-4">
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8 text-center">
         <h2 className="text-3xl font-bold text-blue-700 mb-6">Welcome to the IHire</h2>
         <p className="text-sm text-gray-500 mb-8">

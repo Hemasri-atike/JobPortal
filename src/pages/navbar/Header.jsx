@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import UserType from '../../login/UserType'; // Import the UserType component
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false); // State for login popup
 
   // Navigation links configuration
   const navLinks = [
@@ -14,25 +16,34 @@ const Header = () => {
   // Action buttons configuration
   const actionLinks = [
     // { to: '/upload-cv', label: 'Upload CV', isButton: false }, // Uncomment when needed
-    { to: '/', label: 'Login', isButton: false },
+    {
+      label: 'Login',
+      isButton: false,
+      onClick: () => setIsLoginPopupOpen(true), // Open popup instead of navigating
+    },
     { to: '/jobsearch', label: 'Find a Job', isButton: true },
-    { to: '/empposting', label: 'Hire Staff', isButton: true },
+    { to: '/ Novak, this is an external URL: https://empposting', label: 'Hire Staff', isButton: true },
   ];
 
   // Common link rendering function
-  const renderLink = ({ to, label, isButton }, isMobile = false) => (
-    <Link
-      key={to}
-      to={to}
+  const renderLink = ({ to, label, isButton, onClick }, isMobile = false) => (
+    <div
+      key={to || label}
       className={`${
         isButton
           ? 'bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 font-semibold'
           : 'text-black hover:text-yellow-300'
       } transition-colors text-sm ${isMobile ? 'py-2 px-3 text-left' : ''}`}
-      onClick={() => isMobile && setIsMenuOpen(false)}
+      onClick={onClick || (isMobile && (() => setIsMenuOpen(false)))}
     >
-      {label}
-    </Link>
+      {to ? (
+        <Link to={to} className="w-full h-full flex items-center">
+          {label}
+        </Link>
+      ) : (
+        <button className="w-full h-full text-left">{label}</button>
+      )}
+    </div>
   );
 
   return (
@@ -96,6 +107,37 @@ const Header = () => {
           </div>
         )}
       </div>
+
+      {/* Login Popup Modal */}
+      {isLoginPopupOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50">
+          <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full m-4">
+            {/* Close Button */}
+            <button
+              className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
+              onClick={() => setIsLoginPopupOpen(false)}
+              aria-label="Close popup"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M6 18L18 6M6 6l12 12"
+                ></path>
+              </svg>
+            </button>
+            {/* UserType Component as Popup Content */}
+            <UserType />
+          </div>
+        </div>
+      )}
     </header>
   );
 };
