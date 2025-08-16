@@ -95,9 +95,9 @@ const Category = () => {
           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4">
             Popular Job Categories
           </h2>
-          <p className="text-gray-500 text-base sm:text-lg lg:text-xl">
+          {/* <p className="text-gray-500 text-base sm:text-lg lg:text-xl">
             2020 jobs live - 293 added today.
-          </p>
+          </p> */}
         </div>
 
         {/* Categories grid */}

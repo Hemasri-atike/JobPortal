@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import UserType from '../../login/UserType'; // Import the UserType component
+import UserType from '../../login/UserType'; 
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -22,7 +22,7 @@ const Header = () => {
       onClick: () => setIsLoginPopupOpen(true), // Open popup instead of navigating
     },
     { to: '/jobsearch', label: 'Find a Job', isButton: true },
-    { to: '/ Novak, this is an external URL: https://empposting', label: 'Hire Staff', isButton: true },
+    { to: '/login?type=employee', label: 'Hire Staff', isButton: true },
   ];
 
   // Common link rendering function
@@ -51,7 +51,7 @@ const Header = () => {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <nav className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link to="/home" className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-8 h-8 bg-gray-200 rounded-lg flex items-center justify-center">
               <span className="text-[#1E3A8A] font-bold text-lg">I</span>
             </div>

@@ -91,7 +91,7 @@ const Dashboard = () => {
             </div>
             <p className="text-sm text-gray-600">
               Your profile is {profileCompletion}% complete.{' '}
-              <Link to="/profile" className="text-blue-600 hover:underline">
+              <Link to="/cadprofile" className="text-blue-600 hover:underline">
                 Complete your profile
               </Link>
               {' '}to improve visibility!

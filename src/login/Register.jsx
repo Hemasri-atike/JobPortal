@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -74,8 +74,17 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      console.log('Registration attempt:', formData);
-      navigate(userType === 'employee' ? '/employee-dashboard' : '/candidate-dashboard');
+      // Simulate successful registration by saving to localStorage
+      localStorage.setItem('candidateProfile', JSON.stringify({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: '', // Add phone input if needed
+        designation: formData.position || 'Job Seeker',
+        company: formData.companyId ? `Company ${formData.companyId}` : '',
+        location: formData.location,
+        about: `Candidate with ${formData.experience} years of experience in ${formData.skills.join(', ')}`,
+      }));
+      navigate('/cadprofile'); // Navigate to candidate profile
     } catch (error) {
       setLocalError('Registration failed. Please try again.');
     } finally {
@@ -292,18 +301,6 @@ const Register = () => {
             <span className="px-2 text-gray-500 text-sm">OR</span>
             <span className="border-t border-gray-300 w-full"></span>
           </div>
-
-          {/* <button
-            type="button"
-            className="w-full flex items-center justify-center border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition duration-200"
-          >
-            <img
-              src="https://www.svgrepo.com/show/355037/google.svg"
-              alt="Google"
-              className="w-5 h-5 mr-2"
-            />
-            Sign up with Google
-          </button> */}
 
           <div className="text-center">
             <p className="text-sm text-gray-600">

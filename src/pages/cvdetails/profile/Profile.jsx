@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 
 const Profile = () => {
@@ -12,6 +12,23 @@ const Profile = () => {
     about:
       "Passionate software engineer with 5+ years of experience in full-stack development and team management.",
   });
+
+  // Load profile data from localStorage on mount
+  useEffect(() => {
+    const savedProfile = localStorage.getItem("candidateProfile");
+    if (savedProfile) {
+      setProfile(JSON.parse(savedProfile));
+    }
+  }, []);
+
+  // Update profile data (e.g., after editing)
+  const updateProfile = (updatedData) => {
+    setProfile((prev) => {
+      const newProfile = { ...prev, ...updatedData };
+      localStorage.setItem("candidateProfile", JSON.stringify(newProfile));
+      return newProfile;
+    });
+  };
 
   return (
     <div className="min-h-screen bg-gray-100 p-4 sm:p-6 lg:p-10">
