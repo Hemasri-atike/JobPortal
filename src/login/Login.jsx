@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -32,19 +32,33 @@ const Login = () => {
     );
   }
 
+  // Determine default navigation path based on user type
   const from = location.state?.from?.pathname || 
-    (userType === 'employee' ? '/empdashboard' : '/dashboard');
+    (userType === 'employee' ? '/empdashboard' : '/cadprofile');
 
+  // Simulate user authentication (e.g., check against localStorage or mock data)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError(null);
     setIsLoading(true);
 
     try {
-      console.log('Login attempt:', { email, password, userType });
-      navigate(from, { replace: true });
+      // Simulate authentication (replace with actual API call)
+      const savedProfile = localStorage.getItem(userType === 'candidate' ? 'candidateProfile' : 'employeeProfile');
+      if (savedProfile) {
+        const profile = JSON.parse(savedProfile);
+        // Simple check: match email and assume password is valid for demo
+        if (profile.email === email) {
+          console.log('Login successful:', { email, userType });
+          navigate(from, { replace: true });
+        } else {
+          throw new Error('Invalid email or password');
+        }
+      } else {
+        throw new Error('No account found. Please register first.');
+      }
     } catch (error) {
-      setLocalError('Login failed. Please check your credentials.');
+      setLocalError(error.message || 'Login failed. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -129,18 +143,6 @@ const Login = () => {
             <span className="px-2 text-gray-500 text-sm">OR</span>
             <span className="border-t border-gray-300 w-full"></span>
           </div>
-
-          {/* <button
-            type="button"
-            className="w-full flex items-center justify-center border border-gray-300 py-2 rounded-lg hover:bg-gray-50 transition duration-200"
-          >
-            <img
-              src="https://www.svgrepo.com/show/355037/google.svg"
-              alt="Google"
-              className="w-5 h-5 mr-2"
-            />
-            Sign in with Google
-          </button> */}
 
           <div className="text-center">
             <p className="text-sm text-gray-600">

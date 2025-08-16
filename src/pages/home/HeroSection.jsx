@@ -51,7 +51,7 @@ const HeroSection = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full bg-transparent border-none outline-none pl-10 pr-4 py-4 text-gray-900 placeholder-gray-500" // Changed px-4 to pl-10 pr-4
                 />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 md:hidden flex items-center"> // Adjusted left-4 to left-3, added flex items-center
+                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
                   <Search className="w-5 h-5 text-gray-500" />
                 </div>
               </div>
@@ -91,20 +91,8 @@ const HeroSection = () => {
                 type="submit"
                 className="bg-blue-600 text-white px-8 py-4 whitespace-nowrap rounded-lg hover:bg-blue-700 transition"
               >
-                {/* <svg
-                  className="w-5 h-3 mr-2"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth="4"
-                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                  />
-                </svg> */}
-                Search Jobs
+          
+                Get Jobs
               </button>
             </div>
           </form>
