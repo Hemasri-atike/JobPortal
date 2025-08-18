@@ -25,6 +25,7 @@ import Compdetails from "./components/Employee/Compdetails"
 import Joblisting from './components/common/Joblisting';
 import Messages from './components/candidate/Messages';
 import Application from './components/job/Application';
+import Admindashboard from './pages/dashboard/Admindashboard';
 
 const App = () => {
   return (
@@ -35,6 +36,8 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
                 <Route path="/jobapplication" element={<Application />} />
+                <Route path="/admindashboard" element={<Admindashboard />} />
+
 
       <Route path="/" element={<Home />} />
       <Route path="/nav"element={<Header/>}/>

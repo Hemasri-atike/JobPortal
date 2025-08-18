@@ -1,64 +1,53 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 
 const Login = () => {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract type from query parameters, default to 'candidate' if undefined or invalid
+  // Extract type from query parameters, default to 'candidate'
   const queryParams = new URLSearchParams(location.search);
-  const userType = ['candidate', 'employee'].includes(queryParams.get('type'))
-    ? queryParams.get('type')
-    : 'candidate';
+  const userType = ["candidate", "employee"].includes(queryParams.get("type"))
+    ? queryParams.get("type")
+    : "candidate";
 
-  // Fallback UI for invalid userType (optional, for debugging)
-  if (!['candidate', 'employee'].includes(userType)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-red-600">Invalid User Type</h2>
-          <p className="text-gray-600 mt-2">Please select a valid user type:</p>
-          <div className="mt-4 space-x-4">
-            <Link to="/login?type=candidate" className="text-blue-600 hover:underline">Candidate</Link>
-            <Link to="/login?type=employee" className="text-blue-600 hover:underline">Employee</Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Determine navigation path
+  const from = location.state?.from?.pathname || (userType === "employee" ? "/empdashboard" : "/cadprofile");
 
-  // Determine default navigation path based on user type
-  const from = location.state?.from?.pathname || 
-    (userType === 'employee' ? '/empdashboard' : '/cadprofile');
-
-  // Simulate user authentication (e.g., check against localStorage or mock data)
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError(null);
     setIsLoading(true);
 
     try {
-      // Simulate authentication (replace with actual API call)
-      const savedProfile = localStorage.getItem(userType === 'candidate' ? 'candidateProfile' : 'employeeProfile');
-      if (savedProfile) {
-        const profile = JSON.parse(savedProfile);
-        // Simple check: match email and assume password is valid for demo
-        if (profile.email === email) {
-          console.log('Login successful:', { email, userType });
-          navigate(from, { replace: true });
-        } else {
-          throw new Error('Invalid email or password');
-        }
-      } else {
-        throw new Error('No account found. Please register first.');
+      const response = await fetch("http://localhost:5000/api/users/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Login failed");
       }
+
+      // Store token and user data (e.g., in localStorage or context)
+      localStorage.setItem("token", data.token);
+      localStorage.setItem(userType === "candidate" ? "candidateProfile" : "employeeProfile", JSON.stringify(data.user));
+
+      console.log("Login successful:", { email, userType });
+      navigate(from, { replace: true });
     } catch (error) {
-      setLocalError(error.message || 'Login failed. Please check your credentials.');
+      setLocalError(error.message || "Login failed. Please check your credentials.");
+      console.error("Login error:", error);
     } finally {
       setIsLoading(false);
     }
@@ -69,12 +58,12 @@ const Login = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-blue-700 mb-2">
-            {userType === 'employee' ? 'Employee Login' : 'Candidate Login'}
+            {userType === "employee" ? "Employer Login" : "Candidate Login"}
           </h2>
           <p className="text-sm text-gray-500">
-            {userType === 'employee' 
-              ? 'Access your company dashboard' 
-              : 'Welcome back! Please log in to find your dream job.'}
+            {userType === "employee"
+              ? "Access your company dashboard"
+              : "Welcome back! Please log in to find your dream job."}
           </p>
         </div>
 
@@ -108,10 +97,7 @@ const Login = () => {
               required
             />
             <div className="text-right mt-1">
-              <Link
-                to="/forgot-password"
-                className="text-sm text-blue-600 hover:underline"
-              >
+              <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
                 Forgot password?
               </Link>
             </div>
@@ -134,7 +120,7 @@ const Login = () => {
                 Signing In...
               </div>
             ) : (
-              'Sign In'
+              "Sign In"
             )}
           </button>
 
@@ -146,7 +132,7 @@ const Login = () => {
 
           <div className="text-center">
             <p className="text-sm text-gray-600">
-              Don't have an account?{' '}
+              Don’t have an account?{" "}
               <Link
                 to={`/register?type=${userType}`}
                 className="text-blue-600 hover:underline font-medium"
@@ -158,12 +144,12 @@ const Login = () => {
 
           <div className="text-center">
             <Link
-              to={userType === 'employee' ? '/login?type=candidate' : '/login?type=employee'}
+              to={userType === "employee" ? "/login?type=candidate" : "/login?type=employee"}
               className="text-sm text-gray-600 hover:underline"
             >
-              {userType === 'employee' 
-                ? 'Looking for a job? Switch to candidate login' 
-                : 'Are you an employer? Switch to employee login'}
+              {userType === "employee"
+                ? "Looking for a job? Switch to candidate login"
+                : "Are you an employer? Switch to employer login"}
             </Link>
           </div>
         </form>
