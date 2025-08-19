@@ -1,194 +1,273 @@
-import React from "react";
+import React, { useState } from "react";
+import axios from "axios";
 
 const Application = () => {
-  const handleSubmit = (e) => {
+  const [formData, setFormData] = useState({
+    fullName: "",
+    email: "",
+    phone: "",
+    location: "",
+    experience: "",
+    jobTitle: "",
+    company: "",
+    qualification: "",
+    specialization: "",
+    university: "",
+    skills: "",
+    coverLetter: "",
+    linkedIn: "",
+    portfolio: "",
+  });
+
+  const [resume, setResume] = useState(null);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleFileChange = (e) => {
+    setResume(e.target.files[0]);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    alert("Application Submitted!");
+    try {
+      const data = new FormData();
+      for (const key in formData) {
+        data.append(key, formData[key]);
+      }
+      if (resume) data.append("resume", resume);
+
+      const res = await axios.post(
+        "http://localhost:5000/api/application",
+        data,
+        { headers: { "Content-Type": "multipart/form-data" } }
+      );
+
+      alert(res.data.message);
+    } catch (error) {
+      console.error(error.response?.data || error.message);
+      alert("Failed to submit application");
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#f0ebf8] flex justify-center p-6">
-      <div className="w-full max-w-2xl bg-white shadow-md rounded-lg p-8">
-        {/* Form Header */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Job Application Form
-        </h1>
-        <p className="text-gray-600 mb-6">
-          Please fill out the required fields (*)
-        </p>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Personal Info */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Full Name *
-            </label>
-            <input
-              type="text"
-              required
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
+    <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-2xl p-8 mt-10">
+      <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
+        Job Application Form
+      </h2>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {/* Personal Details */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 text-blue-600">
+            Personal Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Full Name</label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Phone</label>
+              <input
+                type="text"
+                name="phone"
+                value={formData.phone}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Location</label>
+              <input
+                type="text"
+                name="location"
+                value={formData.location}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Email *
-            </label>
-            <input
-              type="email"
-              required
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
+        {/* Professional Details */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 text-blue-600">
+            Professional Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Experience</label>
+              <input
+                type="text"
+                name="experience"
+                value={formData.experience}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Job Title</label>
+              <input
+                type="text"
+                name="jobTitle"
+                value={formData.jobTitle}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Company</label>
+              <input
+                type="text"
+                name="company"
+                value={formData.company}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Phone Number *
-            </label>
-            <input
-              type="tel"
-              required
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
+        {/* Education Details */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 text-blue-600">
+            Education Details
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Qualification</label>
+              <input
+                type="text"
+                name="qualification"
+                value={formData.qualification}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Specialization</label>
+              <input
+                type="text"
+                name="specialization"
+                value={formData.specialization}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">University</label>
+              <input
+                type="text"
+                name="university"
+                value={formData.university}
+                onChange={handleChange}
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
+        </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Location / City
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
+        {/* Skills & Resume */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 text-blue-600">
+            Skills & Resume
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Skills</label>
+              <input
+                type="text"
+                name="skills"
+                value={formData.skills}
+                onChange={handleChange}
+                placeholder="e.g. Java, React, SQL"
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Resume</label>
+              <input
+                type="file"
+                name="resume"
+                accept=".pdf,.doc,.docx"
+                onChange={handleFileChange}
+                className="w-full border p-2 rounded-lg"
+              />
+            </div>
           </div>
+        </div>
 
-          {/* Professional Info */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Years of Experience
-            </label>
-            <input
-              type="number"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
+        {/* Extra Info */}
+        <div>
+          <h3 className="text-lg font-semibold mb-3 text-blue-600">
+            Additional Information
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">LinkedIn</label>
+              <input
+                type="text"
+                name="linkedIn"
+                value={formData.linkedIn}
+                onChange={handleChange}
+                placeholder="LinkedIn Profile URL"
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Portfolio/GitHub</label>
+              <input
+                type="text"
+                name="portfolio"
+                value={formData.portfolio}
+                onChange={handleChange}
+                placeholder="Portfolio or GitHub URL"
+                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Current Job Title
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Current Company
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          {/* Education */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Qualification
-            </label>
-            <select className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2">
-              <option value="">Select</option>
-              <option value="Intermediate">Intermediate</option>
-              <option value="Graduate">Graduate</option>
-              <option value="Post Graduate">Post Graduate</option>
-              <option value="PhD">PhD</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Specialization
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              University / College
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          {/* Skills */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Skills (comma separated)
-            </label>
-            <input
-              type="text"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          {/* Resume Upload */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800 mb-2">
-              Upload Resume *
-            </label>
-            <input type="file" required className="w-full" />
-          </div>
-
-          {/* Cover Letter */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Cover Letter
-            </label>
+          <div className="mt-4">
+            <label className="block text-sm font-medium mb-1">Cover Letter</label>
             <textarea
-              rows="3"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
+              name="coverLetter"
+              value={formData.coverLetter}
+              onChange={handleChange}
+              rows="4"
+              placeholder="Write a short cover letter..."
+              className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
             ></textarea>
           </div>
+        </div>
 
-          {/* Links */}
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              LinkedIn Profile
-            </label>
-            <input
-              type="url"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-800">
-              Portfolio / GitHub Link
-            </label>
-            <input
-              type="url"
-              className="w-full border-b border-gray-300 focus:border-purple-600 focus:outline-none py-2"
-            />
-          </div>
-
-          {/* Submit */}
-          <div className="pt-4">
-            <button
-              type="submit"
-              className="bg-purple-600 text-white font-semibold px-6 py-2 rounded-md hover:bg-purple-700 transition"
-            >
-              Submit
-            </button>
-          </div>
-        </form>
-      </div>
+        {/* Submit */}
+        <div className="text-center">
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition"
+          >
+            Submit Application
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

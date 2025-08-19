@@ -1,4 +1,4 @@
-import React from 'react';
+
 import { User, Briefcase, BookOpen, Code, FileText } from 'lucide-react';
 
 // Custom Button component to match JobSearch
