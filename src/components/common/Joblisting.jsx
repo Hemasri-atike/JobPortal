@@ -29,7 +29,7 @@ const JobListing = () => {
     }
   };
 
-  // 🔹 Handle Add / Edit Job
+  // Handle Add / Edit Job
   const onSubmit = async (data) => {
     try {
       const token = localStorage.getItem("token");
