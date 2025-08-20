@@ -5,36 +5,31 @@ const Register = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract type from query parameters, default to 'candidate'
   const queryParams = new URLSearchParams(location.search);
   const userType = ['candidate', 'employee'].includes(queryParams.get('type'))
     ? queryParams.get('type')
     : 'candidate';
 
-  // Map frontend userType to backend role
   const role = userType === 'candidate' ? 'job_seeker' : 'employer';
 
-  // Form data state
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    mobile: '', // For candidate
-    company_name: '', // For employee
-    position: '', // For employee
+    mobile: '',
+    company_name: '',
+    position: '',
     role: role,
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [localError, setLocalError] = useState(null);
 
-  // Handle input changes
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLocalError(null);
@@ -64,7 +59,6 @@ const Register = () => {
     setIsLoading(true);
 
     try {
-      // Prepare data for backend
       const payload = {
         name: formData.name,
         email: formData.email,
@@ -75,7 +69,6 @@ const Register = () => {
         position: userType === 'employee' ? formData.position : null,
       };
 
-      // Make API call to backend
       const response = await fetch('http://localhost:5000/api/users/register', {
         method: 'POST',
         headers: {
@@ -90,7 +83,7 @@ const Register = () => {
         throw new Error(data.error || 'Registration failed');
       }
 
-      // On success, navigate to appropriate page
+      // Navigate immediately after successful registration
       navigate(userType === 'candidate' ? '/cadprofile' : '/empprofile');
     } catch (error) {
       setLocalError(error.message || 'Registration failed. Please try again.');
