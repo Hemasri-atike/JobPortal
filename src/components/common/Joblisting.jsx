@@ -15,6 +15,17 @@ const JobListing = () => {
     formState: { errors },
   } = useForm();
 
+  // 🔹 Decode token to get user info
+  const token = localStorage.getItem("token");
+  let user = null;
+  if (token) {
+    try {
+      user = JSON.parse(atob(token.split(".")[1]));
+    } catch (err) {
+      console.error("Error decoding token:", err);
+    }
+  }
+
   // 🔹 Fetch jobs from backend
   useEffect(() => {
     fetchJobs();
@@ -23,17 +34,22 @@ const JobListing = () => {
   const fetchJobs = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/jobs");
-      setJobs(res.data.jobs);
+      // ✅ Ensure jobs is always an array
+      setJobs(Array.isArray(res.data.jobs) ? res.data.jobs : res.data);
     } catch (err) {
       console.error("Error fetching jobs:", err);
+      setJobs([]); // fallback to empty
     }
   };
 
-  // Handle Add / Edit Job
+  // 🔹 Handle Add / Edit Job
   const onSubmit = async (data) => {
-    try {
-      const token = localStorage.getItem("token");
+    if (!user || (user.role !== "admin" && user.role !== "employer")) {
+      alert("You are not authorized to perform this action.");
+      return;
+    }
 
+    try {
       if (editingJobId) {
         // Update job
         await axios.put(
@@ -54,19 +70,25 @@ const JobListing = () => {
       reset();
     } catch (err) {
       console.error("Error saving job:", err);
+      alert("Error: " + (err.response?.data?.error || err.message));
     }
   };
 
   // 🔹 Handle Delete Job
   const handleDelete = async (id) => {
+    if (!user || (user.role !== "admin" && user.role !== "employer")) {
+      alert("You are not authorized to delete jobs.");
+      return;
+    }
+
     try {
-      const token = localStorage.getItem("token");
       await axios.delete(`http://localhost:5000/api/jobs/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       fetchJobs(); // Refresh jobs
     } catch (err) {
       console.error("Error deleting job:", err);
+      alert("Error: " + (err.response?.data?.error || err.message));
     }
   };
 
@@ -85,20 +107,25 @@ const JobListing = () => {
       <h1 className="text-2xl font-bold mb-4">Job Listings</h1>
 
       {/* Add Job Button */}
-      <button
-        onClick={() => {
-          setIsAdding(true);
-          setEditingJobId(null);
-          reset();
-        }}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add Job
-      </button>
+      {(user?.role === "admin" || user?.role === "employer") && (
+        <button
+          onClick={() => {
+            setIsAdding(true);
+            setEditingJobId(null);
+            reset();
+          }}
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        >
+          Add Job
+        </button>
+      )}
 
       {/* Job Form */}
-      {isAdding && (
-        <form onSubmit={handleSubmit(onSubmit)} className="mb-6 bg-gray-100 p-4 rounded">
+      {isAdding && (user?.role === "admin" || user?.role === "employer") && (
+        <form
+          onSubmit={handleSubmit(onSubmit)}
+          className="mb-6 bg-gray-100 p-4 rounded"
+        >
           <input
             {...register("title", { required: true })}
             placeholder="Job Title"
@@ -111,7 +138,9 @@ const JobListing = () => {
             placeholder="Job Description"
             className="block w-full mb-2 p-2 border rounded"
           />
-          {errors.description && <p className="text-red-500">Description is required</p>}
+          {errors.description && (
+            <p className="text-red-500">Description is required</p>
+          )}
 
           <input
             {...register("location")}
@@ -146,34 +175,42 @@ const JobListing = () => {
 
       {/* Jobs List */}
       <ul>
-        {jobs.map((job) => (
-          <li
-            key={job.id}
-            className="border-b py-2 flex justify-between items-center"
-          >
-            <div>
-              <h2 className="font-semibold">{job.title}</h2>
-              <p>{job.description}</p>
-              <p className="text-sm text-gray-600">
-                {job.location} | ${job.salary}
-              </p>
-            </div>
-            <div>
-              <button
-                onClick={() => handleEdit(job)}
-                className="bg-yellow-500 text-white px-3 py-1 rounded mr-2"
-              >
-                Edit
-              </button>
-              <button
-                onClick={() => handleDelete(job.id)}
-                className="bg-red-500 text-white px-3 py-1 rounded"
-              >
-                Delete
-              </button>
-            </div>
-          </li>
-        ))}
+        {Array.isArray(jobs) && jobs.length > 0 ? (
+          jobs.map((job) => (
+            <li
+              key={job.id}
+              className="border-b py-2 flex justify-between items-center"
+            >
+              <div>
+                <h2 className="font-semibold">{job.title}</h2>
+                <p>{job.description}</p>
+                <p className="text-sm text-gray-600">
+                  {job.location} | ${job.salary}
+                </p>
+              </div>
+
+              {/* Edit/Delete buttons */}
+              {(user?.role === "admin" || user?.role === "employer") && (
+                <div>
+                  <button
+                    onClick={() => handleEdit(job)}
+                    className="bg-yellow-500 text-white px-3 py-1 rounded mr-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDelete(job.id)}
+                    className="bg-red-500 text-white px-3 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </li>
+          ))
+        ) : (
+          <p className="text-gray-500">No jobs available.</p>
+        )}
       </ul>
     </div>
   );
