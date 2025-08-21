@@ -1,24 +1,11 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// ✅ Load profile from localStorage (simulate backend for now)
+// Load profile from localStorage (on page refresh)
 export const loadProfile = createAsyncThunk("profile/load", async () => {
   const savedProfile = localStorage.getItem("candidateProfile");
-  if (savedProfile) {
-    return JSON.parse(savedProfile);
-  }
-  return {
-    name: "John Doe",
-    email: "johndoe@example.com",
-    phone: "+91 9876543210",
-    designation: "Senior Software Engineer",
-    company: "Tech Solutions Pvt Ltd",
-    location: "Hyderabad, India",
-    about:
-      "Passionate software engineer with 5+ years of experience in full-stack development and team management.",
-  };
+  return savedProfile ? JSON.parse(savedProfile) : null;
 });
 
-// ✅ Slice
 const profileSlice = createSlice({
   name: "profile",
   initialState: {
@@ -27,9 +14,17 @@ const profileSlice = createSlice({
     error: null,
   },
   reducers: {
+    setProfile: (state, action) => {
+      state.data = action.payload;
+      localStorage.setItem("candidateProfile", JSON.stringify(action.payload));
+    },
     updateProfile: (state, action) => {
       state.data = { ...state.data, ...action.payload };
       localStorage.setItem("candidateProfile", JSON.stringify(state.data));
+    },
+    clearProfile: (state) => {
+      state.data = null;
+      localStorage.removeItem("candidateProfile");
     },
   },
   extraReducers: (builder) => {
@@ -48,5 +43,5 @@ const profileSlice = createSlice({
   },
 });
 
-export const { updateProfile } = profileSlice.actions;
+export const { setProfile, updateProfile, clearProfile } = profileSlice.actions;
 export default profileSlice.reducer;
