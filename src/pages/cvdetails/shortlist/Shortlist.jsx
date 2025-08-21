@@ -1,112 +1,50 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Search, Mail, Download } from 'lucide-react';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
+import {
+  fetchJobs,
+  setStatusFilter,
+  setSearchQuery,
+  incrementPage,
+  clearFilters,
+} from '../../../store/jobsSlice.js';
 
 const Shortlist = () => {
-  const [jobs, setJobs] = useState([]);
-  const [statusFilter, setStatusFilter] = useState('All');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [page, setPage] = useState(1);
-  const [isLoading, setIsLoading] = useState(false);
-  const jobsPerPage = 4;
+  const dispatch = useDispatch();
+  const { jobs, total, status, error, statusFilter, searchQuery, page, jobsPerPage } =
+    useSelector((state) => state.jobs);
 
-  // Mock data (replace with API call)
-  const mockJobs = [
-    {
-      id: 1,
-      title: 'Software Engineer (Android), Libraries',
-      company: 'Segment',
-      logo: '/logos/segment.png',
-      location: 'London, UK',
-      appliedDate: '2025-08-10',
-      salary: '$35k - $45k',
-      status: 'Shortlisted',
-      tags: ['Full Time', 'Private', 'Urgent'],
-      recruiterActions: { invitationSent: true, resumeDownloaded: true },
-    },
-    {
-      id: 2,
-      title: 'Recruiting Coordinator',
-      company: 'Catalyst',
-      logo: '/logos/catalyst.png',
-      location: 'London, UK',
-      appliedDate: '2025-08-09',
-      salary: '$35k - $45k',
-      status: 'Interview Scheduled',
-      tags: ['Freelancer', 'Private', 'Urgent'],
-      recruiterActions: { invitationSent: true, resumeDownloaded: false },
-    },
-    {
-      id: 3,
-      title: 'Product Manager, Studio',
-      company: 'Invision',
-      logo: '/logos/invision.png',
-      location: 'London, UK',
-      appliedDate: '2025-08-08',
-      salary: '$35k - $45k',
-      status: 'Shortlisted',
-      tags: ['Part Time', 'Private', 'Urgent'],
-      recruiterActions: { invitationSent: false, resumeDownloaded: true },
-    },
-    {
-      id: 4,
-      title: 'Senior Product Designer',
-      company: 'Upwork',
-      logo: '/logos/upwork.png',
-      location: 'London, UK',
-      appliedDate: '2025-08-07',
-      salary: '$35k - $45k',
-      status: 'Interview Scheduled',
-      tags: ['Temporary', 'Private', 'Urgent'],
-      recruiterActions: { invitationSent: true, resumeDownloaded: true },
-    },
-  ];
-
-  // Simulate API fetch
+  // Fetch jobs whenever filters/search/page changes
   useEffect(() => {
-    setIsLoading(true);
-    // Replace with actual API call, e.g., axios.get('/api/candidate/shortlisted-jobs')
-    setTimeout(() => {
-      setJobs(mockJobs);
-      setIsLoading(false);
-    }, 1000); // Simulate network delay
-  }, []);
-
-  // Filter jobs by status and search query
-  const filteredJobs = jobs.filter((job) => {
-    const matchesStatus = statusFilter === 'All' || job.status === statusFilter;
-    const matchesSearch = job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         job.company.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesStatus && matchesSearch;
-  });
-
-  // Paginate jobs
-  const paginatedJobs = filteredJobs.slice(0, page * jobsPerPage);
+    dispatch(fetchJobs({ statusFilter, searchQuery, page, jobsPerPage }));
+  }, [statusFilter, searchQuery, page, jobsPerPage, dispatch]);
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
       <Header />
-
-      {/* Main layout */}
       <div className="flex flex-1">
-        {/* Sidebar - hidden on small screens */}
         <aside className="hidden md:block w-64 bg-gray-100">
           <Sidebar />
         </aside>
-
-        {/* Content area */}
         <main className="flex-1 p-4 sm:p-6 bg-gray-100 overflow-y-auto">
-          <h4 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">Shortlisted Jobs</h4>
-          {isLoading ? (
+          <h4 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-4">
+            Shortlisted Jobs
+          </h4>
+
+          {status === 'loading' && (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
             </div>
-          ) : (
+          )}
+
+          {status === 'failed' && <p className="text-red-600 text-center">{error}</p>}
+
+          {status === 'succeeded' && (
             <>
-              {/* Filters and Search */}
+              {/* Filters & Search */}
               <div className="flex flex-col sm:flex-row gap-4 mb-6">
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
@@ -114,16 +52,14 @@ const Shortlist = () => {
                     type="text"
                     placeholder="Search by job title or company"
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => dispatch(setSearchQuery(e.target.value))}
                     className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    aria-label="Search shortlisted jobs"
                   />
                 </div>
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => dispatch(setStatusFilter(e.target.value))}
                   className="w-full sm:w-48 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                  aria-label="Filter by shortlist status"
                 >
                   <option value="All">All Statuses</option>
                   <option value="Shortlisted">Shortlisted</option>
@@ -131,10 +67,7 @@ const Shortlist = () => {
                 </select>
                 {(searchQuery || statusFilter !== 'All') && (
                   <button
-                    onClick={() => {
-                      setSearchQuery('');
-                      setStatusFilter('All');
-                    }}
+                    onClick={() => dispatch(clearFilters())}
                     className="text-sm text-blue-600 hover:underline"
                   >
                     Clear Filters
@@ -142,10 +75,10 @@ const Shortlist = () => {
                 )}
               </div>
 
-              {/* Shortlisted Jobs List */}
-              {paginatedJobs.length > 0 ? (
+              {/* Job List */}
+              {jobs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {paginatedJobs.map((job) => (
+                  {jobs.map((job) => (
                     <div key={job.id} className="bg-white rounded-lg shadow p-5 flex flex-col">
                       <div className="flex items-center mb-4">
                         <img src={job.logo} alt={job.company} className="w-12 h-12 rounded" />
@@ -158,9 +91,7 @@ const Shortlist = () => {
                             <span>•</span>
                             <span>Applied {job.appliedDate}</span>
                           </div>
-                          <div className="flex items-center text-sm text-gray-500 mt-1">
-                            💰 {job.salary}
-                          </div>
+                          <div className="flex items-center text-sm text-gray-500 mt-1">💰 {job.salary}</div>
                           <div className="flex gap-2 mt-2">
                             {job.tags.map((tag) => (
                               <span
@@ -183,6 +114,7 @@ const Shortlist = () => {
                           </div>
                         </div>
                       </div>
+
                       <div className="text-sm text-gray-600">
                         <span className="font-medium">Status: </span>{job.status}
                       </div>
@@ -198,14 +130,13 @@ const Shortlist = () => {
                             <Download size={14} className="inline mr-1" /> Resume Downloaded
                           </span>
                         )}
-                        {!job.recruiterActions.invitationSent && !job.recruiterActions.resumeDownloaded && (
-                          <span>No additional actions</span>
-                        )}
+                        {!job.recruiterActions.invitationSent &&
+                          !job.recruiterActions.resumeDownloaded && <span>No additional actions</span>}
                       </div>
+
                       <Link
                         to={`/job/${job.id}`}
                         className="mt-2 text-blue-600 hover:underline text-sm flex items-center"
-                        aria-label={`View details for ${job.title}`}
                       >
                         View Details <ChevronRight size={16} className="inline ml-1" />
                       </Link>
@@ -213,16 +144,15 @@ const Shortlist = () => {
                   ))}
                 </div>
               ) : (
-                <p className="text-gray-600 text-center">No shortlisted jobs match your filters.</p>
+                <p className="text-gray-600 text-center">No jobs found.</p>
               )}
 
               {/* Load More Button */}
-              {filteredJobs.length > paginatedJobs.length && (
+              {jobs.length < total && (
                 <div className="mt-6 text-center">
                   <button
-                    onClick={() => setPage(page + 1)}
+                    onClick={() => dispatch(incrementPage())}
                     className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-                    aria-label="Load more shortlisted jobs"
                   >
                     Load More
                   </button>
