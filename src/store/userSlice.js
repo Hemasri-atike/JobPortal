@@ -17,6 +17,7 @@ export const registerUser = createAsyncThunk(
       // Save token and user to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("userInfo", JSON.stringify(data.user));
+      localStorage.setItem("userType", data.user.role); // save role
 
       return data.user;
     } catch (error) {
@@ -42,6 +43,7 @@ export const loginUser = createAsyncThunk(
       // Save token and user to localStorage
       localStorage.setItem("token", data.token);
       localStorage.setItem("userInfo", JSON.stringify(data.user));
+      localStorage.setItem("userType", data.user.role); // save role
 
       return data.user;
     } catch (error) {
@@ -54,15 +56,20 @@ const userSlice = createSlice({
   name: "user",
   initialState: {
     userInfo: JSON.parse(localStorage.getItem("userInfo")) || null,
+    userType:
+      localStorage.getItem("userType") ||
+      (JSON.parse(localStorage.getItem("userInfo"))?.role ?? null),
     isLoading: false,
     error: null,
   },
   reducers: {
     logoutUser: (state) => {
       state.userInfo = null;
+      state.userType = null;
       state.error = null;
       localStorage.removeItem("token");
       localStorage.removeItem("userInfo");
+      localStorage.removeItem("userType");
     },
   },
   extraReducers: (builder) => {
@@ -75,6 +82,7 @@ const userSlice = createSlice({
       .addCase(registerUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.userInfo = action.payload;
+        state.userType = action.payload.role;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
@@ -89,6 +97,7 @@ const userSlice = createSlice({
       .addCase(loginUser.fulfilled, (state, action) => {
         state.isLoading = false;
         state.userInfo = action.payload;
+        state.userType = action.payload.role;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
