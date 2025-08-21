@@ -1,56 +1,36 @@
 import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useDispatch, useSelector } from "react-redux";
+import { loginUser } from "../store/userSlice";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [localError, setLocalError] = useState(null);
 
+  const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Extract type from query parameters, default to 'candidate'
+  const { isLoading, error, userType } = useSelector((state) => state.user);
+
+  // extract type from query params
   const queryParams = new URLSearchParams(location.search);
-  const userType = ["candidate", "employee"].includes(queryParams.get("type"))
+  const loginType = ["candidate", "employee"].includes(queryParams.get("type"))
     ? queryParams.get("type")
     : "candidate";
 
-  // Determine navigation path
-  const from = location.state?.from?.pathname || (userType === "employee" ? "/empdashboard" : "/cadprofile");
+  const from =
+    location.state?.from?.pathname ||
+    (loginType === "employee" ? "/empdashboard" : "/cadprofile");
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    setLocalError(null);
-    setIsLoading(true);
-
-    try {
-      const response = await fetch("http://localhost:5000/api/users/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || "Login failed");
-      }
-
-      // Store token and user data (e.g., in localStorage or context)
-      localStorage.setItem("token", data.token);
-      localStorage.setItem(userType === "candidate" ? "candidateProfile" : "employeeProfile", JSON.stringify(data.user));
-
-      console.log("Login successful:", { email, userType });
-      navigate(from, { replace: true });
-    } catch (error) {
-      setLocalError(error.message || "Login failed. Please check your credentials.");
-      console.error("Login error:", error);
-    } finally {
-      setIsLoading(false);
-    }
+    dispatch(loginUser({ email, password, userType: loginType }))
+      .unwrap()
+      .then(() => {
+        navigate(from, { replace: true });
+      })
+      .catch(() => {}); // error is already handled in Redux
   };
 
   return (
@@ -58,10 +38,10 @@ const Login = () => {
       <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
         <div className="text-center mb-8">
           <h2 className="text-3xl font-bold text-blue-700 mb-2">
-            {userType === "employee" ? "Employer Login" : "Candidate Login"}
+            {loginType === "employee" ? "Employer Login" : "Candidate Login"}
           </h2>
           <p className="text-sm text-gray-500">
-            {userType === "employee"
+            {loginType === "employee"
               ? "Access your company dashboard"
               : "Welcome back! Please log in to find your dream job."}
           </p>
@@ -69,7 +49,10 @@ const Login = () => {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Email Address
             </label>
             <input
@@ -84,7 +67,10 @@ const Login = () => {
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            <label
+              htmlFor="password"
+              className="block text-sm font-medium text-gray-700 mb-2"
+            >
               Password
             </label>
             <input
@@ -97,15 +83,18 @@ const Login = () => {
               required
             />
             <div className="text-right mt-1">
-              <Link to="/forgot-password" className="text-sm text-blue-600 hover:underline">
+              <Link
+                to="/forgot-password"
+                className="text-sm text-blue-600 hover:underline"
+              >
                 Forgot password?
               </Link>
             </div>
           </div>
 
-          {localError && (
+          {error && (
             <div className="bg-red-100 border border-red-300 text-red-600 px-4 py-3 rounded-lg">
-              {localError}
+              {error}
             </div>
           )}
 
@@ -134,7 +123,7 @@ const Login = () => {
             <p className="text-sm text-gray-600">
               Don’t have an account?{" "}
               <Link
-                to={`/register?type=${userType}`}
+                to={`/register?type=${loginType}`}
                 className="text-blue-600 hover:underline font-medium"
               >
                 Sign up here
@@ -144,10 +133,14 @@ const Login = () => {
 
           <div className="text-center">
             <Link
-              to={userType === "employee" ? "/login?type=candidate" : "/login?type=employee"}
+              to={
+                loginType === "employee"
+                  ? "/login?type=candidate"
+                  : "/login?type=employee"
+              }
               className="text-sm text-gray-600 hover:underline"
             >
-              {userType === "employee"
+              {loginType === "employee"
                 ? "Looking for a job? Switch to candidate login"
                 : "Are you an employer? Switch to employer login"}
             </Link>

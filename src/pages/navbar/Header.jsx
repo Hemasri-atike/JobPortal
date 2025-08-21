@@ -1,31 +1,54 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import UserType from '../../login/UserType'; 
+import { Link, useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { logoutUser } from '../../store/userSlice.js'; 
+import UserType from '../../login/UserType';
+import { X } from "lucide-react";
+
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false); // State for login popup
+  const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
 
-  // Navigation links configuration
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Redux state
+  const { userInfo } = useSelector((state) => state.user);
+
+  // Navigation links
   const navLinks = [
     { to: '/jobsearch', label: 'Find Jobs' },
-    // { to: '/companies', label: 'Companies' }, // Uncomment when needed
-    // { to: '/about', label: 'About' }, // Uncomment when needed
   ];
 
-  // Action buttons configuration
-  const actionLinks = [
-    // { to: '/upload-cv', label: 'Upload CV', isButton: false }, // Uncomment when needed
-    {
-      label: 'Login',
-      isButton: false,
-      onClick: () => setIsLoginPopupOpen(true), // Open popup instead of navigating
-    },
-    { to: '/jobsearch', label: 'Find a Job', isButton: true },
-    { to: '/login?type=employee', label: 'Hire Staff', isButton: true },
-  ];
+  // Action buttons (change if logged in)
+  const actionLinks = userInfo
+    ? [
+        {
+          label: `Hi, ${userInfo.name || "User"}`,
+          isButton: false,
+          onClick: () => navigate("/profile"), // go to profile page
+        },
+        {
+          label: 'Logout',
+          isButton: true,
+          onClick: () => {
+            dispatch(logoutUser());
+            navigate("/");
+          },
+        },
+      ]
+    : [
+        {
+          label: 'Login',
+          isButton: false,
+          onClick: () => setIsLoginPopupOpen(true),
+        },
+        { to: '/jobsearch', label: 'Find a Job', isButton: true },
+        { to: '/login?type=employee', label: 'Hire Staff', isButton: true },
+      ];
 
-  // Common link rendering function
+  // Render function
   const renderLink = ({ to, label, isButton, onClick }, isMobile = false) => (
     <div
       key={to || label}
@@ -58,22 +81,20 @@ const Header = () => {
             <span className="text-xl font-bold text-black">Hire</span>
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Nav */}
           <div className="hidden md:flex items-center space-x-8">
             {navLinks.map((link) => renderLink(link))}
           </div>
 
-          {/* Desktop Action Buttons */}
+          {/* Desktop Actions */}
           <div className="hidden md:flex items-center space-x-4">
             {actionLinks.map((link) => renderLink(link))}
           </div>
 
-          {/* Mobile Menu Button */}
+          {/* Mobile menu btn */}
           <button
             className="md:hidden p-2 rounded-lg hover:bg-gray-200 transition-colors"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={isMenuOpen}
           >
             <div className="w-6 h-6 flex flex-col justify-center items-center">
               <span
@@ -97,7 +118,7 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100 bg-grey animate-fade-in">
+          <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col space-y-4">
               {navLinks.map((link) => renderLink(link, true))}
               <div className="flex flex-col space-y-2 pt-4 border-t border-gray-100">
@@ -108,32 +129,24 @@ const Header = () => {
         )}
       </div>
 
-      {/* Login Popup Modal */}
+      {/* Login Popup */}
       {isLoginPopupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center  bg-opacity-50">
           <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full m-4">
-            {/* Close Button */}
-            <button
+            {/* Close */}
+            {/* <button
               className="absolute top-3 right-3 text-gray-500 hover:text-gray-700"
               onClick={() => setIsLoginPopupOpen(false)}
-              aria-label="Close popup"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                ></path>
-              </svg>
-            </button>
-            {/* UserType Component as Popup Content */}
+              ✕
+            </button> */}
+            <button
+  className="absolute top-3 right-3 p-1 rounded-full hover:bg-gray-100"
+  onClick={() => setIsLoginPopupOpen(false)}
+>
+  <X className="w-5 h-5 text-gray-500 hover:text-gray-700" />
+</button>
+
             <UserType />
           </div>
         </div>
