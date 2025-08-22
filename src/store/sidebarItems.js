@@ -12,9 +12,9 @@ export const sidebarItems = [
       { icon: FaClipboardList, label: "Applied Jobs", path: "/applied" },
       { icon: FaBell, label: "Job Alerts", path: "/job-alerts" },
       { icon: FaStar, label: "Shortlisted Jobs", path: "/shortlisted-jobs" },
-      { icon: FaIdBadge, label: "CV Manager", path: "/cvmanager" },
-      { icon: FaBox, label: "Packages", path: "/packages" },
-      { icon: FaCommentDots, label: "Messages", path: "/messages" },
+      // { icon: FaIdBadge, label: "CV Manager", path: "/cvmanager" },
+      // { icon: FaBox, label: "Packages", path: "/packages" },
+      // { icon: FaCommentDots, label: "Messages", path: "/messages" },
     ],
   },
   // You can add more sections (e.g., Admin Dashboard)

@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Edit, Trash, Plus, Search } from 'lucide-react';
+import { useSelector } from 'react-redux';
+import axios from 'axios';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
 
@@ -8,7 +10,7 @@ const JobAlert = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [alerts, setAlerts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [currentAlert, setCurrentAlert] = useState({
     id: null,
@@ -20,71 +22,51 @@ const JobAlert = () => {
     frequency: 'Daily',
   });
 
-  // Mock data (replace with API call)
-  useEffect(() => {
+  const API_BASE = 'http://localhost:5000/api/job-alerts'; // your backend endpoint
+
+  // Get logged-in user from Redux safely
+  const user = useSelector((state) => state.user?.user || null);
+  const isEmployee = user?.role === 'employee';
+  const isCandidate = user?.role === 'candidate';
+
+  // Fetch job alerts
+  const fetchAlerts = async () => {
     setIsLoading(true);
-    // Simulate API fetch: axios.get('/api/candidate/job-alerts')
-    setTimeout(() => {
-      setAlerts([
-        {
-          id: 1,
-          keywords: 'Software Engineer',
-          location: 'London, UK',
-          salaryMin: '30000',
-          salaryMax: '50000',
-          jobType: 'Full Time',
-          frequency: 'Daily',
-        },
-        {
-          id: 2,
-          keywords: 'Product Manager',
-          location: 'Remote',
-          salaryMin: '40000',
-          salaryMax: '60000',
-          jobType: 'Part Time',
-          frequency: 'Weekly',
-        },
-        {
-          id: 3,
-          keywords: 'Data Analyst',
-          location: 'New York, USA',
-          salaryMin: '35000',
-          salaryMax: '55000',
-          jobType: 'Freelancer',
-          frequency: 'Daily',
-        },
-      ]);
+    try {
+      const { data } = await axios.get(API_BASE);
+      setAlerts(data);
+    } catch (err) {
+      console.error('Failed to fetch job alerts', err);
+      alert('Failed to fetch job alerts');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  useEffect(() => {
+    fetchAlerts();
   }, []);
 
-  // Filter alerts by search query
+  // Filter alerts based on search
   const filteredAlerts = alerts.filter(
     (alert) =>
       alert.keywords.toLowerCase().includes(searchQuery.toLowerCase()) ||
       alert.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Handle form submission for creating/editing alerts
-  const handleSubmit = (e) => {
+  // Create / Update alert
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!currentAlert.keywords || !currentAlert.location) {
       alert('Keywords and location are required.');
       return;
     }
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    try {
       if (currentAlert.id) {
-        // Update existing alert
-        setAlerts(
-          alerts.map((alert) =>
-            alert.id === currentAlert.id ? { ...currentAlert } : alert
-          )
-        );
+        await axios.put(`${API_BASE}/${currentAlert.id}`, currentAlert);
       } else {
-        // Create new alert
-        setAlerts([...alerts, { ...currentAlert, id: alerts.length + 1 }]);
+        await axios.post(API_BASE, currentAlert);
       }
       setIsEditing(false);
       setCurrentAlert({
@@ -96,24 +78,34 @@ const JobAlert = () => {
         jobType: '',
         frequency: 'Daily',
       });
+      fetchAlerts();
+    } catch (err) {
+      console.error('Failed to save job alert', err);
+      alert('Failed to save job alert');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
-  // Handle edit alert
+  // Edit alert
   const handleEdit = (alert) => {
     setCurrentAlert(alert);
     setIsEditing(true);
   };
 
-  // Handle delete alert
-  const handleDelete = (id) => {
+  // Delete alert
+  const handleDelete = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this alert?')) return;
     setIsLoading(true);
-    // Simulate API delete: axios.delete(`/api/candidate/job-alerts/${id}`)
-    setTimeout(() => {
-      setAlerts(alerts.filter((alert) => alert.id !== id));
+    try {
+      await axios.delete(`${API_BASE}/${id}`);
+      fetchAlerts();
+    } catch (err) {
+      console.error('Failed to delete alert', err);
+      alert('Failed to delete alert');
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
   };
 
   return (
@@ -122,12 +114,12 @@ const JobAlert = () => {
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       <div className="flex flex-1">
-        {/* Sidebar (hidden on small screens) */}
+        {/* Sidebar */}
         <div className="hidden md:block w-64 bg-gray-900">
           <Sidebar />
         </div>
 
-        {/* Sidebar for mobile */}
+        {/* Sidebar mobile */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -142,21 +134,22 @@ const JobAlert = () => {
           </div>
         )}
 
-        {/* Main Content */}
+        {/* Main content */}
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">Job Alerts</h3>
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
-              aria-label="Create new job alert"
-            >
-              <Plus size={16} className="mr-2" />
-              Create Alert
-            </button>
+            {isEmployee && (
+              <button
+                onClick={() => setIsEditing(true)}
+                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Plus size={16} className="mr-2" /> Create Alert
+              </button>
+            )}
           </div>
 
-          {isEditing ? (
+          {/* Create / Edit Form */}
+          {isEditing && isEmployee && (
             <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
               <h4 className="text-lg font-semibold text-gray-800 mb-4">
                 {currentAlert.id ? 'Edit Job Alert' : 'Create New Job Alert'}
@@ -167,11 +160,8 @@ const JobAlert = () => {
                   <input
                     type="text"
                     value={currentAlert.keywords}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, keywords: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, keywords: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Job title keywords"
                     required
                   />
                 </div>
@@ -180,11 +170,8 @@ const JobAlert = () => {
                   <input
                     type="text"
                     value={currentAlert.location}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, location: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, location: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Location"
                     required
                   />
                 </div>
@@ -193,11 +180,8 @@ const JobAlert = () => {
                   <input
                     type="number"
                     value={currentAlert.salaryMin}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, salaryMin: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, salaryMin: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Minimum salary"
                   />
                 </div>
                 <div>
@@ -205,22 +189,16 @@ const JobAlert = () => {
                   <input
                     type="number"
                     value={currentAlert.salaryMax}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, salaryMax: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, salaryMax: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Maximum salary"
                   />
                 </div>
                 <div>
                   <label className="block text-sm text-gray-600">Job Type</label>
                   <select
                     value={currentAlert.jobType}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, jobType: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, jobType: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Job type"
                   >
                     <option value="">Select Job Type</option>
                     <option value="Full Time">Full Time</option>
@@ -233,11 +211,8 @@ const JobAlert = () => {
                   <label className="block text-sm text-gray-600">Notification Frequency</label>
                   <select
                     value={currentAlert.frequency}
-                    onChange={(e) =>
-                      setCurrentAlert({ ...currentAlert, frequency: e.target.value })
-                    }
+                    onChange={(e) => setCurrentAlert({ ...currentAlert, frequency: e.target.value })}
                     className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    aria-label="Notification frequency"
                   >
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
@@ -245,14 +220,11 @@ const JobAlert = () => {
                   </select>
                 </div>
                 <div className="md:col-span-2 flex gap-4">
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm"
-                    aria-label={currentAlert.id ? 'Update job alert' : 'Create job alert'}
-                  >
+                  <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">
                     {currentAlert.id ? 'Update' : 'Create'}
                   </button>
                   <button
+                    type="button"
                     onClick={() => {
                       setIsEditing(false);
                       setCurrentAlert({
@@ -266,97 +238,94 @@ const JobAlert = () => {
                       });
                     }}
                     className="text-gray-600 hover:text-gray-800 text-sm"
-                    aria-label="Cancel"
                   >
                     Cancel
                   </button>
                 </div>
               </form>
             </div>
-          ) : (
-            <>
-              {/* Search Bar */}
-              <div className="mb-6">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
-                  <input
-                    type="text"
-                    placeholder="Search alerts by keywords or location"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                    aria-label="Search job alerts"
-                  />
-                </div>
-              </div>
+          )}
 
-              {/* Alerts List */}
-              {isLoading ? (
-                <div className="flex justify-center items-center h-64">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
-                </div>
-              ) : filteredAlerts.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {filteredAlerts.map((alert) => (
-                    <div key={alert.id} className="bg-white shadow rounded-lg p-4 sm:p-6">
-                      <div className="flex items-center mb-4">
-                        <Bell className="w-6 h-6 text-blue-600 mr-3" />
-                        <div>
-                          <h4 className="text-base font-semibold text-gray-800">{alert.keywords}</h4>
-                          <p className="text-sm text-gray-600">{alert.location}</p>
-                        </div>
-                      </div>
-                      <div className="text-sm text-gray-600 space-y-1">
-                        <p>
-                          <span className="font-medium">Salary Range:</span>{' '}
-                          {alert.salaryMin && alert.salaryMax
-                            ? `$${alert.salaryMin} - $${alert.salaryMax}`
-                            : 'Not specified'}
-                        </p>
-                        <p>
-                          <span className="font-medium">Job Type:</span>{' '}
-                          {alert.jobType || 'Not specified'}
-                        </p>
-                        <p>
-                          <span className="font-medium">Frequency:</span> {alert.frequency}
-                        </p>
-                      </div>
-                      <div className="flex gap-4 mt-4">
-                        <Link
-                          to={`/jobsearch?keywords=${encodeURIComponent(
-                            alert.keywords
-                          )}&location=${encodeURIComponent(alert.location)}`}
-                          className="text-blue-600 hover:underline text-sm flex items-center"
-                          aria-label={`Search jobs for ${alert.keywords} in ${alert.location}`}
-                        >
-                          View Matching Jobs
-                        </Link>
-                        <button
-                          onClick={() => handleEdit(alert)}
-                          className="text-blue-600 hover:text-blue-700 text-sm"
-                          aria-label={`Edit alert for ${alert.keywords}`}
-                        >
-                          <Edit size={16} />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(alert.id)}
-                          className="text-red-600 hover:text-red-700 text-sm"
-                          aria-label={`Delete alert for ${alert.keywords}`}
-                        >
-                          <Trash size={16} />
-                        </button>
-                      </div>
+          {/* Search */}
+          <div className="mb-6">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+              <input
+                type="text"
+                placeholder="Search alerts by keywords or location"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+              />
+            </div>
+          </div>
+
+          {/* Alerts List */}
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
+            </div>
+          ) : filteredAlerts.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {filteredAlerts.map((alert) => (
+                <div key={alert.id} className="bg-white shadow rounded-lg p-4 sm:p-6">
+                  <div className="flex items-center mb-4">
+                    <Bell className="w-6 h-6 text-blue-600 mr-3" />
+                    <div>
+                      <h4 className="text-base font-semibold text-gray-800">{alert.keywords}</h4>
+                      <p className="text-sm text-gray-600">{alert.location}</p>
                     </div>
-                  ))}
+                  </div>
+                  <div className="text-sm text-gray-600 space-y-1">
+                    <p>
+                      <span className="font-medium">Salary Range:</span>{' '}
+                      {alert.salaryMin && alert.salaryMax
+                        ? `$${alert.salaryMin} - $${alert.salaryMax}`
+                        : 'Not specified'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Job Type:</span> {alert.jobType || 'Not specified'}
+                    </p>
+                    <p>
+                      <span className="font-medium">Frequency:</span> {alert.frequency}
+                    </p>
+                  </div>
+                  {isEmployee && (
+                    <div className="flex gap-4 mt-4">
+                      <Link
+                        to={`/jobsearch?keywords=${encodeURIComponent(alert.keywords)}&location=${encodeURIComponent(alert.location)}`}
+                        className="text-blue-600 hover:underline text-sm flex items-center"
+                      >
+                        View Matching Jobs
+                      </Link>
+                      <button onClick={() => handleEdit(alert)} className="text-blue-600 hover:text-blue-700 text-sm">
+                        <Edit size={16} />
+                      </button>
+                      <button onClick={() => handleDelete(alert.id)} className="text-red-600 hover:text-red-700 text-sm">
+                        <Trash size={16} />
+                      </button>
+                    </div>
+                  )}
+                  {isCandidate && (
+                    <div className="mt-4">
+                      <Link
+                        to={`/jobsearch?keywords=${encodeURIComponent(alert.keywords)}&location=${encodeURIComponent(alert.location)}`}
+                        className="text-blue-600 hover:underline text-sm"
+                      >
+                        View Matching Jobs
+                      </Link>
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="bg-white shadow rounded-lg p-4 sm:p-6 text-center">
-                  <p className="text-gray-700">
-                    No job alerts found. Create a new alert to get started.
-                  </p>
-                </div>
-              )}
-            </>
+              ))}
+            </div>
+          ) : (
+            <div className="bg-white shadow rounded-lg p-4 sm:p-6 text-center">
+              <p className="text-gray-700">
+                No job alerts found.
+                {isEmployee ? ' Create a new alert to get started.' : ''}
+              </p>
+            </div>
           )}
         </main>
       </div>
