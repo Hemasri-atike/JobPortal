@@ -3,7 +3,8 @@ import userReducer from "../store/userSlice.js";
 import dashboardReducer from "../store/dashboardSlice.js";
 import profileReducer from "../store/profileSlice.js";
 import candidateReducer from "../store/candidateSlice.js";
-import jobsReducer from "../store/jobsSlice.js"
+import jobsReducer from "../store/jobsSlice.js";
+import resumeReducer from "../store/resumeSlice.js"
 
 
 
@@ -14,6 +15,7 @@ const store = configureStore({
      profile: profileReducer,
        candidate: candidateReducer,
        jobs: jobsReducer,
+          resume: resumeReducer,
   },
 });
 
