@@ -1,7 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Fetch jobs from backend
+// Fetch jobs (existing)
 export const fetchJobs = createAsyncThunk(
   'jobs/fetchJobs',
   async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
@@ -10,6 +10,19 @@ export const fetchJobs = createAsyncThunk(
         params: { status: statusFilter, search: searchQuery, page, limit: jobsPerPage },
       });
       return res.data; // { jobs, total, page, limit }
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || 'Server Error');
+    }
+  }
+);
+
+// Fetch categories
+export const fetchCategories = createAsyncThunk(
+  'jobs/fetchCategories',
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get('http://localhost:5000/api/categories');
+      return res.data; // Expected: [{ id, name, openPositions, icon, iconColor, bgColor }, ...]
     } catch (err) {
       return rejectWithValue(err.response?.data?.message || err.message || 'Server Error');
     }
@@ -27,6 +40,9 @@ const jobsSlice = createSlice({
     searchQuery: '',
     page: 1,
     jobsPerPage: 4,
+    categories: [],
+    categoriesStatus: 'idle',
+    categoriesError: null,
   },
   reducers: {
     setStatusFilter: (state, action) => {
@@ -50,6 +66,7 @@ const jobsSlice = createSlice({
     },
   },
   extraReducers: (builder) => {
+    // Existing jobs reducers
     builder
       .addCase(fetchJobs.pending, (state) => {
         state.status = 'loading';
@@ -62,6 +79,18 @@ const jobsSlice = createSlice({
       .addCase(fetchJobs.rejected, (state, action) => {
         state.status = 'failed';
         state.error = action.payload;
+      })
+      // Categories reducers
+      .addCase(fetchCategories.pending, (state) => {
+        state.categoriesStatus = 'loading';
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categoriesStatus = 'succeeded';
+        state.categories = action.payload;
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.categoriesStatus = 'failed';
+        state.categoriesError = action.payload;
       });
   },
 });

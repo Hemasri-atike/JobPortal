@@ -22,7 +22,7 @@ const JobAlert = () => {
     frequency: 'Daily',
   });
 
-  const API_BASE = 'http://localhost:5000/api/job-alerts'; // your backend endpoint
+  const API_BASE = 'http://localhost:5000/api/jobalerts'; // your backend endpoint
 
   // Get logged-in user from Redux safely
   const user = useSelector((state) => state.user?.user || null);

@@ -1,14 +1,28 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Search } from "lucide-react";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchJobs, setSearchQuery } from "../../store/jobsSlice.js"; // Adjust the import path to your jobsSlice file
 
 const HeroSection = () => {
-  const [searchQuery, setSearchQuery] = useState("");
-  const [location, setLocation] = useState("");
+  const dispatch = useDispatch();
+  const { searchQuery, statusFilter, page, jobsPerPage } = useSelector((state) => state.jobs);
 
+  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
+  const [location, setLocation] = useState(""); // Location not used in fetchJobs, kept for UI consistency
+
+  // Handle form submission
   const handleSearch = (e) => {
     e.preventDefault();
-    console.log("Searching for:", { searchQuery, location });
+    // Update Redux store with search query
+    dispatch(setSearchQuery(localSearchQuery));
+    // Dispatch fetchJobs with current filters
+    dispatch(fetchJobs({ statusFilter, searchQuery: localSearchQuery, page, jobsPerPage }));
   };
+
+  // Sync local state with Redux state if searchQuery changes externally
+  useEffect(() => {
+    setLocalSearchQuery(searchQuery);
+  }, [searchQuery]);
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
@@ -47,9 +61,9 @@ const HeroSection = () => {
                 <input
                   type="text"
                   placeholder="Job title, skills, or company"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none pl-10 pr-4 py-4 text-gray-900 placeholder-gray-500" // Changed px-4 to pl-10 pr-4
+                  value={localSearchQuery}
+                  onChange={(e) => setLocalSearchQuery(e.target.value)}
+                  className="w-full bg-transparent border-none outline-none pl-10 pr-4 py-4 text-gray-900 placeholder-gray-500"
                 />
                 <div className="absolute left-3 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
                   <Search className="w-5 h-5 text-gray-500" />
@@ -91,7 +105,6 @@ const HeroSection = () => {
                 type="submit"
                 className="bg-blue-600 text-white px-8 py-4 whitespace-nowrap rounded-lg hover:bg-blue-700 transition"
               >
-          
                 Get Jobs
               </button>
             </div>
