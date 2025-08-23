@@ -1,37 +1,20 @@
-
-import { useEffect, useState } from 'react';
-import { BarLoader } from 'react-spinners';
-import JobCard from '../../components/ui/JobCard';
+// src/pages/jobs/Featured.jsx
+import { useEffect } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import { BarLoader } from "react-spinners";
+import JobCard from "../../components/ui/JobCard";
+import { fetchJobs } from "../../store/jobsSlice";
 
 const Featured = () => {
-  const [loading, setLoading] = useState(true);
-  const [jobs, setJobs] = useState([]);
+  const dispatch = useDispatch();
+  const { jobs, status, error, page, jobsPerPage, statusFilter, searchQuery } = useSelector(
+    (state) => state.jobs
+  );
 
-  // Simulate API load
   useEffect(() => {
-    setTimeout(() => {
-      const mockJobs = [
-        {
-          id: '1',
-          title: 'Frontend Developer',
-          company: 'TechCorp',
-          location: 'Bangalore',
-          skills: ['React', 'Tailwind', 'JavaScript'],
-          description: 'Work on cutting-edge UI features with React and Tailwind CSS.',
-        },
-        {
-          id: '2',
-          title: 'Backend Developer',
-          company: 'DataWorks',
-          location: 'Mumbai',
-          skills: ['Node.js', 'Express', 'MongoDB'],
-          description: 'Build and maintain APIs with Node.js, Express, and MongoDB.',
-        },
-      ];
-      setJobs(mockJobs);
-      setLoading(false);
-    }, 1000);
-  }, []);
+    // Fetch jobs when component mounts or filters change
+    dispatch(fetchJobs({ statusFilter, searchQuery, page, jobsPerPage }));
+  }, [dispatch, statusFilter, searchQuery, page, jobsPerPage]);
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -39,12 +22,14 @@ const Featured = () => {
         Featured Jobs
       </h2>
 
-      {loading ? (
+      {status === "loading" ? (
         <BarLoader className="mt-4 mx-auto" width="100%" color="#36d7b7" />
+      ) : status === "failed" ? (
+        <div className="text-center text-red-600">{error}</div>
       ) : (
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-4">
           {jobs.length ? (
-            jobs.map((job) => <JobCard key={job.id} job={job} savedInit={false} />)
+            jobs.map((job) => <JobCard key={job.id} job={job} />)
           ) : (
             <div className="text-center text-gray-600 col-span-full">No Jobs Found 😢</div>
           )}
