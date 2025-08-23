@@ -4,7 +4,8 @@ import dashboardReducer from "../store/dashboardSlice.js";
 import profileReducer from "../store/profileSlice.js";
 import candidateReducer from "../store/candidateSlice.js";
 import jobsReducer from "../store/jobsSlice.js";
-import resumeReducer from "../store/resumeSlice.js"
+import resumeReducer from "../store/resumeSlice.js";
+import footerReducer from "../store/footerSlice.js"
 
 
 
@@ -16,6 +17,7 @@ const store = configureStore({
        candidate: candidateReducer,
        jobs: jobsReducer,
           resume: resumeReducer,
+            footer: footerReducer,
   },
 });
 
