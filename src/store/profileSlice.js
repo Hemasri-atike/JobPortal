@@ -1,10 +1,34 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// Load profile from localStorage (on page refresh)
-export const loadProfile = createAsyncThunk("profile/load", async () => {
-  const savedProfile = localStorage.getItem("candidateProfile");
-  return savedProfile ? JSON.parse(savedProfile) : null;
-});
+const withAuth = () => {
+  const token = localStorage.getItem("token");
+  return {
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  };
+};
+
+// Fetch profile from backend
+export const fetchProfile = createAsyncThunk(
+  "profile/fetch",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await fetch("http://localhost:5000/api/profile/me", {
+        method: "GET",
+        ...withAuth(),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch profile");
+      // Save to localStorage for persistence
+      localStorage.setItem("candidateProfile", JSON.stringify(data));
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.message);
+    }
+  }
+);
 
 const profileSlice = createSlice({
   name: "profile",
@@ -29,16 +53,17 @@ const profileSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(loadProfile.pending, (state) => {
+      .addCase(fetchProfile.pending, (state) => {
         state.loading = true;
+        state.error = null;
       })
-      .addCase(loadProfile.fulfilled, (state, action) => {
+      .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
         state.data = action.payload;
       })
-      .addCase(loadProfile.rejected, (state, action) => {
+      .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message;
+        state.error = action.payload || "Failed to fetch profile";
       });
   },
 });

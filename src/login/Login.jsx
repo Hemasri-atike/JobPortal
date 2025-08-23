@@ -23,15 +23,38 @@ const Login = () => {
     location.state?.from?.pathname ||
     (loginType === "employee" ? "/empdashboard" : "/cadprofile");
 
+  // const handleSubmit = (e) => {
+  //   e.preventDefault();
+  //   dispatch(loginUser({ email, password, userType: loginType }))
+  //     .unwrap()
+  //     .then(() => {
+  //       navigate(from, { replace: true });
+  //     })
+  //     .catch(() => {}); // error is already handled in Redux
+  // };
+
+
   const handleSubmit = (e) => {
-    e.preventDefault();
-    dispatch(loginUser({ email, password, userType: loginType }))
-      .unwrap()
-      .then(() => {
-        navigate(from, { replace: true });
-      })
-      .catch(() => {}); // error is already handled in Redux
-  };
+  e.preventDefault();
+  
+  dispatch(loginUser({ email, password, userType: loginType }))
+    .unwrap()
+    .then((res) => {
+      // res should contain user profile + token from backend
+      const { user, token } = res;
+
+      // Save token
+      localStorage.setItem("token", token);
+
+      // Save profile in Redux + localStorage
+      dispatch(setProfile(user));
+
+      // Navigate after login
+      navigate(from, { replace: true });
+    })
+    .catch(() => {}); // error is already handled in Redux
+};
+
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 px-4">

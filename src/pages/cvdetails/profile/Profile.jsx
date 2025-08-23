@@ -1,26 +1,33 @@
 import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { loadProfile } from "../../../store/profileSlice.js";
+import { fetchProfile, setProfile } from "../../../store/profileSlice";
 import { Link } from "react-router-dom";
 
 const Profile = () => {
   const dispatch = useDispatch();
   const { data: profile, loading, error } = useSelector((state) => state.profile);
 
+  // Load profile dynamically on component mount
   useEffect(() => {
-    dispatch(loadProfile()); // Load profile on refresh
+    dispatch(fetchProfile());
   }, [dispatch]);
 
-  if (loading) return <p>Loading profile...</p>;
-  if (error) return <p className="text-red-600">Error: {error}</p>;
-  if (!profile) return <p>No profile data available.</p>;
+  // Call this after login/register success inside your login/register component
+  const handleLoginSuccess = (userData, token) => {
+    localStorage.setItem("token", token); // save JWT
+    dispatch(setProfile(userData)); // save profile in Redux + localStorage
+  };
+
+  if (loading) return <p className="text-center mt-8">Loading profile...</p>;
+  if (error) return <p className="text-red-600 text-center mt-8">Error: {error}</p>;
+  if (!profile) return <p className="text-center mt-8">No profile data available.</p>;
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">
       <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-md overflow-hidden">
         <div className="bg-blue-600 p-6 text-white flex items-center gap-4">
           <img
-            src="https://via.placeholder.com/120"
+            src={profile.avatar || "https://via.placeholder.com/120"}
             alt="Profile"
             className="w-24 h-24 rounded-full border-4 border-white"
           />
