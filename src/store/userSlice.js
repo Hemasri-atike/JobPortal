@@ -1,6 +1,29 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// 🔹 Async thunk for user registration
+// 🔹 Helper to safely read from localStorage
+const getStoredUserInfo = () => {
+  try {
+    const stored = localStorage.getItem("userInfo");
+    return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+};
+
+const getStoredUserType = () => {
+  try {
+    const storedType = localStorage.getItem("userType");
+    if (storedType) return storedType;
+    const storedUser = localStorage.getItem("userInfo");
+    return storedUser && storedUser !== "undefined"
+      ? JSON.parse(storedUser)?.role
+      : null;
+  } catch {
+    return null;
+  }
+};
+
+// 🔹 Register User
 export const registerUser = createAsyncThunk(
   "user/registerUser",
   async (userData, { rejectWithValue }) => {
@@ -14,10 +37,10 @@ export const registerUser = createAsyncThunk(
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Registration failed");
 
-      // Save token and user to localStorage
+      // Save token and user
       localStorage.setItem("token", data.token);
       localStorage.setItem("userInfo", JSON.stringify(data.user));
-      localStorage.setItem("userType", data.user.role); // save role
+      localStorage.setItem("userType", data.user.role);
 
       return data.user;
     } catch (error) {
@@ -26,42 +49,44 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// 🔹 Async thunk for user login
+// 🔹 Login User (mobile + password)
 export const loginUser = createAsyncThunk(
   "user/loginUser",
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ mobile, password }, { rejectWithValue }) => {
     try {
       const response = await fetch("http://localhost:5000/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ mobile, password }),
       });
 
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Login failed");
 
-      // Save token and user to localStorage
+      // Save token and user
       localStorage.setItem("token", data.token);
       localStorage.setItem("userInfo", JSON.stringify(data.user));
-      localStorage.setItem("userType", data.user.role); // save role
+      localStorage.setItem("userType", data.user.role);
 
-      return data.user;
+      return data.user; // ❗ thunk returns the user directly
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
+// 🔹 Initial state
+const initialState = {
+  userInfo: getStoredUserInfo(),
+  userType: getStoredUserType(),
+  isLoading: false,
+  error: null,
+};
+
+// 🔹 Slice
 const userSlice = createSlice({
   name: "user",
-  initialState: {
-    userInfo: JSON.parse(localStorage.getItem("userInfo")) || null,
-    userType:
-      localStorage.getItem("userType") ||
-      (JSON.parse(localStorage.getItem("userInfo"))?.role ?? null),
-    isLoading: false,
-    error: null,
-  },
+  initialState,
   reducers: {
     logoutUser: (state) => {
       state.userInfo = null;
@@ -74,7 +99,7 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // 🔹 Register
+      // Register
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -89,7 +114,7 @@ const userSlice = createSlice({
         state.error = action.payload;
       })
 
-      // 🔹 Login
+      // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -106,6 +131,5 @@ const userSlice = createSlice({
   },
 });
 
-// ✅ Export actions and reducer
 export const { logoutUser } = userSlice.actions;
 export default userSlice.reducer;

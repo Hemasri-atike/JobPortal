@@ -15,9 +15,10 @@ import { fetchCategories } from "../../store/jobsSlice.js";
 
 const Category = () => {
   const dispatch = useDispatch();
-  const { categories, categoriesStatus, categoriesError } = useSelector((state) => state.jobs);
+  const { categories, categoriesStatus, categoriesError } = useSelector(
+    (state) => state.jobs
+  );
 
-  // Map icon names to Lucide components
   const iconMap = {
     Calculator,
     Megaphone,
@@ -30,9 +31,8 @@ const Category = () => {
     Briefcase,
   };
 
-  // Fetch categories on component mount
   useEffect(() => {
-    if (categoriesStatus === 'idle') {
+    if (categoriesStatus === "idle") {
       dispatch(fetchCategories());
     }
   }, [categoriesStatus, dispatch]);
@@ -40,32 +40,28 @@ const Category = () => {
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Section header */}
         <div className="text-center mb-8 sm:mb-12">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-gray-900 mb-4">
             Popular Job Categories
           </h2>
-          {/* <p className="text-gray-500 text-base sm:text-lg lg:text-xl">
-            2020 jobs live - 293 added today.
-          </p> */}
         </div>
 
-        {/* Loading and Error States */}
-        {categoriesStatus === 'loading' && (
+        {categoriesStatus === "loading" && (
           <div className="text-center text-gray-500">Loading categories...</div>
         )}
-        {categoriesStatus === 'failed' && (
+        {categoriesStatus === "failed" && (
           <div className="text-center text-red-500">Error: {categoriesError}</div>
         )}
 
-        {/* Categories grid */}
-        {categoriesStatus === 'succeeded' && (
+        {categoriesStatus === "succeeded" && (
           <div className="grid gap-4 sm:gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 max-w-7xl mx-auto">
-            {categories.map((category) => {
-              const IconComponent = iconMap[category.icon] || Briefcase; 
+            {categories.map((category, index) => {
+              const IconComponent = iconMap[category.icon] || Briefcase;
+              // Use combination of id + index as unique key
+              const uniqueKey = `${category.id}-${index}`;
               return (
                 <div
-                  key={category.id}
+                  key={uniqueKey}
                   className="p-4 sm:p-6 bg-white rounded-lg hover:shadow-lg transition-all duration-300 group cursor-pointer hover:-translate-y-1"
                 >
                   <div className="flex items-center space-x-3 sm:space-x-4">
