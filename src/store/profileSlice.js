@@ -1,31 +1,34 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
-const withAuth = () => {
-  const token = localStorage.getItem("token");
-  return {
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-  };
-};
-
-// Fetch profile from backend
+// ✅ Fetch candidate profile
 export const fetchProfile = createAsyncThunk(
-  "profile/fetch",
+  "profile/fetchProfile",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await fetch("http://localhost:5000/api/profile/me", {
-        method: "GET",
-        ...withAuth(),
+      const token = localStorage.getItem("token");
+      const { data } = await axios.get("http://localhost:5000/api/profile", {
+        headers: { Authorization: `Bearer ${token}` },
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Failed to fetch profile");
-      // Save to localStorage for persistence
-      localStorage.setItem("candidateProfile", JSON.stringify(data));
       return data;
-    } catch (err) {
-      return rejectWithValue(err.message);
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to fetch profile");
+    }
+  }
+);
+
+// ✅ Update candidate profile
+export const updateProfile = createAsyncThunk(
+  "profile/updateProfile",
+  async (profileData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem("token");
+      const { data } = await axios.put("http://localhost:5000/api/profile", profileData, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return data;
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || "Failed to update profile");
     }
   }
 );
@@ -33,40 +36,46 @@ export const fetchProfile = createAsyncThunk(
 const profileSlice = createSlice({
   name: "profile",
   initialState: {
-    data: null,
+    profile: null,
     loading: false,
     error: null,
+    success: null,
   },
   reducers: {
-    setProfile: (state, action) => {
-      state.data = action.payload;
-      localStorage.setItem("candidateProfile", JSON.stringify(action.payload));
-    },
-    updateProfile: (state, action) => {
-      state.data = { ...state.data, ...action.payload };
-      localStorage.setItem("candidateProfile", JSON.stringify(state.data));
-    },
-    clearProfile: (state) => {
-      state.data = null;
-      localStorage.removeItem("candidateProfile");
+    clearMessages: (state) => {
+      state.error = null;
+      state.success = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Fetch
       .addCase(fetchProfile.pending, (state) => {
         state.loading = true;
-        state.error = null;
       })
       .addCase(fetchProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload;
+        state.profile = action.payload;
       })
       .addCase(fetchProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload || "Failed to fetch profile";
+        state.error = action.payload;
+      })
+
+      // Update
+      .addCase(updateProfile.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(updateProfile.fulfilled, (state, action) => {
+        state.loading = false;
+        state.success = action.payload.message;
+      })
+      .addCase(updateProfile.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       });
   },
 });
 
-export const { setProfile, updateProfile, clearProfile } = profileSlice.actions;
-export default profileSlice.reducer;
+export const { clearMessages } = profileSlice.actions;
+export default profileSlice.reducer;  // ✅ Default export
