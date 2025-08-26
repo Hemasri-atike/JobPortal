@@ -7,14 +7,14 @@ import { employeeSidebarItems } from "../../store/sidebarItems.js";
 
 const EmpDashboard = () => {
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      {/* Sidebar */}
-      <Sidebar items={employeeSidebarItems} />
+    <div className="min-h-screen bg-gray-50 flex flex-col">
+      {/* Header at the top */}
+      <Header />
 
-      {/* Main content */}
-      <div className="flex-1 flex flex-col">
-        <Header />
+      <div className="flex flex-1">
+        {/* Sidebar */}  <Sidebar role="employee" />
 
+        {/* Main content */}
         <div className="flex-1 flex flex-col p-4 md:p-6">
           {/* Dashboard Header */}
           <header className="flex flex-col md:flex-row justify-between items-center bg-white shadow rounded-lg p-4 mb-6">

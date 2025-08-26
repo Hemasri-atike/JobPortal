@@ -24,9 +24,9 @@ export const candidateSidebarItems = [
 // Employee Sidebar
 export const employeeSidebarItems = [
   { icon: FaHome, label: "Dashboard", path: "/empdashboard" },
-  { icon: FaBriefcase, label: "Job Listings", path: "/emp-joblistings" },
-  { icon: FaPlusCircle, label: "Post a Job", path: "/emp-postjob" },
-  { icon: FaUsers, label: "Applicants", path: "/emp-applicants" },
-  { icon: FaBuilding, label: "Company Profile", path: "/emp-company" },
-  { icon: FaUser, label: "My Profile", path: "/emp-profile" },
+  { icon: FaBriefcase, label: "Job Listings", path: "/joblistings" },
+  { icon: FaPlusCircle, label: "Post a Job", path: "/empposting" },
+  { icon: FaUsers, label: "Applicants", path: "/applicants" },
+  { icon: FaBuilding, label: "Company Profile", path: "/cmpprofile" },
+  { icon: FaUser, label: "My Profile", path: "/empprofile" },
 ];
