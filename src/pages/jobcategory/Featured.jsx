@@ -1,4 +1,3 @@
-// src/pages/jobs/Featured.jsx
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { BarLoader } from "react-spinners";
@@ -12,9 +11,12 @@ const Featured = () => {
   );
 
   useEffect(() => {
-    // Fetch jobs when component mounts or filters change
+    // Fetch jobs on mount or when filters/page change
     dispatch(fetchJobs({ statusFilter, searchQuery, page, jobsPerPage }));
   }, [dispatch, statusFilter, searchQuery, page, jobsPerPage]);
+
+  // Remove duplicate jobs by id
+  const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.id, job])).values());
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -28,8 +30,8 @@ const Featured = () => {
         <div className="text-center text-red-600">{error}</div>
       ) : (
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {jobs.length ? (
-            jobs.map((job) => <JobCard key={job.id} job={job} />)
+          {uniqueJobs.length ? (
+            uniqueJobs.map((job) => <JobCard key={job.id} job={job} />)
           ) : (
             <div className="text-center text-gray-600 col-span-full">No Jobs Found 😢</div>
           )}

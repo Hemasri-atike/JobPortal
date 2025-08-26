@@ -1,114 +1,119 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Search } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchJobs, setSearchQuery } from "../../store/jobsSlice.js"; // Adjust the import path to your jobsSlice file
+import { fetchJobs, setSearchQuery, setLocation } from "../../store/jobsSlice.js";
 
 const HeroSection = () => {
   const dispatch = useDispatch();
-  const { searchQuery, statusFilter, page, jobsPerPage } = useSelector((state) => state.jobs);
+  const { searchQuery, location: reduxLocation, statusFilter, page, jobsPerPage } =
+    useSelector((state) => state.jobs);
 
-  const [localSearchQuery, setLocalSearchQuery] = useState(searchQuery);
-  const [location, setLocation] = useState(""); // Location not used in fetchJobs, kept for UI consistency
+  const [localSearch, setLocalSearch] = useState(searchQuery);
+  const [localLocation, setLocalLocation] = useState(reduxLocation);
+  const debounceRef = useRef(null);
 
-  // Handle form submission
-  const handleSearch = (e) => {
-    e.preventDefault();
-    // Update Redux store with search query
-    dispatch(setSearchQuery(localSearchQuery));
-    // Dispatch fetchJobs with current filters
-    dispatch(fetchJobs({ statusFilter, searchQuery: localSearchQuery, page, jobsPerPage }));
+  const fetchDebouncedJobs = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      dispatch(
+        fetchJobs({
+          statusFilter,
+          searchQuery: localSearch,
+          location: localLocation,
+          page,
+          jobsPerPage,
+        })
+      );
+    }, 500);
   };
 
-  // Sync local state with Redux state if searchQuery changes externally
-  useEffect(() => {
-    setLocalSearchQuery(searchQuery);
-  }, [searchQuery]);
+  const handleSearch = (e) => {
+    e.preventDefault();
+    dispatch(setSearchQuery(localSearch));
+    dispatch(setLocation(localLocation));
+    fetchDebouncedJobs();
+  };
+
+  // Sync local state with Redux
+  useEffect(() => setLocalSearch(searchQuery), [searchQuery]);
+  useEffect(() => setLocalLocation(reduxLocation), [reduxLocation]);
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden bg-white">
-      {/* Background Image - Removed */}
+    <section className="relative h-[70vh] flex items-center justify-center overflow-hidden bg-white">
+      {/* Animated Background */}
       <div className="absolute inset-0 z-0">
-        {/* Image is commented out, no background color */}
-      </div>
-
-      {/* Animated Background Elements */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-20 left-20 w-72 h-72 bg-blue-500/20 rounded-full blur-3xl animate-float"></div>
+        <div className="absolute top-10 left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-float"></div>
         <div
-          className="absolute bottom-20 right-20 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl animate-float"
+          className="absolute bottom-10 right-10 w-56 h-56 bg-purple-500/20 rounded-full blur-3xl animate-float"
           style={{ animationDelay: "1s" }}
         ></div>
         <div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-pink-500/20 rounded-full blur-3xl animate-float"
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-pink-500/20 rounded-full blur-3xl animate-float"
           style={{ animationDelay: "2s" }}
         ></div>
       </div>
 
       {/* Content */}
       <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <div className="max-w-4xl mx-auto space-y-8 animate-fade-in">
-          {/* Main Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight text-gray-900">
-            Find Your <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">Dream Job</span>
+        <div className="max-w-3xl mx-auto space-y-6 animate-fade-in">
+          {/* Heading */}
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold leading-tight text-gray-900">
+            Find Your{" "}
+            <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+              Dream Job
+            </span>
             <br />
             Today
           </h1>
 
           {/* Search Form */}
-          <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-            <div className="flex flex-col md:flex-row gap-4 p-2 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl">
-              <div className="flex-1 relative">
-                <input
-                  type="text"
-                  placeholder="Job title, skills, or company"
-                  value={localSearchQuery}
-                  onChange={(e) => setLocalSearchQuery(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none pl-10 pr-4 py-4 text-gray-900 placeholder-gray-500"
-                />
-                <div className="absolute left-3 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
-                  <Search className="w-5 h-5 text-gray-500" />
-                </div>
-              </div>
+      <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
+  <div className="flex flex-col md:flex-row gap-3 md:gap-4 p-2 md:p-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm">
+    {/* Job Search */}
+    <div className="flex-1 relative">
+      <input
+        type="text"
+        placeholder="Job title, skills, or company"
+        value={localSearch}
+        onChange={(e) => setLocalSearch(e.target.value)}
+        className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
+                   pl-8 pr-3 py-2 text-sm md:pl-10 md:pr-4 md:py-4 md:text-base
+                   text-gray-900 placeholder-gray-500 
+                   rounded-lg md:rounded-none"
+      />
+      {/* Mobile Search Icon */}
+      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
+        <Search className="w-4 h-4 text-gray-500" />
+      </div>
+    </div>
 
-              <div className="w-full md:w-64 relative">
-                <input
-                  type="text"
-                  placeholder="Location"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full bg-transparent border-none outline-none px-4 py-4 text-gray-900 placeholder-gray-500"
-                />
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 md:hidden">
-                  <svg
-                    className="w-5 h-5 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
-                    />
-                  </svg>
-                </div>
-              </div>
+    {/* Location */}
+    <div className="flex-1 relative">
+      <input
+        type="text"
+        placeholder="Location"
+        value={localLocation}
+        onChange={(e) => setLocalLocation(e.target.value)}
+        className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
+                   px-3 py-2 text-sm md:px-4 md:py-4 md:text-base
+                   text-gray-900 placeholder-gray-500 
+                   rounded-lg md:rounded-none"
+      />
+    </div>
 
-              <button
-                type="submit"
-                className="bg-blue-600 text-white px-8 py-4 whitespace-nowrap rounded-lg hover:bg-blue-700 transition"
-              >
-                Get Jobs
-              </button>
-            </div>
-          </form>
+    {/* Submit Button */}
+    <button
+      type="submit"
+      className="bg-blue-600 text-white 
+                 px-4 py-2 text-sm md:px-8 md:py-4 md:text-base
+                 rounded-lg hover:bg-blue-700 transition 
+                 w-full md:w-auto"
+    >
+      Get Jobs
+    </button>
+  </div>
+</form>
+
         </div>
       </div>
     </section>

@@ -1,47 +1,49 @@
-import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
-import axios from 'axios';
+// src/store/jobsSlice.js
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import axios from "axios";
 
-// Fetch jobs (existing)
+// Fetch jobs with filters, search, location, pagination
 export const fetchJobs = createAsyncThunk(
-  'jobs/fetchJobs',
-  async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
+  "jobs/fetchJobs",
+  async ({ statusFilter, searchQuery, location, page, jobsPerPage }, { rejectWithValue }) => {
     try {
-      const res = await axios.get('http://localhost:5000/api/jobs', {
-        params: { status: statusFilter, search: searchQuery, page, limit: jobsPerPage },
+      const res = await axios.get("http://localhost:5000/api/jobs", {
+        params: { status: statusFilter, search: searchQuery, location, page, limit: jobsPerPage },
       });
       return res.data; // { jobs, total, page, limit }
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || 'Server Error');
+      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
     }
   }
 );
 
 // Fetch categories
 export const fetchCategories = createAsyncThunk(
-  'jobs/fetchCategories',
+  "jobs/fetchCategories",
   async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get('http://localhost:5000/api/categories');
-      return res.data; // Expected: [{ id, name, openPositions, icon, iconColor, bgColor }, ...]
+      const res = await axios.get("http://localhost:5000/api/categories");
+      return res.data; // [{ id, name, openPositions, icon, iconColor, bgColor }, ...]
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || 'Server Error');
+      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
     }
   }
 );
 
 const jobsSlice = createSlice({
-  name: 'jobs',
+  name: "jobs",
   initialState: {
     jobs: [],
     total: 0,
-    status: 'idle',
+    status: "idle",
     error: null,
-    statusFilter: 'All',
-    searchQuery: '',
+    statusFilter: "All",
+    searchQuery: "",
+    location: "",
     page: 1,
     jobsPerPage: 4,
     categories: [],
-    categoriesStatus: 'idle',
+    categoriesStatus: "idle",
     categoriesError: null,
   },
   reducers: {
@@ -55,45 +57,56 @@ const jobsSlice = createSlice({
       state.page = 1;
       state.jobs = [];
     },
+    setLocation: (state, action) => {
+      state.location = action.payload;
+      state.page = 1;
+      state.jobs = [];
+    },
     incrementPage: (state) => {
       state.page += 1;
     },
     clearFilters: (state) => {
-      state.statusFilter = 'All';
-      state.searchQuery = '';
+      state.statusFilter = "All";
+      state.searchQuery = "";
+      state.location = "";
       state.page = 1;
       state.jobs = [];
     },
   },
   extraReducers: (builder) => {
-    // Existing jobs reducers
     builder
+      // Fetch Jobs
       .addCase(fetchJobs.pending, (state) => {
-        state.status = 'loading';
+        state.status = "loading";
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
-        state.status = 'succeeded';
-        state.jobs = [...state.jobs, ...action.payload.jobs];
+        state.status = "succeeded";
+        // Replace jobs if page === 1; otherwise append
+        if (state.page === 1) {
+          state.jobs = action.payload.jobs;
+        } else {
+          state.jobs = [...state.jobs, ...action.payload.jobs];
+        }
         state.total = action.payload.total;
       })
       .addCase(fetchJobs.rejected, (state, action) => {
-        state.status = 'failed';
+        state.status = "failed";
         state.error = action.payload;
       })
-      // Categories reducers
+      // Fetch Categories
       .addCase(fetchCategories.pending, (state) => {
-        state.categoriesStatus = 'loading';
+        state.categoriesStatus = "loading";
       })
       .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.categoriesStatus = 'succeeded';
+        state.categoriesStatus = "succeeded";
         state.categories = action.payload;
       })
       .addCase(fetchCategories.rejected, (state, action) => {
-        state.categoriesStatus = 'failed';
+        state.categoriesStatus = "failed";
         state.categoriesError = action.payload;
       });
   },
 });
 
-export const { setStatusFilter, setSearchQuery, incrementPage, clearFilters } = jobsSlice.actions;
+export const { setStatusFilter, setSearchQuery, setLocation, incrementPage, clearFilters } = jobsSlice.actions;
 export default jobsSlice.reducer;
