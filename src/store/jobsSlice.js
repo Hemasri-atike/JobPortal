@@ -17,6 +17,27 @@ export const fetchJobs = createAsyncThunk(
   }
 );
 
+
+export const applyToJobThunk = createAsyncThunk(
+  'jobs/applyToJob',
+  async (formData, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post('http://localhost:5000/api/applications', formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+      });
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message);
+    }
+  }
+);
+
+export const clearApplyState = () => (dispatch) => {
+  dispatch({ type: 'jobs/clearApplyState' });
+};
+
+
 // Fetch categories
 export const fetchCategories = createAsyncThunk(
   "jobs/fetchCategories",

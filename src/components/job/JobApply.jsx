@@ -2,11 +2,10 @@ import React, { useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import UseFetch from '../hooks/UseFetch';
-import { applyToJob } from '@/api/apiApplication';
+import { useDispatch, useSelector } from 'react-redux';
 import { BarLoader } from 'react-spinners';
+import { applyToJobThunk, clearApplyState } from "../../store/jobsSlice.js"; // Redux thunk
 
-// Reusing Input component from JobSearch
 const Input = ({ className = '', ...props }) => (
   <input
     {...props}
@@ -14,7 +13,6 @@ const Input = ({ className = '', ...props }) => (
   />
 );
 
-// Custom Button component
 const Button = ({ children, className = '', ...props }) => (
   <button
     {...props}
@@ -24,7 +22,6 @@ const Button = ({ children, className = '', ...props }) => (
   </button>
 );
 
-// Zod schema
 const schema = z.object({
   experience: z
     .number()
@@ -39,13 +36,15 @@ const schema = z.object({
     .refine(
       (file) =>
         file[0] &&
-        (file[0].type === 'application/pdf' || file[0].type === 'application/msword'),
+        ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file[0].type),
       { message: 'Only PDF or Word documents are allowed' }
     ),
 });
 
 export function JobApply({ user, job, fetchJob, applied = false }) {
   const [isOpen, setIsOpen] = useState(false);
+  const dispatch = useDispatch();
+  const { loadingApply, errorApply, successApply } = useSelector((state) => state.jobs);
 
   const {
     register,
@@ -57,24 +56,22 @@ export function JobApply({ user, job, fetchJob, applied = false }) {
     resolver: zodResolver(schema),
   });
 
-  const {
-    loading: loadingApply,
-    error: errorApply,
-    fn: fnApply,
-  } = UseFetch(applyToJob);
-
   const onSubmit = (data) => {
-    fnApply({
-      ...data,
-      job_id: job.id,
-      candidate_id: user.id,
-      name: user.fullName,
-      status: 'applied',
-      resume: data.resume[0],
-    }).then(() => {
+    const formData = new FormData();
+    formData.append('job_id', job.id);
+    formData.append('candidate_id', user.id);
+    formData.append('name', user.fullName);
+    formData.append('status', 'applied');
+    formData.append('experience', data.experience);
+    formData.append('skills', data.skills);
+    formData.append('education', data.education);
+    formData.append('resume', data.resume[0]);
+
+    dispatch(applyToJobThunk(formData)).then(() => {
       fetchJob();
       reset();
       setIsOpen(false);
+      dispatch(clearApplyState());
     });
   };
 
@@ -108,9 +105,7 @@ export function JobApply({ user, job, fetchJob, applied = false }) {
                   className="w-full"
                   {...register('experience', { valueAsNumber: true })}
                 />
-                {errors.experience && (
-                  <p className="text-red-500 text-sm mt-1">{errors.experience.message}</p>
-                )}
+                {errors.experience && <p className="text-red-500 text-sm mt-1">{errors.experience.message}</p>}
               </div>
 
               <div>
@@ -120,15 +115,11 @@ export function JobApply({ user, job, fetchJob, applied = false }) {
                   className="w-full"
                   {...register('skills')}
                 />
-                {errors.skills && (
-                  <p className="text-red-500 text-sm mt-1">{errors.skills.message}</p>
-                )}
+                {errors.skills && <p className="text-red-500 text-sm mt-1">{errors.skills.message}</p>}
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Education
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Education</label>
                 <Controller
                   name="education"
                   control={control}
@@ -149,9 +140,7 @@ export function JobApply({ user, job, fetchJob, applied = false }) {
                     </div>
                   )}
                 />
-                {errors.education && (
-                  <p className="text-red-500 text-sm mt-1">{errors.education.message}</p>
-                )}
+                {errors.education && <p className="text-red-500 text-sm mt-1">{errors.education.message}</p>}
               </div>
 
               <div>
@@ -161,14 +150,10 @@ export function JobApply({ user, job, fetchJob, applied = false }) {
                   className="w-full file:text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-gray-100 file:text-sm"
                   {...register('resume')}
                 />
-                {errors.resume && (
-                  <p className="text-red-500 text-sm mt-1">{errors.resume.message}</p>
-                )}
+                {errors.resume && <p className="text-red-500 text-sm mt-1">{errors.resume.message}</p>}
               </div>
 
-              {errorApply?.message && (
-                <p className="text-red-500 text-sm">{errorApply?.message}</p>
-              )}
+              {errorApply && <p className="text-red-500 text-sm">{errorApply}</p>}
 
               {loadingApply && <BarLoader width="100%" color="#36d7b7" className="mt-2" />}
 

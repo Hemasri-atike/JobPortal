@@ -26,6 +26,7 @@ import Joblisting from './components/common/Joblisting';
 import Messages from './components/candidate/Messages';
 import Application from './components/job/Application';
 import Admindashboard from './pages/dashboard/Admindashboard';
+import JobApply from './components/job/JobApply';
 
 const App = () => {
   return (
@@ -55,6 +56,8 @@ const App = () => {
               {/* candidate */}
               <Route path='/caddetails' element={<CadidateDetails/>}/>
                      <Route path='/cadmessages' element={<Messages/>}/>
+                      <Route path='/jobapply' element={<JobApply/>}/>
+
 
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
