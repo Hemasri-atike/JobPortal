@@ -1,21 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const JobListing = () => {
   const [jobs, setJobs] = useState([]);
-  const [isAdding, setIsAdding] = useState(false);
-  const [editingJobId, setEditingJobId] = useState(null);
   const navigate = useNavigate();
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    setValue,
-    formState: { errors },
-  } = useForm();
 
   // 🔹 Get token
   const token = localStorage.getItem("token");
@@ -68,28 +57,6 @@ const JobListing = () => {
     }
   };
 
-  // 🔹 Add/Edit Job
-  const onSubmit = async (data) => {
-    if (!user || (user.role !== "admin" && user.role !== "employer")) {
-      alert("You are not authorized.");
-      return;
-    }
-    try {
-      if (editingJobId) {
-        await axiosAuth.put(`/jobs/${editingJobId}`, data);
-      } else {
-        await axiosAuth.post("/jobs", data);
-      }
-      fetchJobs();
-      setIsAdding(false);
-      setEditingJobId(null);
-      reset();
-    } catch (err) {
-      console.error(err);
-      alert(err.response?.data?.error || err.message);
-    }
-  };
-
   const handleDelete = async (id) => {
     if (!user || (user.role !== "admin" && user.role !== "employer")) {
       alert("You are not authorized.");
@@ -105,12 +72,8 @@ const JobListing = () => {
   };
 
   const handleEdit = (job) => {
-    setEditingJobId(job.id);
-    setIsAdding(true);
-    setValue("title", job.title);
-    setValue("description", job.description);
-    setValue("location", job.location || "");
-    setValue("salary", job.salary || "");
+    // Redirect to EmpPosting with job data
+    navigate(`/empposting/${job.id}`, { state: job });
   };
 
   return (
@@ -118,68 +81,12 @@ const JobListing = () => {
       <h1 className="text-2xl font-bold mb-4">Job Listings</h1>
 
       {(user?.role === "admin" || user?.role === "employer") && (
-        <button
-          onClick={() => {
-            setIsAdding(true);
-            setEditingJobId(null);
-            reset();
-          }}
-          className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
+        <Link
+          to="/empposting"
+          className="bg-blue-500 text-white px-4 py-2 rounded mb-4 inline-block"
         >
           Add Job
-        </button>
-      )}
-
-      {isAdding && (user?.role === "admin" || user?.role === "employer") && (
-        <form
-          onSubmit={handleSubmit(onSubmit)}
-          className="mb-6 bg-gray-100 p-4 rounded"
-        >
-          <input
-            {...register("title", { required: true })}
-            placeholder="Job Title"
-            className="block w-full mb-2 p-2 border rounded"
-          />
-          {errors.title && <p className="text-red-500">Title is required</p>}
-
-          <textarea
-            {...register("description", { required: true })}
-            placeholder="Job Description"
-            className="block w-full mb-2 p-2 border rounded"
-          />
-          {errors.description && (
-            <p className="text-red-500">Description is required</p>
-          )}
-
-          <input
-            {...register("location")}
-            placeholder="Location"
-            className="block w-full mb-2 p-2 border rounded"
-          />
-
-          <input
-            {...register("salary")}
-            placeholder="Salary"
-            className="block w-full mb-2 p-2 border rounded"
-          />
-
-          <button
-            type="submit"
-            className="bg-green-500 text-white px-4 py-2 rounded"
-          >
-            {editingJobId ? "Update Job" : "Save Job"}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setIsAdding(false);
-              reset();
-            }}
-            className="ml-2 bg-gray-400 text-white px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-        </form>
+        </Link>
       )}
 
       <ul>

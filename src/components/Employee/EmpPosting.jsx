@@ -1,12 +1,14 @@
 // src/pages/EmpPosting.jsx
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { addSkill, removeSkill } from "../../store/skillsSlice.js"; // adjust path if needed
+import { addSkill, removeSkill } from "../../store/skillsSlice.js"; // adjust path
+import axios from "axios";
 
 const EmpPosting = () => {
   const dispatch = useDispatch();
-  const skills = useSelector((state) => state.skills.list); // get skills from redux
+  const navigate = useNavigate();
+  const skills = useSelector((state) => state.skills.list);
 
   const [formData, setFormData] = useState({
     title: "",
@@ -30,7 +32,41 @@ const EmpPosting = () => {
 
   const [skillInput, setSkillInput] = useState("");
 
-  // Handle form input change
+  // 🔹 Get token
+  const token = localStorage.getItem("token");
+
+  let user = null;
+  if (token) {
+    try {
+      user = JSON.parse(atob(token.split(".")[1]));
+    } catch (err) {
+      console.error("Error decoding token:", err);
+      localStorage.clear();
+      navigate("/login");
+    }
+  } else {
+    navigate("/login");
+  }
+
+  // 🔹 Axios instance
+  const axiosAuth = axios.create({
+    baseURL: "http://localhost:5000/api",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  axiosAuth.interceptors.response.use(
+    (res) => res,
+    (error) => {
+      if (error.response?.status === 401) {
+        alert("Session expired. Please login again.");
+        localStorage.clear();
+        navigate("/login");
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  // 🔹 Handle form input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -39,7 +75,7 @@ const EmpPosting = () => {
     });
   };
 
-  // Add skill
+  // 🔹 Add skill
   const handleAddSkill = () => {
     if (skillInput.trim() !== "") {
       dispatch(addSkill(skillInput.trim()));
@@ -47,7 +83,7 @@ const EmpPosting = () => {
     }
   };
 
-  // Enter key for adding skill
+  // 🔹 Enter key for adding skill
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -55,15 +91,28 @@ const EmpPosting = () => {
     }
   };
 
-  // Submit form
-  const handleSubmit = (e) => {
+  // 🔹 Submit form
+  const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!user || (user.role !== "admin" && user.role !== "employer")) {
+      alert("You are not authorized.");
+      return;
+    }
+
     const jobData = {
       ...formData,
-      skills, // get skills from redux
+      skills,
     };
-    console.log(jobData);
-    alert("Job posted successfully!");
+
+    try {
+      await axiosAuth.post("/jobs", jobData);
+      alert("Job posted successfully!");
+      navigate("/jobs");
+    } catch (err) {
+      console.error("Error posting job:", err);
+      alert(err.response?.data?.error || "Something went wrong");
+    }
   };
 
   return (
