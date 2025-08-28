@@ -20,6 +20,12 @@ const store = configureStore({
           resume: resumeReducer,
             footer: footerReducer,
             header:headerReducer,
+
+
+
+    // postedJobs: postingReducer,
+    // applicants: applicantReducer,
+    // company: companyReducer,
   },
 });
 

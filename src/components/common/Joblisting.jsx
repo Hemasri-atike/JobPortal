@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const JobListing = () => {
   const [jobs, setJobs] = useState([]);
   const [isAdding, setIsAdding] = useState(false);
   const [editingJobId, setEditingJobId] = useState(null);
+  const navigate = useNavigate();
 
   const {
     register,
@@ -15,84 +17,93 @@ const JobListing = () => {
     formState: { errors },
   } = useForm();
 
-  // 🔹 Decode token to get user info
+  // 🔹 Get token
   const token = localStorage.getItem("token");
+
+  // 🔹 Decode token safely
   let user = null;
   if (token) {
     try {
       user = JSON.parse(atob(token.split(".")[1]));
     } catch (err) {
       console.error("Error decoding token:", err);
+      localStorage.clear();
+      navigate("/login");
     }
+  } else {
+    // No token, redirect to login
+    navigate("/login");
   }
 
-  // 🔹 Fetch jobs from backend
+  // 🔹 Axios instance with auth and error handling
+  const axiosAuth = axios.create({
+    baseURL: "http://localhost:5000/api",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  axiosAuth.interceptors.response.use(
+    (res) => res,
+    (error) => {
+      if (error.response?.status === 401) {
+        alert("Session expired. Please login again.");
+        localStorage.clear();
+        navigate("/login");
+      }
+      return Promise.reject(error);
+    }
+  );
+
+  // 🔹 Fetch jobs
   useEffect(() => {
     fetchJobs();
   }, []);
 
   const fetchJobs = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/jobs");
-      // ✅ Ensure jobs is always an array
+      const res = await axiosAuth.get("/jobs");
       setJobs(Array.isArray(res.data.jobs) ? res.data.jobs : res.data);
     } catch (err) {
       console.error("Error fetching jobs:", err);
-      setJobs([]); // fallback to empty
+      setJobs([]);
     }
   };
 
-  // 🔹 Handle Add / Edit Job
+  // 🔹 Add/Edit Job
   const onSubmit = async (data) => {
     if (!user || (user.role !== "admin" && user.role !== "employer")) {
-      alert("You are not authorized to perform this action.");
+      alert("You are not authorized.");
       return;
     }
-
     try {
       if (editingJobId) {
-        // Update job
-        await axios.put(
-          `http://localhost:5000/api/jobs/${editingJobId}`,
-          data,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
+        await axiosAuth.put(`/jobs/${editingJobId}`, data);
       } else {
-        // Create job
-        await axios.post("http://localhost:5000/api/jobs", data, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await axiosAuth.post("/jobs", data);
       }
-
-      fetchJobs(); // Refresh jobs
+      fetchJobs();
       setIsAdding(false);
       setEditingJobId(null);
       reset();
     } catch (err) {
-      console.error("Error saving job:", err);
-      alert("Error: " + (err.response?.data?.error || err.message));
+      console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
-  // 🔹 Handle Delete Job
   const handleDelete = async (id) => {
     if (!user || (user.role !== "admin" && user.role !== "employer")) {
-      alert("You are not authorized to delete jobs.");
+      alert("You are not authorized.");
       return;
     }
-
     try {
-      await axios.delete(`http://localhost:5000/api/jobs/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      fetchJobs(); // Refresh jobs
+      await axiosAuth.delete(`/jobs/${id}`);
+      fetchJobs();
     } catch (err) {
-      console.error("Error deleting job:", err);
-      alert("Error: " + (err.response?.data?.error || err.message));
+      console.error(err);
+      alert(err.response?.data?.error || err.message);
     }
   };
 
-  // 🔹 Handle Edit Job (prefill form)
   const handleEdit = (job) => {
     setEditingJobId(job.id);
     setIsAdding(true);
@@ -106,7 +117,6 @@ const JobListing = () => {
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-4">Job Listings</h1>
 
-      {/* Add Job Button */}
       {(user?.role === "admin" || user?.role === "employer") && (
         <button
           onClick={() => {
@@ -120,7 +130,6 @@ const JobListing = () => {
         </button>
       )}
 
-      {/* Job Form */}
       {isAdding && (user?.role === "admin" || user?.role === "employer") && (
         <form
           onSubmit={handleSubmit(onSubmit)}
@@ -173,7 +182,6 @@ const JobListing = () => {
         </form>
       )}
 
-      {/* Jobs List */}
       <ul>
         {Array.isArray(jobs) && jobs.length > 0 ? (
           jobs.map((job) => (
@@ -189,7 +197,6 @@ const JobListing = () => {
                 </p>
               </div>
 
-              {/* Edit/Delete buttons */}
               {(user?.role === "admin" || user?.role === "employer") && (
                 <div>
                   <button

@@ -68,7 +68,7 @@ export const loginUser = createAsyncThunk(
       localStorage.setItem("userInfo", JSON.stringify(data.user));
       localStorage.setItem("userType", data.user.role);
 
-      return data.user; // ❗ thunk returns the user directly
+      return data.user; 
     } catch (error) {
       return rejectWithValue(error.message);
     }

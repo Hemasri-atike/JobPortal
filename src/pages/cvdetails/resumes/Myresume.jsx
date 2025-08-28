@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchResume, updateResume } from "../../../store/resumeSlice.js";
+import { fetchResume, createResume, updateResume } from "../../../store/resumeSlice.js";
+
 import { resumeSections } from "../../../config/resumeConfig.js";
 import Header from "../../navbar/Header.jsx";
 import Sidebar from "../layout/Sidebar.jsx";
@@ -12,14 +13,17 @@ const MyResume = () => {
   const [editableData, setEditableData] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
+  // Fetch resume on mount
   useEffect(() => {
     dispatch(fetchResume());
   }, [dispatch]);
 
+  // Update editableData when resumeData changes
   useEffect(() => {
     if (resumeData) setEditableData(resumeData);
   }, [resumeData]);
 
+  // Update nested field
   const updateNestedField = (section, id, key, value) => {
     setEditableData((prev) => ({
       ...prev,
@@ -29,16 +33,17 @@ const MyResume = () => {
     }));
   };
 
+  // Add new entry
   const addEntry = (section) => {
-    const newEntry = {};
+    const newEntry = { id: Date.now() };
     resumeSections[section].forEach((f) => (newEntry[f.key] = ""));
-    newEntry.id = Date.now(); // temporary ID
     setEditableData((prev) => ({
       ...prev,
-      [section]: [...(prev[section] || []), newEntry],
+      [section]: [...(prev?.[section] || []), newEntry],
     }));
   };
 
+  // Remove entry
   const removeEntry = (section, id) => {
     setEditableData((prev) => ({
       ...prev,
@@ -46,108 +51,104 @@ const MyResume = () => {
     }));
   };
 
+  // Save (Update or Create)
   const handleSave = async () => {
-    if (editableData) {
-      await dispatch(updateResume(editableData));
+    if (!editableData) return;
+
+    let resultAction;
+    if (resumeData) {
+      // Resume exists → Update
+      resultAction = await dispatch(updateResume({ resumeData: editableData }));
+    } else {
+      // Resume not found → Create new
+      resultAction = await dispatch(createResume({ resumeData: editableData }));
+    }
+
+    if (
+      (updateResume.fulfilled && updateResume.fulfilled.match(resultAction)) ||
+      (createResume.fulfilled && createResume.fulfilled.match(resultAction))
+    ) {
+      setEditableData(resultAction.payload);
       setIsEditing(false);
+    } else {
+      alert("Failed to save resume: " + resultAction.payload);
     }
   };
 
+  // Render each section
   const renderSection = (sectionKey) => {
     const fields = resumeSections[sectionKey];
     const sectionData = editableData?.[sectionKey];
 
-    if (!sectionData || (Array.isArray(sectionData) && sectionData.length === 0)) {
-      return (
+    if (!sectionData || sectionData.length === 0) {
+      return isEditing ? (
         <p className="text-gray-500">
           No data available.{" "}
-          {isEditing && (
-            <button
-              onClick={() => addEntry(sectionKey)}
-              className="ml-2 text-blue-500 underline"
-            >
-              Add
-            </button>
-          )}
+          <button
+            onClick={() => addEntry(sectionKey)}
+            className="ml-2 text-blue-500 underline"
+          >
+            Add
+          </button>
         </p>
+      ) : (
+        <p className="text-gray-500">No data available.</p>
       );
     }
 
-    if (Array.isArray(sectionData)) {
-      return (
-        <div>
-          {sectionData.map((entry) => (
-            <div key={entry.id} className="mb-4 border p-3 rounded relative">
-              {isEditing && (
-                <button
-                  onClick={() => removeEntry(sectionKey, entry.id)}
-                  className="absolute top-2 right-2 text-red-500 font-bold"
-                >
-                  X
-                </button>
-              )}
-              {fields.map((field) => (
-                <div key={field.key} className="mb-2">
-                  <label className="block text-sm text-gray-600">{field.label}</label>
-                  {isEditing ? (
-                    field.type === "textarea" ? (
-                      <textarea
-                        value={entry[field.key] || ""}
-                        onChange={(e) =>
-                          updateNestedField(sectionKey, entry.id, field.key, e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    ) : (
-                      <input
-                        type={field.type}
-                        value={entry[field.key] || ""}
-                        onChange={(e) =>
-                          updateNestedField(sectionKey, entry.id, field.key, e.target.value)
-                        }
-                        className="w-full p-2 border rounded-lg"
-                      />
-                    )
+    return (
+      <div>
+        {sectionData.map((entry) => (
+          <div key={entry.id} className="mb-4 border p-3 rounded relative">
+            {isEditing && (
+              <button
+                onClick={() => removeEntry(sectionKey, entry.id)}
+                className="absolute top-2 right-2 text-red-500 font-bold"
+              >
+                X
+              </button>
+            )}
+            {fields.map((field) => (
+              <div key={field.key} className="mb-2">
+                <label className="block text-sm text-gray-600">
+                  {field.label}
+                </label>
+                {isEditing ? (
+                  field.type === "textarea" ? (
+                    <textarea
+                      value={entry[field.key] || ""}
+                      onChange={(e) =>
+                        updateNestedField(sectionKey, entry.id, field.key, e.target.value)
+                      }
+                      className="w-full p-2 border rounded-lg"
+                    />
                   ) : (
-                    <p>{entry[field.key] || "-"}</p>
-                  )}
-                </div>
-              ))}
-            </div>
-          ))}
-          {isEditing && (
-            <button
-              onClick={() => addEntry(sectionKey)}
-              className="mt-2 px-3 py-1 bg-blue-500 text-white rounded"
-            >
-              + Add {sectionKey}
-            </button>
-          )}
-        </div>
-      );
-    }
-
-    // Object-based section
-    return fields.map((field) => (
-      <div key={field.key} className="mb-2">
-        <label className="block text-sm text-gray-600">{field.label}</label>
-        {isEditing ? (
-          <input
-            type={field.type}
-            value={sectionData[field.key] || ""}
-            onChange={(e) =>
-              setEditableData({
-                ...editableData,
-                [sectionKey]: { ...sectionData, [field.key]: e.target.value },
-              })
-            }
-            className="w-full p-2 border rounded-lg"
-          />
-        ) : (
-          <p>{sectionData[field.key] || "-"}</p>
+                    <input
+                      type={field.type}
+                      value={entry[field.key] || ""}
+                      onChange={(e) =>
+                        updateNestedField(sectionKey, entry.id, field.key, e.target.value)
+                      }
+                      className="w-full p-2 border rounded-lg"
+                    />
+                  )
+                ) : (
+                  <p>{entry[field.key] || "-"}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        ))}
+        {isEditing && (
+          <button
+            onClick={() => addEntry(sectionKey)}
+            className="mt-2 px-3 py-1 bg-blue-500 text-white rounded"
+          >
+            + Add {sectionKey}
+          </button>
         )}
       </div>
-    ));
+    );
   };
 
   return (
@@ -177,12 +178,28 @@ const MyResume = () => {
           <div className="flex justify-between mb-4">
             <h1 className="text-xl font-bold">My Resume</h1>
             {!isEditing ? (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="px-4 py-2 bg-blue-500 text-white rounded"
-              >
-                Edit
-              </button>
+              resumeData ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded"
+                >
+                  Edit
+                </button>
+              ) : (
+                <button
+                  onClick={() => {
+                    setEditableData(
+                      Object.fromEntries(
+                        Object.keys(resumeSections).map((key) => [key, []])
+                      )
+                    );
+                    setIsEditing(true);
+                  }}
+                  className="px-4 py-2 bg-green-500 text-white rounded"
+                >
+                  Create Resume
+                </button>
+              )
             ) : (
               <button
                 onClick={handleSave}
@@ -195,12 +212,19 @@ const MyResume = () => {
 
           {loading && <p className="p-4">Loading resume...</p>}
           {error && <p className="p-4 text-red-500">{error}</p>}
-          {!loading && !resumeData && <p className="p-4">No resume data found.</p>}
+          {!loading && !resumeData && !isEditing && (
+            <p className="p-4">No resume data found. Please create one.</p>
+          )}
 
           {editableData &&
             Object.keys(resumeSections).map((sectionKey) => (
-              <div key={sectionKey} className="bg-white p-6 rounded shadow mb-4">
-                <h2 className="text-lg font-semibold mb-3 capitalize">{sectionKey}</h2>
+              <div
+                key={sectionKey}
+                className="bg-white p-6 rounded shadow mb-4"
+              >
+                <h2 className="text-lg font-semibold mb-3 capitalize">
+                  {sectionKey}
+                </h2>
                 {renderSection(sectionKey)}
               </div>
             ))}
