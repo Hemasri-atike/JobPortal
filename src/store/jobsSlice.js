@@ -2,140 +2,172 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// ---------------------- Thunks ----------------------
-
-
-// Apply to job
-export const applyToJobThunk = createAsyncThunk(
-  "jobs/applyToJob",
-  async (formData, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post("http://localhost:5000/api/applications", formData, {
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
-      });
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message);
-    }
-  }
-);
-
-// Fetch categories
-export const fetchCategories = createAsyncThunk(
-  "jobs/fetchCategories",
-  async (_, { rejectWithValue }) => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/categories");
-      return res.data; // [{ id, name, openPositions, icon, iconColor, bgColor }, ...]
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
-    }
-  }
-);
-
-
-
-
-
-// Fetch jobs
+// Fetch jobs with filters, search, location, pagination
 export const fetchJobs = createAsyncThunk(
   "jobs/fetchJobs",
   async ({ statusFilter, searchQuery, location, page, jobsPerPage }, { rejectWithValue }) => {
     try {
       const res = await axios.get("http://localhost:5000/api/jobs", {
-        params: { status: statusFilter, search: searchQuery, location, page, limit: jobsPerPage },
+        params: { statusFilter, searchQuery, location, page, jobsPerPage },
       });
-      return res.data; // { jobs: [...], total, page, limit }
+      return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
+      return rejectWithValue(err.response?.data || "Error fetching jobs");
     }
   }
 );
 
-// Slice
+export const applyToJobThunk = createAsyncThunk(
+  "jobs/applyToJob",
+  async ({ jobId, applicationData }, { rejectWithValue }) => {
+    try {
+      const res = await axios.post(
+        `http://localhost:5000/api/jobs/${jobId}/apply`,
+        applicationData
+      );
+      return res.data; // e.g. { message: "Applied successfully", application }
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error applying to job");
+    }
+  }
+);
+
+export const fetchCategories = createAsyncThunk(
+  "jobs/fetchCategories",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/categories");
+      return res.data; // expecting array of categories
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error fetching categories");
+    }
+  }
+);
+
+
+// Add Job
+export const addJob = createAsyncThunk(
+  "jobs/addJob",
+  async (newJob, { rejectWithValue }) => {
+    try {
+      const res = await axios.post("http://localhost:5000/api/jobs", newJob);
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error adding job");
+    }
+  }
+);
+
+// Update Job
+export const updateJob = createAsyncThunk(
+  "jobs/updateJob",
+  async (updatedJob, { rejectWithValue }) => {
+    try {
+      const res = await axios.put(
+        `http://localhost:5000/api/jobs/${updatedJob.id}`,
+        updatedJob
+      );
+      return res.data;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error updating job");
+    }
+  }
+);
+
+// Delete Job
+export const deleteJob = createAsyncThunk(
+  "jobs/deleteJob",
+  async (id, { rejectWithValue }) => {
+    try {
+      await axios.delete(`http://localhost:5000/api/jobs/${id}`);
+      return id;
+    } catch (err) {
+      return rejectWithValue(err.response?.data || "Error deleting job");
+    }
+  }
+);
+
 const jobsSlice = createSlice({
   name: "jobs",
   initialState: {
     jobs: [],
-    total: 0,
-    status: "idle",
+    loading: false,
     error: null,
-    statusFilter: "All",
     searchQuery: "",
     location: "",
+    statusFilter: "all",
     page: 1,
-    jobsPerPage: 4,
+    jobsPerPage: 5,
+    
   },
   reducers: {
-    setStatusFilter: (state, action) => {
-      state.statusFilter = action.payload;
-      state.page = 1;
-      state.jobs = [];
-    },
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
-      state.page = 1;
-      state.jobs = [];
     },
     setLocation: (state, action) => {
       state.location = action.payload;
-      state.page = 1;
-      state.jobs = [];
+    },
+    setStatusFilter: (state, action) => {
+      state.statusFilter = action.payload;
+    },
+    setPage: (state, action) => {
+      state.page = action.payload;
+    },
+    clearApplyState: (state) => {
+      state.applications = [];
+      state.error = null;
     },
     incrementPage: (state) => {
       state.page += 1;
     },
+    decrementPage: (state) => {
+      if (state.page > 1) state.page -= 1;
+    },
     clearFilters: (state) => {
-      state.statusFilter = "All";
       state.searchQuery = "";
       state.location = "";
+      state.statusFilter = "all";
       state.page = 1;
-      state.jobs = [];
     },
   },
   extraReducers: (builder) => {
     builder
+      // Fetch Jobs
       .addCase(fetchJobs.pending, (state) => {
-        state.status = "loading";
+        state.loading = true;
+        state.error = null;
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
-        state.status = "succeeded";
-
-        // Use action.payload.jobs
-        const fetchedJobs = action.payload.jobs.map(job => ({
-          ...job,
-          title: job.title || "Untitled Job",
-          company_name: job.company_name || "Unknown Company",
-          location: job.location || "Location not specified",
-          tags: job.tags || [],
-          description: job.description || "No description available",
-        }));
-
-        if (state.page === 1) {
-          state.jobs = fetchedJobs;
-        } else {
-          state.jobs = [...state.jobs, ...fetchedJobs];
-        }
-        state.total = action.payload.total;
+        state.loading = false;
+        state.jobs = action.payload;
       })
       .addCase(fetchJobs.rejected, (state, action) => {
-        state.status = "failed";
+        state.loading = false;
         state.error = action.payload;
+      })
+
+      // Add Job
+      .addCase(addJob.fulfilled, (state, action) => {
+        state.jobs.push(action.payload);
+      })
+
+      // Update Job
+      .addCase(updateJob.fulfilled, (state, action) => {
+        const index = state.jobs.findIndex((job) => job.id === action.payload.id);
+        if (index !== -1) {
+          state.jobs[index] = action.payload;
+        }
+      })
+
+      // Delete Job
+      .addCase(deleteJob.fulfilled, (state, action) => {
+        state.jobs = state.jobs.filter((job) => job.id !== action.payload);
       });
   },
 });
 
-
-// ---------------------- Exports ----------------------
-export const {
-  setStatusFilter,
-  setSearchQuery,
-  setLocation,
-  incrementPage,
-  clearFilters,
-  addJob,
-  clearApplyState,
-} = jobsSlice.actions;
+export const { setSearchQuery, setLocation, setStatusFilter, setPage,  incrementPage,
+  decrementPage, clearFilters,clearApplyState } =
+  jobsSlice.actions;
 
 export default jobsSlice.reducer;

@@ -396,7 +396,7 @@ const EmpPosting = () => {
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600">
               Back to{" "}
-              <Link to="/jobs" className="text-blue-600 hover:underline font-medium">
+              <Link to="/joblistings" className="text-blue-600 hover:underline font-medium">
                 Job Listings
               </Link>
             </p>
