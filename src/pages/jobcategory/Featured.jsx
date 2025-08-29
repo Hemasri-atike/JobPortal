@@ -11,11 +11,10 @@ const Featured = () => {
   );
 
   useEffect(() => {
-    // Fetch jobs on mount or when filters/page change
     dispatch(fetchJobs({ statusFilter, searchQuery, page, jobsPerPage }));
   }, [dispatch, statusFilter, searchQuery, page, jobsPerPage]);
 
-  // Remove duplicate jobs by id
+  // Remove duplicates (if any)
   const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.id, job])).values());
 
   return (

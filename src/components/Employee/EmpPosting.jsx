@@ -2,7 +2,8 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { addSkill, removeSkill } from "../../store/skillsSlice.js"; // adjust path
+import { addSkill, removeSkill } from "../../store/skillsSlice.js";
+import { addJob } from "../../store/jobsSlice.js"; // ✅ import addJob
 import axios from "axios";
 
 const EmpPosting = () => {
@@ -34,7 +35,6 @@ const EmpPosting = () => {
 
   // 🔹 Get token
   const token = localStorage.getItem("token");
-
   let user = null;
   if (token) {
     try {
@@ -42,10 +42,10 @@ const EmpPosting = () => {
     } catch (err) {
       console.error("Error decoding token:", err);
       localStorage.clear();
-      navigate("/login");
+      navigate("/login?type=employee");
     }
   } else {
-    navigate("/login");
+    navigate("/login?type=employee");
   }
 
   // 🔹 Axios instance
@@ -60,7 +60,7 @@ const EmpPosting = () => {
       if (error.response?.status === 401) {
         alert("Session expired. Please login again.");
         localStorage.clear();
-        navigate("/login");
+        navigate("/login?type=employee");
       }
       return Promise.reject(error);
     }
@@ -69,10 +69,7 @@ const EmpPosting = () => {
   // 🔹 Handle form input change
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+    setFormData({ ...formData, [name]: value });
   };
 
   // 🔹 Add skill
@@ -83,7 +80,6 @@ const EmpPosting = () => {
     }
   };
 
-  // 🔹 Enter key for adding skill
   const handleKeyPress = (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
@@ -100,15 +96,16 @@ const EmpPosting = () => {
       return;
     }
 
-    const jobData = {
-      ...formData,
-      skills,
-    };
+    const jobData = { ...formData, skills };
 
     try {
-      await axiosAuth.post("/jobs", jobData);
+      const res = await axiosAuth.post("/jobs", jobData);
+
+      // ✅ Dispatch to add the job immediately in Redux
+      dispatch(addJob(res.data));
+
       alert("Job posted successfully!");
-      navigate("/jobs");
+      navigate("/joblistings"); // Optional: navigate to Jobs page
     } catch (err) {
       console.error("Error posting job:", err);
       alert(err.response?.data?.error || "Something went wrong");
@@ -125,9 +122,7 @@ const EmpPosting = () => {
         <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Job Title */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Job Title
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Job Title</label>
             <input
               type="text"
               name="title"
@@ -142,9 +137,7 @@ const EmpPosting = () => {
           {/* Company Name + Role */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Company Name
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Company Name</label>
               <input
                 type="text"
                 name="companyName"
@@ -156,9 +149,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Job Role
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Job Role</label>
               <input
                 type="text"
                 name="role"
@@ -173,9 +164,7 @@ const EmpPosting = () => {
           {/* Job Category + Experience */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Job Category
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Job Category</label>
               <select
                 name="jobCategory"
                 value={formData.jobCategory}
@@ -191,9 +180,7 @@ const EmpPosting = () => {
               </select>
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Experience Category
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Experience Category</label>
               <select
                 name="experienceLevel"
                 value={formData.experienceLevel}
@@ -212,9 +199,7 @@ const EmpPosting = () => {
           {/* Location */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                State
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">State</label>
               <input
                 type="text"
                 name="state"
@@ -225,9 +210,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                City
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">City</label>
               <input
                 type="text"
                 name="city"
@@ -238,9 +221,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Work Mode
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Work Mode</label>
               <select
                 name="workMode"
                 value={formData.workMode}
@@ -258,9 +239,7 @@ const EmpPosting = () => {
           {/* Job Type + Vacancies */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Job Type
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Job Type</label>
               <select
                 name="jobType"
                 value={formData.jobType}
@@ -275,9 +254,7 @@ const EmpPosting = () => {
               </select>
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Number of Vacancies
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Number of Vacancies</label>
               <input
                 type="number"
                 name="vacancies"
@@ -293,9 +270,7 @@ const EmpPosting = () => {
           {/* Salary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Min Salary (per month)
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Min Salary (per month)</label>
               <input
                 type="number"
                 name="minSalary"
@@ -306,9 +281,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Max Salary (per month)
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Max Salary (per month)</label>
               <input
                 type="number"
                 name="maxSalary"
@@ -320,11 +293,9 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Dynamic Skills */}
+          {/* Skills */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Required Skills
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Required Skills</label>
             <div className="flex items-center gap-2">
               <input
                 type="text"
@@ -342,8 +313,6 @@ const EmpPosting = () => {
                 +
               </button>
             </div>
-
-            {/* Skill Tags */}
             <div className="mt-3 flex flex-wrap gap-2">
               {skills.map((skill, index) => (
                 <span
@@ -365,9 +334,7 @@ const EmpPosting = () => {
 
           {/* Job Description */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Job Description
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Job Description</label>
             <textarea
               name="description"
               rows="4"
@@ -380,9 +347,7 @@ const EmpPosting = () => {
 
           {/* Contact Person */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
-              Contact Person
-            </label>
+            <label className="block text-gray-700 font-medium mb-1">Contact Person</label>
             <input
               type="text"
               name="contactPerson"
@@ -396,9 +361,7 @@ const EmpPosting = () => {
           {/* Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Application Start Date
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Application Start Date</label>
               <input
                 type="date"
                 name="startDate"
@@ -408,9 +371,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">
-                Application End Date
-              </label>
+              <label className="block text-gray-700 font-medium mb-1">Application End Date</label>
               <input
                 type="date"
                 name="endDate"
@@ -435,10 +396,7 @@ const EmpPosting = () => {
           <div className="text-center mt-4">
             <p className="text-sm text-gray-600">
               Back to{" "}
-              <Link
-                to="/jobs"
-                className="text-blue-600 hover:underline font-medium"
-              >
+              <Link to="/jobs" className="text-blue-600 hover:underline font-medium">
                 Job Listings
               </Link>
             </p>

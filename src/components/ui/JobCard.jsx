@@ -1,5 +1,5 @@
 const JobCard = ({ job }) => {
-  if (!job) return null; // Skip rendering if job is undefined
+  if (!job) return null;
 
   const {
     id,
@@ -8,6 +8,8 @@ const JobCard = ({ job }) => {
     location = "Location not specified",
     tags = [],
     description = "No description available",
+    salary = "Not specified",
+    status = "Not specified",
   } = job;
 
   return (
@@ -15,12 +17,14 @@ const JobCard = ({ job }) => {
       <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
       <p className="text-sm text-gray-500">{company_name}</p>
       <p className="text-sm text-gray-400">{location}</p>
+      <p className="text-sm text-gray-500 mt-1">Salary: {salary}</p>
+      {/* <p className="text-sm text-gray-500 mt-1">Status: {status}</p> */}
 
       {tags.length > 0 && (
         <div className="flex gap-2 mt-3 flex-wrap">
           {tags.map((tag, i) => (
             <span
-              key={`${id}-${tag}-${i}`} // Unique key combining job id and index
+              key={`${id}-${tag}-${i}`}
               className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
             >
               {tag}

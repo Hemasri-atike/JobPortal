@@ -2,29 +2,17 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Fetch jobs with filters, search, location, pagination
-export const fetchJobs = createAsyncThunk(
-  "jobs/fetchJobs",
-  async ({ statusFilter, searchQuery, location, page, jobsPerPage }, { rejectWithValue }) => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/jobs", {
-        params: { status: statusFilter, search: searchQuery, location, page, limit: jobsPerPage },
-      });
-      return res.data; // { jobs, total, page, limit }
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
-    }
-  }
-);
+// ---------------------- Thunks ----------------------
 
 
+// Apply to job
 export const applyToJobThunk = createAsyncThunk(
-  'jobs/applyToJob',
+  "jobs/applyToJob",
   async (formData, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post('http://localhost:5000/api/applications', formData, {
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem("token");
+      const res = await axios.post("http://localhost:5000/api/applications", formData, {
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "multipart/form-data" },
       });
       return res.data;
     } catch (err) {
@@ -32,11 +20,6 @@ export const applyToJobThunk = createAsyncThunk(
     }
   }
 );
-
-export const clearApplyState = () => (dispatch) => {
-  dispatch({ type: 'jobs/clearApplyState' });
-};
-
 
 // Fetch categories
 export const fetchCategories = createAsyncThunk(
@@ -51,6 +34,26 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
+
+
+
+
+// Fetch jobs
+export const fetchJobs = createAsyncThunk(
+  "jobs/fetchJobs",
+  async ({ statusFilter, searchQuery, location, page, jobsPerPage }, { rejectWithValue }) => {
+    try {
+      const res = await axios.get("http://localhost:5000/api/jobs", {
+        params: { status: statusFilter, search: searchQuery, location, page, limit: jobsPerPage },
+      });
+      return res.data; // { jobs: [...], total, page, limit }
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || err.message || "Server Error");
+    }
+  }
+);
+
+// Slice
 const jobsSlice = createSlice({
   name: "jobs",
   initialState: {
@@ -63,9 +66,6 @@ const jobsSlice = createSlice({
     location: "",
     page: 1,
     jobsPerPage: 4,
-    categories: [],
-    categoriesStatus: "idle",
-    categoriesError: null,
   },
   reducers: {
     setStatusFilter: (state, action) => {
@@ -96,38 +96,46 @@ const jobsSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Jobs
       .addCase(fetchJobs.pending, (state) => {
         state.status = "loading";
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
         state.status = "succeeded";
-        // Replace jobs if page === 1; otherwise append
+
+        // Use action.payload.jobs
+        const fetchedJobs = action.payload.jobs.map(job => ({
+          ...job,
+          title: job.title || "Untitled Job",
+          company_name: job.company_name || "Unknown Company",
+          location: job.location || "Location not specified",
+          tags: job.tags || [],
+          description: job.description || "No description available",
+        }));
+
         if (state.page === 1) {
-          state.jobs = action.payload.jobs;
+          state.jobs = fetchedJobs;
         } else {
-          state.jobs = [...state.jobs, ...action.payload.jobs];
+          state.jobs = [...state.jobs, ...fetchedJobs];
         }
         state.total = action.payload.total;
       })
       .addCase(fetchJobs.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload;
-      })
-      // Fetch Categories
-      .addCase(fetchCategories.pending, (state) => {
-        state.categoriesStatus = "loading";
-      })
-      .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.categoriesStatus = "succeeded";
-        state.categories = action.payload;
-      })
-      .addCase(fetchCategories.rejected, (state, action) => {
-        state.categoriesStatus = "failed";
-        state.categoriesError = action.payload;
       });
   },
 });
 
-export const { setStatusFilter, setSearchQuery, setLocation, incrementPage, clearFilters } = jobsSlice.actions;
+
+// ---------------------- Exports ----------------------
+export const {
+  setStatusFilter,
+  setSearchQuery,
+  setLocation,
+  incrementPage,
+  clearFilters,
+  addJob,
+  clearApplyState,
+} = jobsSlice.actions;
+
 export default jobsSlice.reducer;
