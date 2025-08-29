@@ -39,7 +39,7 @@ const App = () => {
                 <Route path="/jobapplication" element={<Application />} />
                 <Route path="/admindashboard" element={<Admindashboard />} />
 
-<Route path="/company/:id" element={<Compdetails />} />
+{/* <Route path="/company/:id" element={<Compdetails />} /> */}
 
 
 
@@ -51,6 +51,8 @@ const App = () => {
           <Route path='/empdashboard' element={<EmpDashboard/>}/>
               <Route path='/empposting' element={<EmpPosting/>}/>
                   <Route path='/applicants' element={<Applicants/>}/>
+         <Route path="/cmpprofile/:id" element={<Compdetails />} />
+
 
 
               {/* candidate */}
@@ -62,7 +64,10 @@ const App = () => {
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
     <Route path='/companies' element={<Company/>}/>
-     <Route path='/cmpprofile' element={<Compdetails />}/>
+     {/* <Route path='/cmpprofile' element={<Compdetails />}/> */}
+     <Route path="/cmpprofile" element={<Compdetails />} />
+<Route path="/cmpprofile/:id" element={<Compdetails />} />
+
       <Route path='/category' element={<Category/>}/>
       {/* <Route path="/login" element={<Login/>}/>
          <Route path="/register" element={<Register/>}/> */}
