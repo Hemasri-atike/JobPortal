@@ -10,6 +10,7 @@ import {
   addExperience,
   addCertification,
   setResume,
+  setAllFields,
 } from "../../store/empprofileSlice.js";
 import { saveEmployeeProfile, uploadResume } from "../../api/empapi.js";
 
@@ -35,12 +36,25 @@ const EmpProfile = () => {
     state: "",
     country: "",
   });
+  
 
-  // Handlers
-  const handleChange = (e) => dispatch(updateField({ field: e.target.name, value: e.target.value }));
-  const handleEduChange = (e) => setEduInput({ ...eduInput, [e.target.name]: e.target.value });
-  const handleExpChange = (e) => setExpForm({ ...expForm, [e.target.name]: e.target.value });
-  const handleAddSkill = () => { if (skillInput.trim()) { dispatch(addSkill(skillInput)); setSkillInput(""); } };
+  // ----------------- Handlers -----------------
+  const handleChange = (e) =>
+    dispatch(updateField({ field: e.target.name, value: e.target.value }));
+
+  const handleEduChange = (e) =>
+    setEduInput({ ...eduInput, [e.target.name]: e.target.value });
+
+  const handleExpChange = (e) =>
+    setExpForm({ ...expForm, [e.target.name]: e.target.value });
+
+  const handleAddSkill = () => {
+    if (skillInput.trim()) {
+      dispatch(addSkill(skillInput));
+      setSkillInput("");
+    }
+  };
+
   const handleAddEducation = () => {
     const { state, city, university, college, duration } = eduInput;
     if (state && city && university && college && duration) {
@@ -48,14 +62,45 @@ const EmpProfile = () => {
       setEduInput({ state: "", city: "", university: "", college: "", duration: "" });
     }
   };
-  const handleAddExperience = () => { if (expForm.company && expForm.role) { dispatch(addExperience(expForm)); setExpForm({ company: "", role: "", startDate: "", endDate: "", city: "", state: "", country: "" }); } };
-  const handleAddCertification = () => { if (certInput.trim()) { dispatch(addCertification(certInput)); setCertInput(""); } };
+
+  const handleAddExperience = () => {
+    if (expForm.company && expForm.role) {
+      dispatch(addExperience(expForm));
+      setExpForm({
+        company: "",
+        role: "",
+        startDate: "",
+        endDate: "",
+        city: "",
+        state: "",
+        country: "",
+      });
+    }
+  };
+
+  const handleAddCertification = () => {
+    if (certInput.trim()) {
+      dispatch(addCertification(certInput));
+      setCertInput("");
+    }
+  };
+
   const handleResumeUpload = (e) => dispatch(setResume(e.target.files[0]));
+
+  // ----------------- Save & Fetch Backend -----------------
   const handleSaveProfile = async () => {
     try {
-      const result = await saveEmployeeProfile(employee);
-      const employeeId = result.employeeId;
-      if (employee.resume) await uploadResume(employeeId, employee.resume);
+      // Save employee profile
+      const savedProfile = await saveEmployeeProfile(employee);
+
+      // Upload resume if exists
+      if (employee.resume) {
+        await uploadResume(savedProfile.employeeId, employee.resume);
+      }
+
+      // Update Redux with backend-saved profile
+      dispatch(setAllFields(savedProfile));
+
       alert("Profile saved successfully!");
     } catch (err) {
       console.error(err);
@@ -63,9 +108,9 @@ const EmpProfile = () => {
     }
   };
 
+  // ----------------- JSX -----------------
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header */}
       <Header />
 
       <div className="flex pt-4">
@@ -78,7 +123,7 @@ const EmpProfile = () => {
         <main className="flex-1 p-6">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">Employee Profile</h2>
 
-          {/* Personal Details */}
+          {/* ----------------- Personal Details ----------------- */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             {[
               { label: "Full Name", name: "fullName", type: "text", placeholder: "Enter your full name" },
@@ -117,7 +162,7 @@ const EmpProfile = () => {
             </div>
           </div>
 
-          {/* Skills */}
+          {/* ----------------- Skills ----------------- */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700">Skills</label>
             <div className="flex gap-2 mt-2">
@@ -145,7 +190,7 @@ const EmpProfile = () => {
             </div>
           </div>
 
-          {/* Education */}
+          {/* ----------------- Education ----------------- */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Education</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -178,7 +223,7 @@ const EmpProfile = () => {
             </div>
           </div>
 
-          {/* Experience */}
+          {/* ----------------- Experience ----------------- */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-800 mb-3">Experience</h3>
             <div className="grid grid-cols-2 gap-4">
@@ -212,7 +257,7 @@ const EmpProfile = () => {
             </div>
           </div>
 
-          {/* Resume Upload */}
+          {/* ----------------- Resume ----------------- */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700">Upload Resume</label>
             <input
@@ -226,7 +271,7 @@ const EmpProfile = () => {
             )}
           </div>
 
-          {/* Certifications */}
+          {/* ----------------- Certifications ----------------- */}
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700">Certifications</label>
             <div className="flex gap-2 mt-2">
@@ -254,13 +299,37 @@ const EmpProfile = () => {
             </div>
           </div>
 
-          {/* Save Button */}
+          {/* ----------------- Save Button ----------------- */}
           <button
             onClick={handleSaveProfile}
-            className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700"
+            className="bg-purple-600 text-white px-6 py-2 rounded hover:bg-purple-700 mb-6"
           >
             Save Profile
           </button>
+
+          {/* ----------------- Backend Profile Preview ----------------- */}
+          <div className="mt-10 border-t pt-6">
+            <h3 className="text-xl font-bold mb-4">Saved Profile (from Backend)</h3>
+            <p><strong>Name:</strong> {employee.fullName}</p>
+            <p><strong>Email:</strong> {employee.email}</p>
+            <p><strong>Phone:</strong> {employee.phone}</p>
+            <p><strong>Location:</strong> {employee.location}</p>
+            <p><strong>Gender:</strong> {employee.gender}</p>
+            <div><strong>Skills:</strong> {employee.skills?.join(", ")}</div>
+            <div>
+              <strong>Education:</strong>
+              {employee.education?.map((edu, i) => (
+                <p key={i}>{edu.college}, {edu.university} ({edu.city}, {edu.state}) - {edu.duration}</p>
+              ))}
+            </div>
+            <div>
+              <strong>Experience:</strong>
+              {employee.experience?.map((exp, i) => (
+                <p key={i}>{exp.role} at {exp.company} ({exp.startDate} - {exp.endDate || "Present"})</p>
+              ))}
+            </div>
+            <div><strong>Certifications:</strong> {employee.certifications?.join(", ")}</div>
+          </div>
         </main>
       </div>
     </div>

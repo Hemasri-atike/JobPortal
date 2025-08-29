@@ -13,6 +13,7 @@ const initialState = {
   experience: [],
   certifications: [],
   resume: null,
+
 };
 
 const employeeSlice = createSlice({
@@ -40,7 +41,13 @@ const employeeSlice = createSlice({
     },
     resetProfile: () => initialState,
   },
-});
+     // ✅ Add this reducer to set all fields at once from backend
+     setAllFields: (state, action) => {
+      return { ...state, ...action.payload };
+    },
+  },
+
+);
 
 export const {
   updateField,
@@ -50,6 +57,7 @@ export const {
   addCertification,
   setResume,
   resetProfile,
+  setAllFields, // ✅ export it
 } = employeeSlice.actions;
 
 export default employeeSlice.reducer;
