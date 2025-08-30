@@ -9,7 +9,8 @@ import footerReducer from "../store/footerSlice.js";
 import  headerReducer from "../store/headerSlice.js";
 import skillsReducer from "./skillsSlice.js";
 import employeeReducer from "../store/empprofileSlice.js";
-import companyReducer from "../store/companySlice.js"
+import companyReducer from "../store/companySlice.js";
+import postingReducer from "../store/profileSlice.js"
 
 
 
@@ -27,6 +28,7 @@ const store = configureStore({
             skills: skillsReducer,
             employee: employeeReducer,
             company:companyReducer,
+             postedJobs: postingReducer,
 
 
 
