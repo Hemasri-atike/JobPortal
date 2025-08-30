@@ -139,15 +139,14 @@ const jobsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchJobs.fulfilled, (state, action) => {
-        state.loading = false;
-        state.jobs = action.payload;
-          state.total = action.payload.total; // <-- save total count
-  state.page = action.payload.page;   // <-- update page
-  state.jobsPerPage = action.payload.limit; // <-- update limit
+     .addCase(fetchJobs.fulfilled, (state, action) => {
+  state.loading = false;
+  state.jobs = action.payload.jobs || [];   // <-- extract the array
+  state.total = action.payload.total || 0;
+  state.page = action.payload.page || 1;
+  state.jobsPerPage = action.payload.limit || state.jobsPerPage;
+})
 
-      })
-    
       .addCase(fetchJobs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;

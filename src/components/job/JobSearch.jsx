@@ -12,15 +12,18 @@ import statesWithCities from "../common/Statesncities";
 const JobSearch = () => {
   const dispatch = useDispatch();
 
-  const {
-    jobs,
-    status,
-    total,
-    searchQuery,
-    location,
-    page,
-    jobsPerPage,
-  } = useSelector((state) => state.jobs);
+const {
+  jobs: jobsArray,
+  status,
+  total,
+  searchQuery,
+  location,
+  page,
+  jobsPerPage,
+} = useSelector((state) => state.jobs);
+
+const jobs = Array.isArray(jobsArray) ? jobsArray : [];
+
 
   const [filters, setFilters] = useState({
     state: "",

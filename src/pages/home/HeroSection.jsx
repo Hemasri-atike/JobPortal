@@ -12,20 +12,36 @@ const HeroSection = () => {
   const [localLocation, setLocalLocation] = useState(reduxLocation);
   const debounceRef = useRef(null);
 
-  const fetchDebouncedJobs = () => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      dispatch(
-        fetchJobs({
-          statusFilter,
-          searchQuery: localSearch,
-          location: localLocation,
-          page,
-          jobsPerPage,
-        })
-      );
-    }, 500);
-  };
+
+  useEffect(() => {
+  if (localSearch.trim() || localLocation.trim()) {
+    dispatch(
+      fetchJobs({
+        statusFilter,
+        searchQuery: localSearch,
+        location: localLocation,
+        page,
+        jobsPerPage,
+      })
+    );
+  }
+}, [localSearch, localLocation, statusFilter, page, jobsPerPage, dispatch]);
+
+
+  // const fetchDebouncedJobs = () => {
+  //   if (debounceRef.current) clearTimeout(debounceRef.current);
+  //   debounceRef.current = setTimeout(() => {
+  //     dispatch(
+  //       fetchJobs({
+  //         statusFilter,
+  //         searchQuery: localSearch,
+  //         location: localLocation,
+  //         page,
+  //         jobsPerPage,
+  //       })
+  //     );
+  //   }, 500);
+  // };
 
   const handleSearch = (e) => {
     e.preventDefault();

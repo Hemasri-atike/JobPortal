@@ -3,7 +3,8 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { addSkill, removeSkill } from "../../store/skillsSlice.js";
-import { addJob } from "../../store/jobsSlice.js"; // ✅ import addJob
+import { addJob } from "../../store/jobsSlice.js";
+import statesAndCities from "../common/Statesncities.jsx";
 import axios from "axios";
 
 const EmpPosting = () => {
@@ -16,7 +17,6 @@ const EmpPosting = () => {
     companyName: "",
     role: "",
     jobCategory: "",
-    location: "",
     state: "",
     city: "",
     vacancies: "",
@@ -33,7 +33,7 @@ const EmpPosting = () => {
 
   const [skillInput, setSkillInput] = useState("");
 
-  // 🔹 Get token
+  // Get token & decode user
   const token = localStorage.getItem("token");
   let user = null;
   if (token) {
@@ -48,7 +48,7 @@ const EmpPosting = () => {
     navigate("/login?type=employee");
   }
 
-  // 🔹 Axios instance
+  // Axios instance
   const axiosAuth = axios.create({
     baseURL: "http://localhost:5000/api",
     headers: { Authorization: `Bearer ${token}` },
@@ -66,13 +66,11 @@ const EmpPosting = () => {
     }
   );
 
-  // 🔹 Handle form input change
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
 
-  // 🔹 Add skill
   const handleAddSkill = () => {
     if (skillInput.trim() !== "") {
       dispatch(addSkill(skillInput.trim()));
@@ -87,10 +85,8 @@ const EmpPosting = () => {
     }
   };
 
-  // 🔹 Submit form
   const handleSubmit = async (e) => {
     e.preventDefault();
-
     if (!user || (user.role !== "admin" && user.role !== "employer")) {
       alert("You are not authorized.");
       return;
@@ -100,12 +96,9 @@ const EmpPosting = () => {
 
     try {
       const res = await axiosAuth.post("/jobs", jobData);
-
-      // ✅ Dispatch to add the job immediately in Redux
       dispatch(addJob(res.data));
-
       alert("Job posted successfully!");
-      navigate("/joblistings"); // Optional: navigate to Jobs page
+      navigate("/joblistings");
     } catch (err) {
       console.error("Error posting job:", err);
       alert(err.response?.data?.error || "Something went wrong");
@@ -114,8 +107,8 @@ const EmpPosting = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-5xl mx-auto bg-white shadow-md rounded-xl p-6">
-        <h2 className="text-2xl font-bold text-center text-gray-800 mb-6">
+      <div className="max-w-5xl mx-auto bg-white shadow-md rounded-xl p-8">
+        <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
           Post a Job
         </h2>
 
@@ -126,7 +119,7 @@ const EmpPosting = () => {
             <input
               type="text"
               name="title"
-              placeholder="e.g. Frontend Developer"
+              placeholder="Frontend Developer"
               value={formData.title}
               onChange={handleChange}
               className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
@@ -134,14 +127,14 @@ const EmpPosting = () => {
             />
           </div>
 
-          {/* Company Name + Role */}
+          {/* Company Name & Role */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Company Name</label>
               <input
                 type="text"
                 name="companyName"
-                placeholder="e.g. Google"
+                placeholder="Google"
                 value={formData.companyName}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
@@ -153,7 +146,7 @@ const EmpPosting = () => {
               <input
                 type="text"
                 name="role"
-                placeholder="e.g. Software Engineer"
+                placeholder="Software Engineer"
                 value={formData.role}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
@@ -161,7 +154,7 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Job Category + Experience */}
+          {/* Job Category & Experience */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Job Category</label>
@@ -171,7 +164,7 @@ const EmpPosting = () => {
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               >
-                <option value="">Select category</option>
+                <option value="">Select Category</option>
                 <option value="IT">IT</option>
                 <option value="Marketing">Marketing</option>
                 <option value="Finance">Finance</option>
@@ -180,14 +173,14 @@ const EmpPosting = () => {
               </select>
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Experience Category</label>
+              <label className="block text-gray-700 font-medium mb-1">Experience Level</label>
               <select
                 name="experienceLevel"
                 value={formData.experienceLevel}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               >
-                <option value="">Select experience</option>
+                <option value="">Select Experience</option>
                 <option value="Fresher">Fresher</option>
                 <option value="Junior">1-3 years</option>
                 <option value="Mid">3-6 years</option>
@@ -196,29 +189,36 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Location */}
+          {/* State, City & Work Mode */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
               <label className="block text-gray-700 font-medium mb-1">State</label>
-              <input
-                type="text"
+              <select
                 name="state"
-                placeholder="e.g. Telangana"
                 value={formData.state}
-                onChange={handleChange}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value, city: "" })}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
+              >
+                <option value="">Select State</option>
+                {Object.keys(statesAndCities).map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-gray-700 font-medium mb-1">City</label>
-              <input
-                type="text"
+              <select
                 name="city"
-                placeholder="e.g. Hyderabad"
                 value={formData.city}
                 onChange={handleChange}
+                disabled={!formData.state}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
+              >
+                <option value="">Select City</option>
+                {formData.state && statesAndCities[formData.state].map((ct) => (
+                  <option key={ct} value={ct}>{ct}</option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-gray-700 font-medium mb-1">Work Mode</label>
@@ -236,7 +236,7 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Job Type + Vacancies */}
+          {/* Job Type & Vacancies */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-gray-700 font-medium mb-1">Job Type</label>
@@ -246,7 +246,7 @@ const EmpPosting = () => {
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               >
-                <option value="">Select job type</option>
+                <option value="">Select Job Type</option>
                 <option value="Full-Time">Full-Time</option>
                 <option value="Part-Time">Part-Time</option>
                 <option value="Internship">Internship</option>
@@ -254,7 +254,7 @@ const EmpPosting = () => {
               </select>
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Number of Vacancies</label>
+              <label className="block text-gray-700 font-medium mb-1">Vacancies</label>
               <input
                 type="number"
                 name="vacancies"
@@ -270,22 +270,22 @@ const EmpPosting = () => {
           {/* Salary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Min Salary (per month)</label>
+              <label className="block text-gray-700 font-medium mb-1">Min Salary</label>
               <input
                 type="number"
                 name="minSalary"
-                placeholder="e.g. 30000"
+                placeholder="30000"
                 value={formData.minSalary}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Max Salary (per month)</label>
+              <label className="block text-gray-700 font-medium mb-1">Max Salary</label>
               <input
                 type="number"
                 name="maxSalary"
-                placeholder="e.g. 80000"
+                placeholder="80000"
                 value={formData.maxSalary}
                 onChange={handleChange}
                 className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
@@ -313,7 +313,7 @@ const EmpPosting = () => {
                 +
               </button>
             </div>
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-2 flex flex-wrap gap-2">
               {skills.map((skill, index) => (
                 <span
                   key={index}
@@ -332,7 +332,7 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Job Description */}
+          {/* Description */}
           <div>
             <label className="block text-gray-700 font-medium mb-1">Job Description</label>
             <textarea
@@ -345,23 +345,21 @@ const EmpPosting = () => {
             />
           </div>
 
-          {/* Contact Person */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Contact Person</label>
-            <input
-              type="text"
-              name="contactPerson"
-              placeholder="e.g. HR Manager Name"
-              value={formData.contactPerson}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
-          {/* Dates */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Contact & Dates */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Application Start Date</label>
+              <label className="block text-gray-700 font-medium mb-1">Contact Person</label>
+              <input
+                type="text"
+                name="contactPerson"
+                placeholder="HR Manager"
+                value={formData.contactPerson}
+                onChange={handleChange}
+                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-gray-700 font-medium mb-1">Start Date</label>
               <input
                 type="date"
                 name="startDate"
@@ -371,7 +369,7 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Application End Date</label>
+              <label className="block text-gray-700 font-medium mb-1">End Date</label>
               <input
                 type="date"
                 name="endDate"
@@ -383,24 +381,22 @@ const EmpPosting = () => {
           </div>
 
           {/* Submit */}
-          <div className="text-center">
+          <div className="text-center mt-6">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
             >
               Post Job
             </button>
           </div>
 
-          {/* Back link */}
-          <div className="text-center mt-4">
-            <p className="text-sm text-gray-600">
-              Back to{" "}
-              <Link to="/joblistings" className="text-blue-600 hover:underline font-medium">
-                Job Listings
-              </Link>
-            </p>
-          </div>
+          {/* Back Link */}
+          <p className="text-center text-gray-600 mt-4">
+            Back to{" "}
+            <Link to="/joblistings" className="text-blue-600 hover:underline font-medium">
+              Job Listings
+            </Link>
+          </p>
         </form>
       </div>
     </div>
