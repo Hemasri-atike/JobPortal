@@ -98,7 +98,9 @@ const jobsSlice = createSlice({
     statusFilter: "all",
     page: 1,
     jobsPerPage: 5,
-    
+  
+
+
   },
   reducers: {
     setSearchQuery: (state, action) => {
@@ -140,7 +142,12 @@ const jobsSlice = createSlice({
       .addCase(fetchJobs.fulfilled, (state, action) => {
         state.loading = false;
         state.jobs = action.payload;
+          state.total = action.payload.total; // <-- save total count
+  state.page = action.payload.page;   // <-- update page
+  state.jobsPerPage = action.payload.limit; // <-- update limit
+
       })
+    
       .addCase(fetchJobs.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;

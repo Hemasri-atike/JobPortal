@@ -6,16 +6,19 @@ import { fetchJobs } from "../../store/jobsSlice";
 
 const Featured = () => {
   const dispatch = useDispatch();
-  const { jobs, status, error, page, jobsPerPage, statusFilter, searchQuery } = useSelector(
-    (state) => state.jobs
-  );
+
+  const { jobs, status, error, page, jobsPerPage, statusFilter, searchQuery } =
+    useSelector((state) => state.jobs);
 
   useEffect(() => {
     dispatch(fetchJobs({ statusFilter, searchQuery, page, jobsPerPage }));
   }, [dispatch, statusFilter, searchQuery, page, jobsPerPage]);
 
-  // Remove duplicates (if any)
-  const uniqueJobs = Array.from(new Map(jobs.map((job) => [job.id, job])).values());
+  // ✅ Extract jobs array from API response
+  const jobList = Array.isArray(jobs?.jobs) ? jobs.jobs : [];
+
+  // ✅ Remove duplicates
+  const uniqueJobs = [...new Map(jobList.map((job) => [job.id, job])).values()];
 
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
@@ -32,7 +35,9 @@ const Featured = () => {
           {uniqueJobs.length ? (
             uniqueJobs.map((job) => <JobCard key={job.id} job={job} />)
           ) : (
-            <div className="text-center text-gray-600 col-span-full">No Jobs Found 😢</div>
+            <div className="text-center text-gray-600 col-span-full">
+              No Jobs Found 😢
+            </div>
           )}
         </div>
       )}
