@@ -31,26 +31,38 @@ const Header = () => {
 
   const { logo } = data || {};
 
-  // Navigate to profile based on role
-  const goToProfile = () => {
-    if (!userInfo) return;
-    const route = userInfo.role === "candidate" ? "/cadprofile" : "/empprofile";
-    navigate(route);
-    setIsMenuOpen(false); // Close mobile menu if open
-  };
+  // // Navigate to profile based on role
+  // const goToProfile = () => {
+  //   if (!userInfo) return;
+  //   const route = userInfo.role === "candidate" ? "/cadprofile" : "/empprofile";
+  //   navigate(route);
+  //   setIsMenuOpen(false); // Close mobile menu if open
+  // };
 
+
+  const goToProfile = () => {
+  if (!userInfo) return;
+  const role = userInfo.role?.toLowerCase();
+  const route = role === "job_seeker" ? "/cadprofile" : "/empprofile";
+  navigate(route);
+  setIsMenuOpen(false);
+};
+// console.log("userInfo:", userInfo);
   // Avatar + name component
-  const AvatarName = () => (
-    <div
-      className="flex items-center cursor-pointer space-x-2 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
-      onClick={goToProfile}
-    >
-      <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
-        {userInfo.name.charAt(0).toUpperCase()}
-      </div>
-      <span className="text-black font-medium hover:text-yellow-500">{userInfo.name}</span>
+const AvatarName = () => (
+  <div
+    className="flex items-center cursor-pointer space-x-2 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
+    onClick={goToProfile}
+  >
+    <div className="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+      {userInfo?.name ? userInfo.name.charAt(0).toUpperCase() : "U"}
     </div>
-  );
+    <span className="text-black font-medium hover:text-yellow-500">
+      {userInfo?.name || "User"}
+    </span>
+  </div>
+);
+
 
   // Render links
   const renderLink = ({ label, to, type }, isMobile = false) => {
