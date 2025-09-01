@@ -10,7 +10,8 @@ import  headerReducer from "../store/headerSlice.js";
 import skillsReducer from "./skillsSlice.js";
 import employeeReducer from "../store/empprofileSlice.js";
 import companyReducer from "../store/companySlice.js";
-import postingReducer from "../store/profileSlice.js"
+import postingReducer from "../store/profileSlice.js";
+import jobalertsReducer from "../store/jobalertSlice.js"
 
 
 
@@ -29,6 +30,7 @@ const store = configureStore({
             employee: employeeReducer,
             company:companyReducer,
              postedJobs: postingReducer,
+              jobalerts: jobalertsReducer, // ✅ add this
 
 
 

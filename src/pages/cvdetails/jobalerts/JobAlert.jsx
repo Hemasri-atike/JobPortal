@@ -1,16 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, Edit, Trash, Plus, Search } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import axios from 'axios';
+import { useSelector, useDispatch } from 'react-redux';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
+import {
+  fetchJobAlerts,
+  addJobAlert,
+  updateJobAlert,
+  deleteJobAlert,
+  clearJobAlertMessages,
+} from '../../../store/jobalertSlice.js';
 
 const JobAlert = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [alerts, setAlerts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [currentAlert, setCurrentAlert] = useState({
     id: null,
@@ -22,104 +26,76 @@ const JobAlert = () => {
     frequency: 'Daily',
   });
 
-  const API_BASE = 'http://localhost:5000/api/jobalerts'; // your backend endpoint
-
-  // Get logged-in user from Redux safely
+  const dispatch = useDispatch();
+  const { alerts, loading, error, success } = useSelector((state) => state.jobalerts);
   const user = useSelector((state) => state.user?.user || null);
   const isEmployee = user?.role === 'employee';
   const isCandidate = user?.role === 'candidate';
 
-  // Fetch job alerts
-  const fetchAlerts = async () => {
-    setIsLoading(true);
-    try {
-      const { data } = await axios.get(API_BASE);
-      setAlerts(data);
-    } catch (err) {
-      console.error('Failed to fetch job alerts', err);
-      alert('Failed to fetch job alerts');
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
+  // Fetch job alerts on mount
   useEffect(() => {
-    fetchAlerts();
-  }, []);
+    dispatch(fetchJobAlerts());
+  }, [dispatch]);
 
-  // Filter alerts based on search
+  // Clear success/error messages on unmount
+  useEffect(() => {
+    return () => dispatch(clearJobAlertMessages());
+  }, [dispatch]);
+
+  // Filter alerts
   const filteredAlerts = alerts.filter(
     (alert) =>
       alert.keywords.toLowerCase().includes(searchQuery.toLowerCase()) ||
       alert.location.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Create / Update alert
-  const handleSubmit = async (e) => {
+  // Handle Create/Update
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!currentAlert.keywords || !currentAlert.location) {
       alert('Keywords and location are required.');
       return;
     }
-    setIsLoading(true);
-    try {
-      if (currentAlert.id) {
-        await axios.put(`${API_BASE}/${currentAlert.id}`, currentAlert);
-      } else {
-        await axios.post(API_BASE, currentAlert);
-      }
-      setIsEditing(false);
-      setCurrentAlert({
-        id: null,
-        keywords: '',
-        location: '',
-        salaryMin: '',
-        salaryMax: '',
-        jobType: '',
-        frequency: 'Daily',
-      });
-      fetchAlerts();
-    } catch (err) {
-      console.error('Failed to save job alert', err);
-      alert('Failed to save job alert');
-    } finally {
-      setIsLoading(false);
+
+    if (currentAlert.id) {
+      dispatch(updateJobAlert({ id: currentAlert.id, alertData: currentAlert }));
+    } else {
+      dispatch(addJobAlert(currentAlert));
     }
+
+    setIsEditing(false);
+    setCurrentAlert({
+      id: null,
+      keywords: '',
+      location: '',
+      salaryMin: '',
+      salaryMax: '',
+      jobType: '',
+      frequency: 'Daily',
+    });
   };
 
-  // Edit alert
+  // Edit
   const handleEdit = (alert) => {
     setCurrentAlert(alert);
     setIsEditing(true);
   };
 
-  // Delete alert
-  const handleDelete = async (id) => {
+  // Delete
+  const handleDelete = (id) => {
     if (!window.confirm('Are you sure you want to delete this alert?')) return;
-    setIsLoading(true);
-    try {
-      await axios.delete(`${API_BASE}/${id}`);
-      fetchAlerts();
-    } catch (err) {
-      console.error('Failed to delete alert', err);
-      alert('Failed to delete alert');
-    } finally {
-      setIsLoading(false);
-    }
+    dispatch(deleteJobAlert(id));
   };
 
   return (
     <div className="flex flex-col h-screen bg-gray-100">
-      {/* Header */}
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       <div className="flex flex-1">
-        {/* Sidebar */}
         <div className="hidden md:block w-64 bg-gray-900">
           <Sidebar />
         </div>
 
-        {/* Sidebar mobile */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
@@ -134,7 +110,6 @@ const JobAlert = () => {
           </div>
         )}
 
-        {/* Main content */}
         <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
           <div className="flex justify-between items-center mb-4">
             <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">Job Alerts</h3>
@@ -148,7 +123,11 @@ const JobAlert = () => {
             )}
           </div>
 
-          {/* Create / Edit Form */}
+          {/* Success/Error Messages */}
+          {success && <div className="text-green-600 mb-4">{success}</div>}
+          {error && <div className="text-red-600 mb-4">{error}</div>}
+
+          {/* Create/Edit Form */}
           {isEditing && isEmployee && (
             <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
               <h4 className="text-lg font-semibold text-gray-800 mb-4">
@@ -220,7 +199,10 @@ const JobAlert = () => {
                   </select>
                 </div>
                 <div className="md:col-span-2 flex gap-4">
-                  <button type="submit" className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm">
+                  <button
+                    type="submit"
+                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm"
+                  >
                     {currentAlert.id ? 'Update' : 'Create'}
                   </button>
                   <button
@@ -261,7 +243,7 @@ const JobAlert = () => {
           </div>
 
           {/* Alerts List */}
-          {isLoading ? (
+          {loading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
             </div>

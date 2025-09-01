@@ -2,10 +2,13 @@ import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchProfile, clearMessages } from "../../../store/profileSlice.js";
 import Sidebar from "../layout/Sidebar.jsx";
-import Header from "../../navbar/Header.jsx"
+import Header from "../../navbar/Header.jsx";
+import { useNavigate } from "react-router-dom"; // ✅ Import useNavigate
 
 const Profile = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate(); // ✅ Initialize navigate
+
   const { profile, loading, error, success } = useSelector(
     (state) => state.profile
   );
@@ -35,7 +38,18 @@ const Profile = () => {
 
         {/* Main Content */}
         <main className="flex-1 p-6 md:ml-64">
-          <h2 className="text-2xl font-bold mb-4">Candidate Profile</h2>
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold">Candidate Profile</h2>
+
+            {/* ✅ Add Button */}
+            <button
+              onClick={() => navigate("/caddetails")} 
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+            >
+              Add
+            </button>
+          </div>
+
           {success && <p className="text-green-500 mb-2">{success}</p>}
 
           <div className="bg-white p-6 rounded-lg shadow space-y-2">
@@ -48,16 +62,15 @@ const Profile = () => {
             <p>
               <strong>Mobile:</strong> {profile.mobile}
             </p>
-            <p>
+            {/* <p>
               <strong>Company:</strong> {profile.company_name || "-"}
             </p>
             <p>
               <strong>Role:</strong> {profile.role}
-            </p>
+            </p> */}
           </div>
         </main>
       </div>
-    
     </div>
   );
 };

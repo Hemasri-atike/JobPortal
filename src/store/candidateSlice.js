@@ -5,32 +5,30 @@ export const loadCandidate = createAsyncThunk(
   "candidate/load",
   async (id, { rejectWithValue }) => {
     try {
-      const res = await fetch(`http://localhost:5000/candidate/${id}`);
+      const res = await fetch(`http://localhost:5000/candidates/${id}`);
       if (!res.ok) throw new Error("Failed to fetch candidate");
-      const data = await res.json();
-      return data;
+      return await res.json();
     } catch (err) {
       return rejectWithValue(err.message);
     }
   }
 );
 
-// Save candidate (insert/update)
+
+
+
+
+// Save candidate (FormData is prepared in component)
 export const saveCandidate = createAsyncThunk(
   "candidate/save",
   async (formData, { rejectWithValue }) => {
     try {
-      const data = new FormData();
-      for (let key in formData) {
-        if (formData[key] !== null) data.append(key, formData[key]);
-      }
-      const res = await fetch("http://localhost:5000/candidate", {
-        method: "POST",
-        body: data,
-      });
+  const res = await fetch("http://localhost:5000/candidates", {
+  method: "POST",
+  body: formData, // sending FormData
+});
       if (!res.ok) throw new Error("Failed to save candidate");
-      const result = await res.json();
-      return result;
+      return await res.json();
     } catch (err) {
       return rejectWithValue(err.message);
     }
