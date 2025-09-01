@@ -1,34 +1,63 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { loadCandidate, clearCandidateMessages } from "../../../store/candidateSlice.js";
+import { fetchProfile, clearMessages } from "../../../store/profileSlice.js";
+import Sidebar from "../layout/Sidebar.jsx";
+import Header from "../../navbar/Header.jsx"
 
 const Profile = () => {
   const dispatch = useDispatch();
-  const { data, loading, error, success } = useSelector((state) => state.candidate);
-  const { userInfo } = useSelector((state) => state.user); // logged-in user info
+  const { profile, loading, error, success } = useSelector(
+    (state) => state.profile
+  );
+  const { userInfo } = useSelector((state) => state.user);
 
   useEffect(() => {
-    if (userInfo?.id && userInfo.role === "candidate") {
-      dispatch(loadCandidate(userInfo.id));
+    if (userInfo?.role === "job_seeker") {
+      dispatch(fetchProfile());
     }
-    return () => dispatch(clearCandidateMessages()); // clear errors/messages on unmount
+    return () => dispatch(clearMessages());
   }, [dispatch, userInfo]);
 
   if (loading) return <p>Loading profile...</p>;
   if (error) return <p className="text-red-500">{error}</p>;
-  if (!data) return <p>No profile found.</p>;
+  if (!profile) return <p>No profile found.</p>;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <h2 className="text-2xl font-bold mb-4">Candidate Profile</h2>
-      {success && <p className="text-green-500 mb-2">{success}</p>}
-      <div className="bg-white p-6 rounded-lg shadow space-y-2">
-        <p><strong>Name:</strong> {data.name}</p>
-        <p><strong>Email:</strong> {data.email}</p>
-        <p><strong>Mobile:</strong> {data.mobile}</p>
-        <p><strong>Company:</strong> {data.company_name || "-"}</p>
-        <p><strong>Role:</strong> {data.role}</p>
+    <div className="flex flex-col min-h-screen bg-gray-100">
+      {/* ✅ Header */}
+      <Header />
+
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <Sidebar
+          role={userInfo?.role === "employee" ? "employee" : "candidate"}
+        />
+
+        {/* Main Content */}
+        <main className="flex-1 p-6 md:ml-64">
+          <h2 className="text-2xl font-bold mb-4">Candidate Profile</h2>
+          {success && <p className="text-green-500 mb-2">{success}</p>}
+
+          <div className="bg-white p-6 rounded-lg shadow space-y-2">
+            <p>
+              <strong>Name:</strong> {profile.name}
+            </p>
+            <p>
+              <strong>Email:</strong> {profile.email}
+            </p>
+            <p>
+              <strong>Mobile:</strong> {profile.mobile}
+            </p>
+            <p>
+              <strong>Company:</strong> {profile.company_name || "-"}
+            </p>
+            <p>
+              <strong>Role:</strong> {profile.role}
+            </p>
+          </div>
+        </main>
       </div>
+    
     </div>
   );
 };
