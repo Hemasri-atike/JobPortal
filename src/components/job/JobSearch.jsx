@@ -25,6 +25,9 @@ const {
 const jobs = Array.isArray(jobsArray) ? jobsArray : [];
 
 
+  // ✅ Ensure jobs is always an array
+  const jobsArray = Array.isArray(jobs) ? jobs : [];
+
   const [filters, setFilters] = useState({
     state: "",
     city: "",
@@ -62,7 +65,7 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
   }, [dispatch]);
 
   // Filter jobs locally for skills, workMode, jobType arrays
-  const filteredJobs = jobs.filter((job) => {
+  const filteredJobs = jobsArray.filter((job) => {
     const title = job.title?.toLowerCase() || "";
     const loc = job.location?.toLowerCase() || "";
     const company = job.company?.toLowerCase() || "";
@@ -345,7 +348,7 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
                   <option value="">Select Company</option>
-                  {jobs.map((c) => (
+                  {jobsArray.map((c) => (
                     <option key={c.id || c._id} value={c.company}>{c.company}</option>
                   ))}
                 </select>
