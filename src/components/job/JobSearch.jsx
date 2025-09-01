@@ -26,7 +26,7 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
 
 
   // ✅ Ensure jobs is always an array
-  const jobsArray = Array.isArray(jobs) ? jobs : [];
+
 
   const [filters, setFilters] = useState({
     state: "",

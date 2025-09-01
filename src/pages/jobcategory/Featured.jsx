@@ -15,7 +15,7 @@ const Featured = () => {
   }, [dispatch, statusFilter, searchQuery, page, jobsPerPage]);
 
   // ✅ Extract jobs array from API response
-  const jobList = Array.isArray(jobs?.jobs) ? jobs.jobs : [];
+    const jobList = Array.isArray(jobs) ? jobs : [];
 
   // ✅ Remove duplicates
   const uniqueJobs = [...new Map(jobList.map((job) => [job.id, job])).values()];

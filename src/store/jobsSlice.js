@@ -37,7 +37,7 @@ export const fetchCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get("http://localhost:5000/api/categories");
-      return res.data; // expecting array of categories
+      return res.data; // should be an array
     } catch (err) {
       return rejectWithValue(err.response?.data || "Error fetching categories");
     }
@@ -98,6 +98,10 @@ const jobsSlice = createSlice({
     statusFilter: "all",
     page: 1,
     jobsPerPage: 5,
+       categories: [],
+    categoriesStatus: "idle",
+    categoriesError: null,
+
   
 
 
@@ -168,7 +172,19 @@ const jobsSlice = createSlice({
       // Delete Job
       .addCase(deleteJob.fulfilled, (state, action) => {
         state.jobs = state.jobs.filter((job) => job.id !== action.payload);
-      });
+      }) .addCase(fetchCategories.pending, (state) => {
+        state.categoriesStatus = "loading";
+        state.categoriesError = null;
+      })
+      .addCase(fetchCategories.fulfilled, (state, action) => {
+        state.categoriesStatus = "succeeded";
+        state.categories = action.payload; // or action.payload.categories if backend wraps it
+      })
+      .addCase(fetchCategories.rejected, (state, action) => {
+        state.categoriesStatus = "failed";
+        state.categoriesError = action.payload;
+      })
+
   },
 });
 
