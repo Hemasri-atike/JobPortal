@@ -74,7 +74,7 @@ const Dashboard = () => {
     );
   }
 
-  const isCandidate = userType === "candidate";
+  const isCandidate = userType === "job_seeker";
   const isAdmin = userType === "admin";
 
   return (
@@ -227,7 +227,7 @@ const Dashboard = () => {
                   ))}
                 </ul>
                 <Link
-                  to="/notifications"
+                  to="/job-alerts"
                   className="mt-4 inline-block text-blue-600 hover:underline text-sm"
                 >
                   View All Notifications{" "}
@@ -317,7 +317,7 @@ const Dashboard = () => {
                   ))}
                 </div>
                 <Link
-                  to="/applied-jobs"
+                  to="/applied"
                   className="mt-4 inline-block text-blue-600 hover:underline text-sm"
                 >
                   View All Applied Jobs{" "}

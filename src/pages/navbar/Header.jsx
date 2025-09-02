@@ -31,14 +31,7 @@ const Header = () => {
 
   const { logo } = data || {};
 
-  // // Navigate to profile based on role
-  // const goToProfile = () => {
-  //   if (!userInfo) return;
-  //   const route = userInfo.role === "candidate" ? "/cadprofile" : "/empprofile";
-  //   navigate(route);
-  //   setIsMenuOpen(false); // Close mobile menu if open
-  // };
-
+ 
 
   const goToProfile = () => {
   if (!userInfo) return;
@@ -47,8 +40,7 @@ const Header = () => {
   navigate(route);
   setIsMenuOpen(false);
 };
-// console.log("userInfo:", userInfo);
-  // Avatar + name component
+
 const AvatarName = () => (
   <div
     className="flex items-center cursor-pointer space-x-2 px-2 py-1 rounded-md hover:bg-gray-100 transition-colors"
@@ -131,7 +123,7 @@ const AvatarName = () => (
               Find a Job
             </Link>
             <Link
-              to="/hire"
+              to="/login?type=employee"
               className="bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 font-semibold"
             >
               Hire a Staff
@@ -182,7 +174,7 @@ const AvatarName = () => (
               Find a Job
             </Link>
             <Link
-              to="/hire"
+              to="/login?type=employee"
               className="bg-yellow-400 text-[#1E3A8A] px-4 py-1 rounded-md hover:bg-yellow-500 font-semibold"
               onClick={() => setIsMenuOpen(false)}
             >
