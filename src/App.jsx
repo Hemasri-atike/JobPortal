@@ -27,6 +27,7 @@ import Messages from './components/candidate/Messages';
 import Application from './components/job/Application';
 import Admindashboard from './pages/dashboard/Admindashboard';
 import JobApply from './components/job/JobApply';
+import Subcategories from './pages/jobcategory/Subcategories';
 
 const App = () => {
   return (
@@ -68,7 +69,10 @@ const App = () => {
      <Route path="/cmpprofile" element={<Compdetails />} />
 <Route path="/cmpprofile/:id" element={<Compdetails />} />
 
-      <Route path='/category' element={<Category/>}/>
+      <Route path='/category' element={<Category/>}/> 
+       <Route path="/categories/:id" element={<Subcategories />} />
+      
+
       {/* <Route path="/login" element={<Login/>}/>
          <Route path="/register" element={<Register/>}/> */}
           {/* <Route path="/upload-cv" element={<Cvmanager/>}/> */}

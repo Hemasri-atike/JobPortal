@@ -12,21 +12,18 @@ import statesWithCities from "../common/Statesncities";
 const JobSearch = () => {
   const dispatch = useDispatch();
 
-const {
-  jobs: jobsArray,
-  status,
-  total,
-  searchQuery,
-  location,
-  page,
-  jobsPerPage,
-} = useSelector((state) => state.jobs);
+  const {
+    jobs: jobsArray,
+    status,
+    total,
+    searchQuery,
+    location,
+    page,
+    jobsPerPage,
+  } = useSelector((state) => state.jobs);
 
-const jobs = Array.isArray(jobsArray) ? jobsArray : [];
-
-
-  // ✅ Ensure jobs is always an array
-
+  // Ensure jobs is always an array
+  const jobs = Array.isArray(jobsArray) ? jobsArray : [];
 
   const [filters, setFilters] = useState({
     state: "",
@@ -46,6 +43,10 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
   const [showCityDropdown, setShowCityDropdown] = useState(false);
   const [searchInput, setSearchInput] = useState("");
 
+  const jobTypes = ["Full Time", "Part Time", "Contract", "Internship", "Work From Home"];
+  const workModes = ["Remote", "On-site", "Hybrid"];
+  const skillsList = ["React", "Node.js", "JavaScript", "Python", "Java", "SQL"];
+
   // Fetch jobs initially & when filters/search/page changes
   useEffect(() => {
     dispatch(
@@ -59,13 +60,13 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
     );
   }, [dispatch, filters, searchInput, page, jobsPerPage]);
 
-  // Fetch categories (if needed)
+  // Fetch categories
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
 
   // Filter jobs locally for skills, workMode, jobType arrays
-  const filteredJobs = jobsArray.filter((job) => {
+  const filteredJobs = jobs.filter((job) => {
     const title = job.title?.toLowerCase() || "";
     const loc = job.location?.toLowerCase() || "";
     const company = job.company?.toLowerCase() || "";
@@ -76,48 +77,36 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
     const matchesSearch = searchInput
       ? title.includes(searchInput.toLowerCase())
       : true;
-
     const matchesState = filters.state
       ? loc.includes(filters.state.toLowerCase())
       : true;
-
     const matchesCity = filters.city
       ? loc.includes(filters.city.toLowerCase())
       : true;
-
     const matchesJobRole = filters.jobRole
       ? title.includes(filters.jobRole.toLowerCase())
       : true;
-
     const matchesJobType =
       filters.jobType.length > 0 ? filters.jobType.includes(job.jobType) : true;
-
     const matchesWorkMode =
       filters.workMode.length > 0 ? filters.workMode.includes(job.workMode) : true;
-
     const matchesSkills =
       filters.skills.length > 0
         ? filters.skills.some((skill) => skills.includes(skill.toLowerCase()))
         : true;
-
     const matchesCompanyName = filters.companyName
       ? company.includes(filters.companyName.toLowerCase())
       : true;
-
     const matchesExperience = filters.experience
       ? job.experienceLevel === filters.experience
       : true;
-
     const matchesSalary = filters.salary
       ? Number(job.salaryMin || 0) >= Number(filters.salary)
       : true;
-
     const matchesPostedDate =
       filters.postedDate && job.postedDate
         ? new Date(job.postedDate) >=
-          new Date(
-            Date.now() - Number(filters.postedDate) * 24 * 60 * 60 * 1000
-          )
+          new Date(Date.now() - Number(filters.postedDate) * 24 * 60 * 60 * 1000)
         : true;
 
     return (
@@ -151,10 +140,6 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
       setFilters({ ...filters, [key]: [...current, value] });
     }
   };
-
-  const jobTypes = ["Full Time", "Part Time", "Contract", "Internship", "Work From Home"];
-  const workModes = ["Remote", "On-site", "Hybrid"];
-  const skillsList = ["React", "Node.js", "JavaScript", "Python", "Java", "SQL"];
 
   return (
     <>
@@ -222,20 +207,20 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
                 />
                 {filters.state && showCityDropdown && (
                   <ul className="absolute z-50 bg-white border border-gray-300 w-full mt-1 max-h-40 overflow-y-auto rounded-md shadow-lg">
-                    {statesWithCities[filters.state]
+                    {(statesWithCities[filters.state] || [])
                       .filter((city) => city.toLowerCase().includes(citySearch.toLowerCase()))
-                      .map((city) => (
+                      .map((city, index) => (
                         <li
-                          key={city}
+                          key={city + index}
                           onClick={() => handleCitySelect(city)}
                           className="px-3 py-2 cursor-pointer hover:bg-blue-100 text-sm"
                         >
                           {city}
                         </li>
                       ))}
-                    {statesWithCities[filters.state].filter((city) =>
-                      city.toLowerCase().includes(citySearch.toLowerCase())
-                    ).length === 0 && (
+                    {((statesWithCities[filters.state] || [])
+                      .filter((city) => city.toLowerCase().includes(citySearch.toLowerCase()))
+                      .length === 0) && (
                       <li className="px-3 py-2 text-gray-500 text-sm">No cities found</li>
                     )}
                   </ul>
@@ -348,8 +333,8 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
                 >
                   <option value="">Select Company</option>
-                  {jobsArray.map((c) => (
-                    <option key={c.id || c._id} value={c.company}>{c.company}</option>
+                  {jobs.map((c, idx) => (
+                    <option key={c.id || c._id || idx} value={c.company}>{c.company}</option>
                   ))}
                 </select>
               </div>
@@ -387,8 +372,8 @@ const jobs = Array.isArray(jobsArray) ? jobsArray : [];
                 <BarLoader className="mt-4 mx-auto" width="100%" color="#36d7b7" />
               ) : filteredJobs.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredJobs.map((job) => (
-                    <JobCard key={job.id || job._id} job={job} />
+                  {filteredJobs.map((job, index) => (
+                    <JobCard key={job.id || job._id || index} job={job} />
                   ))}
                 </div>
               ) : (

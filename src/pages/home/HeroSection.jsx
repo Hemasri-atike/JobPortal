@@ -8,41 +8,34 @@ const HeroSection = () => {
   const { searchQuery, location: reduxLocation, statusFilter, page, jobsPerPage } =
     useSelector((state) => state.jobs);
 
-  const [localSearch, setLocalSearch] = useState(searchQuery);
-  const [localLocation, setLocalLocation] = useState(reduxLocation);
+  const [localSearch, setLocalSearch] = useState(searchQuery || "");
+  const [localLocation, setLocalLocation] = useState(reduxLocation || "");
   const debounceRef = useRef(null);
 
+  // Debounced fetch
+  const fetchDebouncedJobs = () => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      dispatch(
+        fetchJobs({
+          statusFilter,
+          searchQuery: localSearch,
+          location: localLocation,
+          page,
+          jobsPerPage,
+        })
+      );
+    }, 500);
+  };
 
+  // Fetch jobs when localSearch or localLocation changes
   useEffect(() => {
-  if (localSearch.trim() || localLocation.trim()) {
-    dispatch(
-      fetchJobs({
-        statusFilter,
-        searchQuery: localSearch,
-        location: localLocation,
-        page,
-        jobsPerPage,
-      })
-    );
-  }
-}, [localSearch, localLocation, statusFilter, page, jobsPerPage, dispatch]);
+    if ((localSearch || "").trim() || (localLocation || "").trim()) {
+      fetchDebouncedJobs();
+    }
+  }, [localSearch, localLocation, statusFilter, page, jobsPerPage, dispatch]);
 
-
-  // const fetchDebouncedJobs = () => {
-  //   if (debounceRef.current) clearTimeout(debounceRef.current);
-  //   debounceRef.current = setTimeout(() => {
-  //     dispatch(
-  //       fetchJobs({
-  //         statusFilter,
-  //         searchQuery: localSearch,
-  //         location: localLocation,
-  //         page,
-  //         jobsPerPage,
-  //       })
-  //     );
-  //   }, 500);
-  // };
-
+  // Handle form submit
   const handleSearch = (e) => {
     e.preventDefault();
     dispatch(setSearchQuery(localSearch));
@@ -51,8 +44,8 @@ const HeroSection = () => {
   };
 
   // Sync local state with Redux
-  useEffect(() => setLocalSearch(searchQuery), [searchQuery]);
-  useEffect(() => setLocalLocation(reduxLocation), [reduxLocation]);
+  useEffect(() => setLocalSearch(searchQuery || ""), [searchQuery]);
+  useEffect(() => setLocalLocation(reduxLocation || ""), [reduxLocation]);
 
   return (
     <section className="relative h-[70vh] flex items-center justify-center overflow-hidden bg-white">
@@ -83,53 +76,51 @@ const HeroSection = () => {
           </h1>
 
           {/* Search Form */}
-      <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
-  <div className="flex flex-col md:flex-row gap-3 md:gap-4 p-2 md:p-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm">
-    {/* Job Search */}
-    <div className="flex-1 relative">
-      <input
-        type="text"
-        placeholder="Job title, skills, or company"
-        value={localSearch}
-        onChange={(e) => setLocalSearch(e.target.value)}
-        className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
-                   pl-8 pr-3 py-2 text-sm md:pl-10 md:pr-4 md:py-4 md:text-base
-                   text-gray-900 placeholder-gray-500 
-                   rounded-lg md:rounded-none"
-      />
-      {/* Mobile Search Icon */}
-      <div className="absolute left-2 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
-        <Search className="w-4 h-4 text-gray-500" />
-      </div>
-    </div>
+          <form onSubmit={handleSearch} className="max-w-3xl mx-auto">
+            <div className="flex flex-col md:flex-row gap-3 md:gap-4 p-2 md:p-3 bg-white/90 backdrop-blur-md border border-gray-200 rounded-2xl shadow-sm">
+              {/* Job Search */}
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Job title, skills, or company"
+                  value={localSearch}
+                  onChange={(e) => setLocalSearch(e.target.value)}
+                  className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
+                             pl-8 pr-3 py-2 text-sm md:pl-10 md:pr-4 md:py-4 md:text-base
+                             text-gray-900 placeholder-gray-500 
+                             rounded-lg md:rounded-none"
+                />
+                <div className="absolute left-2 top-1/2 transform -translate-y-1/2 md:hidden flex items-center">
+                  <Search className="w-4 h-4 text-gray-500" />
+                </div>
+              </div>
 
-    {/* Location */}
-    <div className="flex-1 relative">
-      <input
-        type="text"
-        placeholder="Location"
-        value={localLocation}
-        onChange={(e) => setLocalLocation(e.target.value)}
-        className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
-                   px-3 py-2 text-sm md:px-4 md:py-4 md:text-base
-                   text-gray-900 placeholder-gray-500 
-                   rounded-lg md:rounded-none"
-      />
-    </div>
+              {/* Location */}
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  placeholder="Location"
+                  value={localLocation}
+                  onChange={(e) => setLocalLocation(e.target.value)}
+                  className="w-full bg-transparent border border-gray-300 md:border-none outline-none 
+                             px-3 py-2 text-sm md:px-4 md:py-4 md:text-base
+                             text-gray-900 placeholder-gray-500 
+                             rounded-lg md:rounded-none"
+                />
+              </div>
 
-    {/* Submit Button */}
-    <button
-      type="submit"
-      className="bg-blue-600 text-white 
-                 px-4 py-2 text-sm md:px-8 md:py-4 md:text-base
-                 rounded-lg hover:bg-blue-700 transition 
-                 w-full md:w-auto"
-    >
-      Get Jobs
-    </button>
-  </div>
-</form>
-
+              {/* Submit Button */}
+              <button
+                type="submit"
+                className="bg-blue-600 text-white 
+                           px-4 py-2 text-sm md:px-8 md:py-4 md:text-base
+                           rounded-lg hover:bg-blue-700 transition 
+                           w-full md:w-auto"
+              >
+                Get Jobs
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </section>

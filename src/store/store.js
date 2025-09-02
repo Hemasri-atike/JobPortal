@@ -12,6 +12,7 @@ import employeeReducer from "../store/empprofileSlice.js";
 import companyReducer from "../store/companySlice.js";
 import postingReducer from "../store/profileSlice.js";
 import jobalertsReducer from "../store/jobalertSlice.js"
+import categoriesReducer from "../store/categoriesSlice.js"
 
 
 
@@ -31,6 +32,8 @@ const store = configureStore({
             company:companyReducer,
              postedJobs: postingReducer,
               jobalerts: jobalertsReducer, // ✅ add this
+         
+                 categories: categoriesReducer,
 
 
 
