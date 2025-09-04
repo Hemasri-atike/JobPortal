@@ -13,12 +13,13 @@ import companyReducer from "../store/companySlice.js";
 import postingReducer from "../store/profileSlice.js";
 import jobalertsReducer from "../store/jobalertSlice.js"
 import categoriesReducer from "../store/categoriesSlice.js"
-
+import authReducer from '../store/authSlice.js'
 
 
 
 const store = configureStore({
   reducer: {
+    auth:authReducer,
     user: userReducer,
      dashboard: dashboardReducer,
      profile: profileReducer,
