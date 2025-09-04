@@ -1,69 +1,74 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// ✅ Fetch logged-in user's resume
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/resume";
+
 export const fetchResume = createAsyncThunk(
-  "resume/fetch",
+  "resume/fetchResume",
   async (_, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("/api/resume/me", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to fetch resume");
+      if (!token) {
+        return rejectWithValue("No authentication token found");
+      }
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const response = await axios.get(API_URL, config);
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch resume";
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
-// ✅ Create a new resume
-export const createResume = createAsyncThunk(
-  "resume/create",
-  async (resumeData, { rejectWithValue }) => {
-    try {
-      const token = localStorage.getItem("token");
-      const res = await axios.post(
-        "/api/resume/me",
-        resumeData, // send direct body
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to create resume");
-    }
-  }
-);
-
-// ✅ Update logged-in user's resume
 export const updateResume = createAsyncThunk(
-  "resume/update",
+  "resume/updateResume",
   async (resumeData, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.put(
-        "/api/resume/me",
-        resumeData, // send direct body
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      return res.data;
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || "Failed to update resume");
+      if (!token) {
+        return rejectWithValue("No authentication token found");
+      }
+      const config = {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      };
+      const response = await axios.put(API_URL, resumeData, config);
+      return response.data;
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to update resume";
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 const resumeSlice = createSlice({
   name: "resume",
-  initialState: { data: null, loading: false, error: null },
-  reducers: {},
+  initialState: {
+    data: null,
+    loading: false,
+    error: null,
+  },
+  reducers: {
+    clearError: (state) => {
+      state.error = null;
+    },
+  },
   extraReducers: (builder) => {
     builder
-      // 🔹 Fetch resume
       .addCase(fetchResume.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -76,22 +81,6 @@ const resumeSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-
-      // 🔹 Create resume
-      .addCase(createResume.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(createResume.fulfilled, (state, action) => {
-        state.loading = false;
-        state.data = action.payload;
-      })
-      .addCase(createResume.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.payload;
-      })
-
-      // 🔹 Update resume
       .addCase(updateResume.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -107,4 +96,5 @@ const resumeSlice = createSlice({
   },
 });
 
+export const { clearError } = resumeSlice.actions;
 export default resumeSlice.reducer;
