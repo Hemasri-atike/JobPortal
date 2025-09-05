@@ -1,7 +1,7 @@
 // src/pages/jobs/JobSearch.jsx
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchJobs, fetchCategories } from "../../store/jobsSlice";
+import { fetchJobs, fetchCategories } from "../../store/jobsSlice.js";
 import Header from "../../pages/navbar/Header";
 import Footer from "../../pages/footer/Footer";
 import JobCard from "../../components/ui/JobCard";
