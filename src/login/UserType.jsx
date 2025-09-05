@@ -3,25 +3,32 @@ import { User, Briefcase } from "lucide-react";
 
 const UserType = () => {
   return (
-    <div className="w-full max-w-sm bg-white rounded-2xl shadow-xl p-6 text-center">
-      <h2 className="text-2xl font-bold text-blue-700 mb-4">Welcome to IHire</h2>
-      <p className="text-sm text-gray-500 mb-6">
+    <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm p-6 text-center animate-fade-in">
+      <h2 className="text-2xl font-bold text-gray-900 mb-4">
+        Welcome to{" "}
+        <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+          IHire
+        </span>
+      </h2>
+      <p className="text-base text-gray-600 mb-6">
         Please select your role to continue
       </p>
 
       <div className="flex flex-col gap-4">
         <Link
           to="/login?type=candidate"
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors font-semibold"
+          aria-label="Log in as a candidate"
         >
-          <User size={18} /> I'm a Candidate
+          <User size={20} /> I'm a Candidate
         </Link>
 
         <Link
-          to="/login?type=employee"
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium"
+          to="/login?type=employer"
+          className="flex items-center justify-center gap-2 bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-semibold"
+          aria-label="Log in as an employer"
         >
-          <Briefcase size={18} /> I'm an Employee
+          <Briefcase size={20} /> I'm an Employer
         </Link>
       </div>
 
@@ -29,20 +36,32 @@ const UserType = () => {
         Don’t have an account?{" "}
         <Link
           to="/register"
-          className="text-blue-600 hover:underline font-medium"
+          className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+          aria-label="Sign up for an account"
         >
           Sign up here
         </Link>
       </div>
 
-      <div className="mt-4 text-xs text-gray-500">
+      <div className="mt-4 text-sm text-gray-500">
         <p>
           <strong>Candidate</strong>: Job seekers looking for opportunities.
         </p>
         <p>
-          <strong>Employee</strong>: Employers or recruiters posting jobs.
+          <strong>Employer</strong>: Employers or recruiters posting jobs.
         </p>
       </div>
+
+      {/* Tailwind Animation Classes */}
+      <style jsx>{`
+        .animate-fade-in {
+          animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
     </div>
   );
 };
