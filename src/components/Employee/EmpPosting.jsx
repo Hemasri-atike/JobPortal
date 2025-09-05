@@ -1,39 +1,44 @@
 // src/pages/EmpPosting.jsx
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate, useLocation, useParams } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { addSkill, removeSkill } from "../../store/skillsSlice.js";
 import { addJob } from "../../store/jobsSlice.js";
 import statesAndCities from "../common/Statesncities.jsx";
 import axios from "axios";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 const EmpPosting = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const { id } = useParams();
+  const { state } = useLocation();
   const skills = useSelector((state) => state.skills.list);
+  const isEditing = !!id;
 
   const [formData, setFormData] = useState({
-    title: "",
-    companyName: "",
-    role: "",
-    jobCategory: "",
-    state: "",
-    city: "",
-    vacancies: "",
-    jobType: "",
-    workMode: "",
-    experienceLevel: "",
-    minSalary: "",
-    maxSalary: "",
-    description: "",
-    contactPerson: "",
-    startDate: "",
-    endDate: "",
+    title: state?.title || "",
+    description: state?.description || "",
+    company_name: state?.company_name || "",
+    state: state?.location ? state.location.split(", ")[1] || "" : "",
+    city: state?.location ? state.location.split(", ")[0] || "" : "",
+    role: state?.role || "",
+    jobCategory: state?.category || "",
+    vacancies: state?.vacancies || "",
+    jobType: state?.jobType || "",
+    workMode: state?.type || "",
+    experienceLevel: state?.experience || "",
+    salary: state?.salary || "",
+    contactPerson: state?.contactPerson || "",
+    startDate: state?.startDate || "",
+    endDate: state?.deadline || "",
   });
-
   const [skillInput, setSkillInput] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Get token & decode user
+  // Token and user setup
   const token = localStorage.getItem("token");
   let user = null;
   if (token) {
@@ -48,6 +53,11 @@ const EmpPosting = () => {
     navigate("/login?type=employee");
   }
 
+  if (user && user.role !== "admin" && user.role !== "employer") {
+    toast.error("You are not authorized to post jobs.");
+    navigate("/");
+  }
+
   // Axios instance
   const axiosAuth = axios.create({
     baseURL: "http://localhost:5000/api",
@@ -58,7 +68,7 @@ const EmpPosting = () => {
     (res) => res,
     (error) => {
       if (error.response?.status === 401) {
-        alert("Session expired. Please login again.");
+        toast.error("Session expired. Please login again.");
         localStorage.clear();
         navigate("/login?type=employee");
       }
@@ -66,11 +76,31 @@ const EmpPosting = () => {
     }
   );
 
+  // Client-side validation
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.title.trim()) newErrors.title = "Job title is required";
+    if (!formData.description.trim()) newErrors.description = "Job description is required";
+    if (!formData.company_name.trim()) newErrors.company_name = "Company name is required";
+    if (!formData.city || !formData.state) newErrors.location = "Both city and state are required";
+    if (formData.salary && (isNaN(formData.salary) || parseFloat(formData.salary) < 0)) {
+      newErrors.salary = "Salary must be a non-negative number";
+    }
+    if (formData.endDate && isNaN(Date.parse(formData.endDate))) {
+      newErrors.endDate = "Invalid deadline format";
+    }
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle input changes
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
+    setErrors({ ...errors, [name]: "", location: "" });
   };
 
+  // Handle skill input
   const handleAddSkill = () => {
     if (skillInput.trim() !== "") {
       dispatch(addSkill(skillInput.trim()));
@@ -85,23 +115,49 @@ const EmpPosting = () => {
     }
   };
 
+  // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!user || (user.role !== "admin" && user.role !== "employer")) {
-      alert("You are not authorized.");
+    if (!validateForm()) {
+      toast.error("Please fill all required fields correctly.");
       return;
     }
 
-    const jobData = { ...formData, skills };
+    setIsSubmitting(true);
+    const location = `${formData.city}, ${formData.state}`;
+    const jobData = {
+      title: formData.title,
+      description: formData.description,
+      location,
+      company_name: formData.company_name,
+      salary: formData.salary ? parseFloat(formData.salary) : null,
+      status: formData.status || "Draft",
+      tags: skills,
+      category: formData.jobCategory || null,
+      deadline: formData.endDate || null,
+      type: formData.workMode || null,
+      experience: formData.experienceLevel || null,
+      role: formData.role || null,
+      vacancies: formData.vacancies ? parseInt(formData.vacancies) : null,
+      contactPerson: formData.contactPerson || null,
+      startDate: formData.startDate || null,
+    };
 
     try {
-      const res = await axiosAuth.post("/jobs", jobData);
-      dispatch(addJob(res.data));
-      alert("Job posted successfully!");
+      if (isEditing) {
+        await axiosAuth.patch(`/jobs/${id}`, jobData);
+        toast.success("Job updated successfully!");
+      } else {
+        const res = await axiosAuth.post("/jobs", jobData);
+        dispatch(addJob({ ...jobData, id: res.data.jobId }));
+        toast.success("Job posted successfully!");
+      }
       navigate("/joblistings");
     } catch (err) {
-      console.error("Error posting job:", err);
-      alert(err.response?.data?.error || "Something went wrong");
+      console.error("Error posting/updating job:", err);
+      toast.error(err.response?.data?.error || "Something went wrong");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -109,49 +165,127 @@ const EmpPosting = () => {
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-5xl mx-auto bg-white shadow-md rounded-xl p-8">
         <h2 className="text-3xl font-bold text-center text-gray-800 mb-8">
-          Post a Job
+          {isEditing ? "Edit Job" : "Post a Job"}
         </h2>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           {/* Job Title */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">Job Title</label>
+            <label className="block text-gray-700 font-medium mb-1">
+              Job Title <span className="text-red-500">*</span>
+            </label>
             <input
               type="text"
               name="title"
               placeholder="Frontend Developer"
               value={formData.title}
               onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.title ? "border-red-500" : ""}`}
               required
             />
+            {errors.title && <p className="text-red-500 text-sm mt-1">{errors.title}</p>}
           </div>
 
-          {/* Company Name & Role */}
+          {/* Company Name */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Company Name <span className="text-red-500">*</span>
+            </label>
+            <input
+              type="text"
+              name="company_name"
+              placeholder="Google"
+              value={formData.company_name}
+              onChange={handleChange}
+              className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.company_name ? "border-red-500" : ""}`}
+              required
+            />
+            {errors.company_name && <p className="text-red-500 text-sm mt-1">{errors.company_name}</p>}
+          </div>
+
+          {/* State and City */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Company Name</label>
-              <input
-                type="text"
-                name="companyName"
-                placeholder="Google"
-                value={formData.companyName}
-                onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+              <label className="block text-gray-700 font-medium mb-1">
+                State <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="state"
+                value={formData.state}
+                onChange={(e) => setFormData({ ...formData, state: e.target.value, city: "" })}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.location ? "border-red-500" : ""}`}
                 required
-              />
+              >
+                <option value="">Select State</option>
+                {Object.keys(statesAndCities).map((st) => (
+                  <option key={st} value={st}>{st}</option>
+                ))}
+              </select>
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">Job Role</label>
-              <input
-                type="text"
-                name="role"
-                placeholder="Software Engineer"
-                value={formData.role}
+              <label className="block text-gray-700 font-medium mb-1">
+                City <span className="text-red-500">*</span>
+              </label>
+              <select
+                name="city"
+                value={formData.city}
                 onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
+                disabled={!formData.state}
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.location ? "border-red-500" : ""}`}
+                required
+              >
+                <option value="">Select City</option>
+                {formData.state && statesAndCities[formData.state].map((ct) => (
+                  <option key={ct} value={ct}>{ct}</option>
+                ))}
+              </select>
+              {errors.location && <p className="text-red-500 text-sm mt-1">{errors.location}</p>}
             </div>
+          </div>
+
+          {/* Description */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">
+              Job Description <span className="text-red-500">*</span>
+            </label>
+            <textarea
+              name="description"
+              rows="4"
+              placeholder="Enter detailed job description..."
+              value={formData.description}
+              onChange={handleChange}
+              className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.description ? "border-red-500" : ""}`}
+              required
+            />
+            {errors.description && <p className="text-red-500 text-sm mt-1">{errors.description}</p>}
+          </div>
+
+          {/* Salary */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Salary</label>
+            <input
+              type="number"
+              name="salary"
+              placeholder="50000"
+              value={formData.salary}
+              onChange={handleChange}
+              className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.salary ? "border-red-500" : ""}`}
+              min="0"
+            />
+            {errors.salary && <p className="text-red-500 text-sm mt-1">{errors.salary}</p>}
+          </div>
+
+          {/* Job Role */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Job Role</label>
+            <input
+              type="text"
+              name="role"
+              placeholder="Software Engineer"
+              value={formData.role}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+            />
           </div>
 
           {/* Job Category & Experience */}
@@ -189,53 +323,6 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* State, City & Work Mode */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">State</label>
-              <select
-                name="state"
-                value={formData.state}
-                onChange={(e) => setFormData({ ...formData, state: e.target.value, city: "" })}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Select State</option>
-                {Object.keys(statesAndCities).map((st) => (
-                  <option key={st} value={st}>{st}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">City</label>
-              <select
-                name="city"
-                value={formData.city}
-                onChange={handleChange}
-                disabled={!formData.state}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Select City</option>
-                {formData.state && statesAndCities[formData.state].map((ct) => (
-                  <option key={ct} value={ct}>{ct}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">Work Mode</label>
-              <select
-                name="workMode"
-                value={formData.workMode}
-                onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              >
-                <option value="">Select</option>
-                <option value="Onsite">Onsite</option>
-                <option value="Remote">Remote</option>
-                <option value="Hybrid">Hybrid</option>
-              </select>
-            </div>
-          </div>
-
           {/* Job Type & Vacancies */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
@@ -267,30 +354,20 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Salary */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">Min Salary</label>
-              <input
-                type="number"
-                name="minSalary"
-                placeholder="30000"
-                value={formData.minSalary}
-                onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
-            </div>
-            <div>
-              <label className="block text-gray-700 font-medium mb-1">Max Salary</label>
-              <input
-                type="number"
-                name="maxSalary"
-                placeholder="80000"
-                value={formData.maxSalary}
-                onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-              />
-            </div>
+          {/* Work Mode */}
+          <div>
+            <label className="block text-gray-700 font-medium mb-1">Work Mode</label>
+            <select
+              name="workMode"
+              value={formData.workMode}
+              onChange={handleChange}
+              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+            >
+              <option value="">Select</option>
+              <option value="Onsite">Onsite</option>
+              <option value="Remote">Remote</option>
+              <option value="Hybrid">Hybrid</option>
+            </select>
           </div>
 
           {/* Skills */}
@@ -332,19 +409,6 @@ const EmpPosting = () => {
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <label className="block text-gray-700 font-medium mb-1">Job Description</label>
-            <textarea
-              name="description"
-              rows="4"
-              placeholder="Enter detailed job description..."
-              value={formData.description}
-              onChange={handleChange}
-              className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
-            />
-          </div>
-
           {/* Contact & Dates */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
@@ -369,14 +433,15 @@ const EmpPosting = () => {
               />
             </div>
             <div>
-              <label className="block text-gray-700 font-medium mb-1">End Date</label>
+              <label className="block text-gray-700 font-medium mb-1">Deadline</label>
               <input
                 type="date"
                 name="endDate"
                 value={formData.endDate}
                 onChange={handleChange}
-                className="w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500"
+                className={`w-full border rounded-lg px-4 py-2 focus:outline-none focus:border-blue-500 ${errors.endDate ? "border-red-500" : ""}`}
               />
+              {errors.endDate && <p className="text-red-500 text-sm mt-1">{errors.endDate}</p>}
             </div>
           </div>
 
@@ -384,9 +449,10 @@ const EmpPosting = () => {
           <div className="text-center mt-6">
             <button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition"
+              disabled={isSubmitting}
+              className={`bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg transition ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""}`}
             >
-              Post Job
+              {isEditing ? "Update Job" : "Post Job"}
             </button>
           </div>
 
@@ -399,6 +465,7 @@ const EmpPosting = () => {
           </p>
         </form>
       </div>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

@@ -36,7 +36,7 @@ const Header = () => {
   const goToProfile = () => {
   if (!userInfo) return;
   const role = userInfo.role?.toLowerCase();
-  const route = role === "job_seeker" ? "/cadprofile" : "/empprofile";
+  const route = role === "employee" ? "/cadprofile" : "/empprofile";
   navigate(route);
   setIsMenuOpen(false);
 };

@@ -1,4 +1,3 @@
-// src/pages/employee/EmpProfile.jsx
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -365,7 +364,8 @@ const EmpProfile = () => {
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 bg-white shadow-lg hidden md:block">
-          <Sidebar role={userType || "job_seeker"} />
+          
+          <Sidebar role={userType || "employee"} />
         </aside>
 
         {/* Main Content */}
@@ -487,7 +487,7 @@ const EmpProfile = () => {
                     <label className="block text-sm font-medium text-gray-700">Company Name</label>
                     <input
                       type="text"
-                      value={userInfo.company_name || ""}
+                      value={userInfo.company_name || "no company info"}
                       className="w-full p-3 border rounded-lg bg-gray-100 cursor-not-allowed"
                       disabled
                     />
