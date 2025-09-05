@@ -365,7 +365,7 @@ const EmpProfile = () => {
         {/* Sidebar */}
         <aside className="w-64 bg-white shadow-lg hidden md:block">
           
-          <Sidebar role={userType || "employee"} />
+          <Sidebar role="employee"/>
         </aside>
 
         {/* Main Content */}
