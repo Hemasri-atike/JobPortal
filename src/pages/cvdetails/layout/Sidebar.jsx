@@ -14,7 +14,7 @@ const Sidebar = ({ role = "candidate" }) => {
     <>
       {/* Mobile Toggle Button */}
       <button
-        className="md:hidden fixed top-4 left-4 z-50 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+        className="md:hidden fixed top-4 left-4 z-50 p-3 bg-indigo-500 text-white rounded-full hover:bg-indigo-600 transition-all duration-300 ease-in-out transform hover:scale-105"
         onClick={() => setIsMobileOpen(!isMobileOpen)}
         aria-label="Toggle Sidebar"
       >
@@ -23,14 +23,14 @@ const Sidebar = ({ role = "candidate" }) => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 w-64 bg-gray-900 text-white p-4 transform transition-transform duration-300 ease-in-out
+        className={`fixed inset-y-0 left-0 w-64 bg-gradient-to-br from-indigo-50 via-teal-50 to-gray-50 text-gray-900 p-6 transform transition-transform duration-300 ease-in-out
           ${isMobileOpen ? "translate-x-0" : "-translate-x-full"}
-          md:translate-x-0 md:static md:h-full md:rounded-lg md:shadow-lg z-40`}
+          md:translate-x-0 md:static md:h-full md:rounded-3xl md:shadow-md z-40 backdrop-blur-sm bg-opacity-90`}
       >
-        <div className="mb-6">
+        <div className="mb-8">
           {/* Role Title */}
-          <div className="text-xs text-gray-400 uppercase tracking-wide mb-2">
-            {role === "employee" ? "Employee Dashboard" : "Candidate Dashboard"}
+          <div className="text-xs text-indigo-600 uppercase tracking-wider font-semibold mb-4">
+            {role === "employee" ? "Employer Dashboard" : "Candidate Dashboard"}
           </div>
 
           {/* Sidebar Navigation */}
@@ -39,23 +39,23 @@ const Sidebar = ({ role = "candidate" }) => {
               <Link
                 key={label}
                 to={path}
-                className={`flex items-center space-x-3 p-3 rounded-lg transition-all duration-200 ${
+                className={`flex items-center space-x-3 p-3 rounded-xl transition-all duration-300 ease-in-out ${
                   location.pathname === path
-                    ? "bg-blue-600 text-white shadow-md"
-                    : "text-gray-300 hover:bg-gray-800 hover:text-yellow-400"
+                    ? "bg-indigo-500 text-white shadow-md"
+                    : "text-gray-700 hover:bg-indigo-100 hover:text-indigo-800"
                 } group relative`}
                 onClick={() => setIsMobileOpen(false)}
               >
                 {/* Icon */}
                 <span className="text-xl transform group-hover:scale-110 transition-transform duration-200">
-                  <Icon />
+                  <Icon className={location.pathname === path ? "text-white" : "text-indigo-600"} />
                 </span>
 
                 {/* Label */}
-                <span className="text-sm font-medium">{label}</span>
+                <span className="text-sm font-semibold">{label}</span>
 
                 {/* Hover Indicator */}
-                <span className="absolute left-0 top-0 h-full w-1 bg-yellow-400 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></span>
+                <span className="absolute left-0 top-0 h-full w-1 bg-coral-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></span>
               </Link>
             ))}
           </nav>
@@ -65,7 +65,7 @@ const Sidebar = ({ role = "candidate" }) => {
       {/* Dark Overlay for Mobile */}
       {isMobileOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
+          className="md:hidden fixed inset-0 bg-black bg-opacity-60 z-30 transition-opacity duration-300"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
