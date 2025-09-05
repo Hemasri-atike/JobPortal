@@ -4,7 +4,7 @@ import { fetchResume, updateResume, clearError } from "../../../store/resumeSlic
 import { resumeSections } from "../../../config/resumeConfig.js";
 import Header from "../../navbar/Header.jsx";
 import Sidebar from "../layout/Sidebar.jsx";
-import PreviewResume from "./Previewresume.jsx"; // Updated to PascalCase
+import PreviewResume from "./Previewresume.jsx"; 
 
 const MyResume = () => {
   const dispatch = useDispatch();
@@ -24,7 +24,7 @@ const MyResume = () => {
 
   useEffect(() => {
     if (resumeData) {
-      setEditableData(structuredClone(resumeData)); // Use structuredClone for deep copy
+      setEditableData(structuredClone(resumeData)); 
     }
   }, [resumeData]);
 
@@ -317,7 +317,7 @@ const MyResume = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex">
-        <div className="hidden lg:block w-72 bg-indigo-900 text-white shadow-2xl">
+        <div className="hidden lg:block w-72  text-white shadow-2xl">
           <Sidebar />
         </div>
         {isSidebarOpen && (
