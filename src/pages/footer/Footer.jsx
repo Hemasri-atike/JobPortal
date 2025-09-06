@@ -18,6 +18,28 @@ const Footer = () => {
 
   const { cta, companyInfo, sections, bottomLinks } = data;
 
+  // ✅ Map all possible link names to correct paths
+  const linkPaths = {
+    "Browse Jobs": "/jobs",
+    "Browse Categories": "/categories",
+    "Candidate Dashboard": "/dashboard",
+    "Browse Candidates": "/candidates",
+    "Employer Dashboard": "/employer-dashboard",
+    "Add Job": "/add-job",
+    "Job Packages": "/job-packages",
+    "About Us": "/about",
+    "Job Page Invoice": "/invoice",
+    "Terms Page": "/terms",
+    "Blog": "/blog",
+    "Contact": "/contact",
+  };
+
+  // Bottom links paths (optional override if needed)
+  const bottomLinkPaths = {
+    "Privacy Policy": "/privacy",
+    "Terms of Service": "/terms",
+  };
+
   return (
     <footer className="bg-gray-900 text-gray-200">
       {/* CTA Section */}
@@ -64,13 +86,20 @@ const Footer = () => {
                     {section}
                   </h4>
                   <ul className="space-y-2 sm:space-y-3 text-gray-300 text-sm sm:text-base">
-                    {links.map((item, idx) => (
-                      <li key={idx}>
-                        <Link to={item.path} className="hover:text-white transition-colors duration-300">
-                          {item.name}
-                        </Link>
-                      </li>
-                    ))}
+                    {links.map((item, idx) => {
+                      const name = item.name;
+                      const path = item.path && item.path !== "#" ? item.path : linkPaths[name] || "#";
+                      return (
+                        <li key={idx}>
+                          <Link
+                            to={path}
+                            className="hover:text-white transition-colors duration-300"
+                          >
+                            {name}
+                          </Link>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
@@ -85,11 +114,14 @@ const Footer = () => {
             <p>&copy; 2024 Ihire. All Rights Reserved.</p>
             <div className="flex items-center gap-4 sm:gap-6 flex-wrap justify-center">
               {bottomLinks &&
-                bottomLinks.map((link, idx) => (
-                  <Link key={idx} to={link.path} className="hover:text-white transition-colors duration-300">
-                    {link.name}
-                  </Link>
-                ))}
+                bottomLinks.map((link, idx) => {
+                  const path = bottomLinkPaths[link.name] || link.path || "#";
+                  return (
+                    <Link key={idx} to={path} className="hover:text-white transition-colors duration-300">
+                      {link.name}
+                    </Link>
+                  );
+                })}
             </div>
           </div>
         </div>

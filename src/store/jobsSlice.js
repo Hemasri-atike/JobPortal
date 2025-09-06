@@ -9,10 +9,10 @@ export const fetchJobs = createAsyncThunk(
       const res = await axios.get('http://localhost:5000/api/jobs', {
         params: { status: statusFilter, search: searchQuery, location, page, limit: jobsPerPage },
       });
-      console.log('fetchJobs API response:', res.data); // Debug API response
+    
       return res.data;
     } catch (err) {
-      console.error('fetchJobs API error:', err.response?.data, err.message);
+   
       return rejectWithValue(err.response?.data?.message || 'Error fetching jobs');
     }
   }
@@ -24,10 +24,10 @@ export const fetchCategories = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const res = await axios.get('http://localhost:5000/api/jobs/categories');
-      console.log('fetchCategories API response:', res.data);
+  
       return res.data;
     } catch (err) {
-      console.error('fetchCategories API error:', err.response?.data, err.message);
+    
       return rejectWithValue(err.response?.data?.message || 'Error fetching categories');
     }
   }
@@ -41,10 +41,10 @@ export const fetchJobsByCategory = createAsyncThunk(
       const res = await axios.get('http://localhost:5000/api/jobs/by-category', {
         params: { category },
       });
-      console.log('fetchJobsByCategory API response:', res.data);
+     
       return res.data;
     } catch (err) {
-      console.error('fetchJobsByCategory API error:', err.response?.data, err.message);
+    
       return rejectWithValue(err.response?.data?.message || 'Error fetching jobs by category');
     }
   }
@@ -61,10 +61,10 @@ export const fetchUserApplications = createAsyncThunk(
       const res = await axios.get('http://localhost:5000/api/applications', {
         params: { candidate_id: candidateId },
       });
-      console.log('fetchUserApplications response:', res.data);
+    
       return res.data.map((app) => app.job_id);
     } catch (err) {
-      console.error('fetchUserApplications error:', err.response?.data, err.message);
+    
       return rejectWithValue(err.response?.data?.message || 'Error fetching applications');
     }
   }
@@ -81,10 +81,10 @@ export const addJob = createAsyncThunk(
         jobData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log('addJob response:', res.data);
+  
       return { jobId: res.data.jobId, job: jobData };
     } catch (err) {
-      console.error('addJob failed:', err.response?.data, err.message);
+   
       return rejectWithValue(err.response?.data?.message || 'Error creating job');
     }
   }
@@ -101,10 +101,9 @@ export const updateJob = createAsyncThunk(
         jobData,
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      console.log('updateJob response:', res.data);
+    
       return { id, ...jobData };
     } catch (err) {
-      console.error('updateJob failed:', err.response?.data, err.message);
       return rejectWithValue(err.response?.data?.message || 'Error updating job');
     }
   }
@@ -119,55 +118,52 @@ export const deleteJob = createAsyncThunk(
       await axios.delete(`http://localhost:5000/api/jobs/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('deleteJob success:', id);
       return id;
     } catch (err) {
-      console.error('deleteJob failed:', err.response?.data, err.message);
+   
       return rejectWithValue(err.response?.data?.message || 'Error deleting job');
     }
   }
 );
 
 
-// Thunk for applying to a job
 export const applyToJobThunk = createAsyncThunk(
-  "jobs/applyToJob",
+  'jobs/applyToJob',
   async (applicationData, { rejectWithValue }) => {
     try {
-      // Construct FormData
       const formData = new FormData();
-      formData.append("name", applicationData.name);
-      formData.append("email", applicationData.email);
-      formData.append("phone", applicationData.phone);
-      formData.append("location", applicationData.location);
-      formData.append("experience", applicationData.experience);
-      formData.append("jobTitle", applicationData.jobTitle);
-      formData.append("company", applicationData.company);
-      formData.append("qualification", applicationData.qualification);
-      formData.append("specialization", applicationData.specialization);
-      formData.append("university", applicationData.university);
-      formData.append("skills", applicationData.skills);
-      formData.append("coverLetter", applicationData.coverLetter);
-      formData.append("linkedIn", applicationData.linkedIn);
-      formData.append("portfolio", applicationData.portfolio);
-      formData.append("job_id", applicationData.job_id);
-      formData.append("candidate_id", applicationData.candidate_id);
-      formData.append("status", "applied"); // optional, can be default on backend
-      formData.append("resume", applicationData.resumeFile); // File object
+      formData.append('fullName', applicationData.name); // Match backend field
+      formData.append('email', applicationData.email);
+      formData.append('phone', applicationData.phone);
+      formData.append('location', applicationData.location);
+      formData.append('experience', applicationData.experience);
+      formData.append('jobTitle', applicationData.jobTitle);
+      formData.append('company', applicationData.company);
+      formData.append('qualification', applicationData.qualification);
+      formData.append('specialization', applicationData.specialization);
+      formData.append('university', applicationData.university);
+      formData.append('skills', applicationData.skills);
+      formData.append('coverLetter', applicationData.coverLetter);
+      formData.append('linkedIn', applicationData.linkedIn);
+      formData.append('portfolio', applicationData.portfolio);
+      formData.append('job_id', applicationData.job_id); // Include job_id
+      formData.append('candidate_id', applicationData.candidate_id); // Include candidate_id
+      formData.append('status', 'applied');
+      formData.append('resume', applicationData.resume); // File object
 
       const response = await axios.post(
-        "http://localhost:5000/api/jobs/apply",
+        'http://localhost:5000/api/applications', // Correct endpoint
         formData,
         {
           headers: {
-            "Content-Type": "multipart/form-data",
+            'Content-Type': 'multipart/form-data',
           },
         }
       );
 
       return response.data;
     } catch (error) {
-      console.error("applyToJobThunk error:", error.response?.data || error.message);
+    
       return rejectWithValue(error.response?.data || error.message);
     }
   }
@@ -294,7 +290,7 @@ const jobsSlice = createSlice({
       })
       .addCase(fetchJobs.fulfilled, (state, action) => {
         state.jobsStatus = 'succeeded';
-        console.log('fetchJobs fulfilled payload:', action.payload); // Debug payload
+   
         // Normalize payload into jobs array
         if (Array.isArray(action.payload)) {
           state.jobs = action.payload;
@@ -303,7 +299,7 @@ const jobsSlice = createSlice({
           state.jobs = action.payload.jobs;
           state.total = action.payload.total || action.payload.jobs.length;
         } else {
-          console.warn('fetchJobs: Unexpected payload format', action.payload);
+        
           state.jobs = [];
           state.total = 0;
         }
@@ -313,7 +309,7 @@ const jobsSlice = createSlice({
       .addCase(fetchJobs.rejected, (state, action) => {
         state.jobsStatus = 'failed';
         state.jobsError = action.payload;
-        console.error('fetchJobs rejected:', action.payload);
+     
       })
       // Fetch Categories
       .addCase(fetchCategories.pending, (state) => {
@@ -323,12 +319,12 @@ const jobsSlice = createSlice({
       .addCase(fetchCategories.fulfilled, (state, action) => {
         state.categoriesStatus = 'succeeded';
         state.categories = action.payload || [];
-        console.log('fetchCategories fulfilled:', action.payload);
+        
       })
       .addCase(fetchCategories.rejected, (state, action) => {
         state.categoriesStatus = 'failed';
         state.categoriesError = action.payload || 'Failed to fetch categories';
-        console.error('fetchCategories rejected:', action.payload);
+     
       })
       // Fetch Jobs by Category
       .addCase(fetchJobsByCategory.pending, (state) => {
@@ -338,12 +334,12 @@ const jobsSlice = createSlice({
       .addCase(fetchJobsByCategory.fulfilled, (state, action) => {
         state.jobsStatus = 'succeeded';
         state.jobsByCategory = action.payload.jobs || [];
-        console.log('fetchJobsByCategory fulfilled:', action.payload);
+      
       })
       .addCase(fetchJobsByCategory.rejected, (state, action) => {
         state.jobsStatus = 'failed';
         state.jobsError = action.payload;
-        console.error('fetchJobsByCategory rejected:', action.payload);
+
       })
       // Apply to Job
       .addCase(applyToJobThunk.pending, (state) => {
@@ -355,12 +351,12 @@ const jobsSlice = createSlice({
         state.loadingApply = false;
         state.successApply = true;
         state.applications = [...new Set([...state.applications, action.payload.jobId])];
-        console.log('applyToJobThunk fulfilled:', action.payload);
+       
       })
       .addCase(applyToJobThunk.rejected, (state, action) => {
         state.loadingApply = false;
         state.errorApply = action.payload;
-        console.error('applyToJobThunk rejected:', action.payload);
+      
       })
       // Fetch User Applications
       .addCase(fetchUserApplications.pending, (state) => {
@@ -370,12 +366,12 @@ const jobsSlice = createSlice({
       .addCase(fetchUserApplications.fulfilled, (state, action) => {
         state.jobsStatus = 'succeeded';
         state.applications = action.payload;
-        console.log('fetchUserApplications fulfilled:', action.payload);
+      
       })
       .addCase(fetchUserApplications.rejected, (state, action) => {
         state.jobsStatus = 'failed';
         state.jobsError = action.payload;
-        console.error('fetchUserApplications rejected:', action.payload);
+    
       })
       // Add Job
       .addCase(addJob.pending, (state) => {
@@ -387,12 +383,12 @@ const jobsSlice = createSlice({
         state.addJobStatus = 'succeeded';
         state.addJobSuccess = true;
         state.jobs = [...state.jobs, { id: action.payload.jobId, ...action.payload.job }];
-        console.log('addJob fulfilled:', action.payload);
+       
       })
       .addCase(addJob.rejected, (state, action) => {
         state.addJobStatus = 'failed';
         state.addJobError = action.payload;
-        console.error('addJob rejected:', action.payload);
+    
       })
       // Update Job
       .addCase(updateJob.pending, (state) => {
@@ -407,12 +403,12 @@ const jobsSlice = createSlice({
         if (index !== -1) {
           state.jobs[index] = { ...state.jobs[index], ...action.payload };
         }
-        console.log('updateJob fulfilled:', action.payload);
+       
       })
       .addCase(updateJob.rejected, (state, action) => {
         state.updateJobStatus = 'failed';
         state.updateJobError = action.payload;
-        console.error('updateJob rejected:', action.payload);
+ 
       })
       // Delete Job
       .addCase(deleteJob.pending, (state) => {
@@ -424,12 +420,12 @@ const jobsSlice = createSlice({
         state.deleteJobStatus = 'succeeded';
         state.deleteJobSuccess = true;
         state.jobs = state.jobs.filter((job) => job.id !== action.payload);
-        console.log('deleteJob fulfilled:', action.payload);
+       
       })
       .addCase(deleteJob.rejected, (state, action) => {
         state.deleteJobStatus = 'failed';
         state.deleteJobError = action.payload;
-        console.error('deleteJob rejected:', action.payload);
+
       });
   },
 });

@@ -1,27 +1,65 @@
-// store/footerSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Async thunk to fetch footer data
-export const fetchFooter = createAsyncThunk(
-  "footer/fetchFooter",
-  async (_, { rejectWithValue }) => {
-    try {
-      const response = await axios.get("http://localhost:5000/api/footer"); 
-      return response.data; // API returns { data: { candidates, employers, about } }
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.error || err.message);
-    }
+// Define all mappings in one place
+const linkPaths = {
+  "Browse Jobs": "/jobs",
+  "Browse Categories": "/categories",
+  "Candidate Dashboard": "/candidate-dashboard",
+  "Browse Candidates": "/candidates",
+  "Employer Dashboard": "/employer-dashboard",
+  "Add Job": "/add-job",
+  "About Us": "/about",
+  "Job Page Invoice": "/invoice",
+  "Terms Page": "/terms",
+  "Blog": "/blog",
+};
+
+export const fetchFooter = createAsyncThunk("footer/fetchFooter", async (_, { rejectWithValue }) => {
+  try {
+    const response = await axios.get("http://localhost:5000/api/footer");
+    const rawData = response.data.data || {};
+
+    // Transform DB data into usable frontend data
+    const transformLinks = (arr) =>
+      (arr || []).map((item) =>
+        typeof item === "string"
+          ? { name: item, path: linkPaths[item] || "#" }
+          : { name: item.name, path: item.path || "#" }
+      );
+
+    return {
+      cta: {
+        title: "Find the Right Job for You",
+        subtitle: "Thousands of jobs from top companies are waiting",
+        ctaText: "Get Started",
+        ctaLink: "/jobs",
+      },
+      companyInfo: {
+        phone: "+91 9876543210",
+        address: "Kozhikode, Kerala, India",
+        email: "support@ihire.com",
+      },
+      sections: Object.fromEntries(
+        Object.entries(rawData).map(([section, links]) => [
+          section,
+          transformLinks(links),
+        ])
+      ),
+      bottomLinks: [
+        { name: "Privacy Policy", path: "/privacy" },
+        { name: "Terms & Conditions", path: "/terms" },
+        { name: "Help Center", path: "/help" },
+      ],
+    };
+  } catch (error) {
+    return rejectWithValue(error.message || "Failed to fetch footer data");
   }
-);
+});
 
 const footerSlice = createSlice({
   name: "footer",
-  initialState: {
-    data: {},
-    status: "idle",
-    error: null,
-  },
+  initialState: { data: {}, status: "idle", error: null },
   reducers: {},
   extraReducers: (builder) => {
     builder
@@ -30,36 +68,11 @@ const footerSlice = createSlice({
       })
       .addCase(fetchFooter.fulfilled, (state, action) => {
         state.status = "succeeded";
-
-        const apiData = action.payload.data; // <-- extract 'data' from API response
-
-        // Transform backend data into structure expected by Footer component
-        state.data = {
-          cta: {
-            title: "Find Your Dream Job Today",
-            subtitle: "Explore jobs and apply with one click!",
-            ctaText: "Browse Jobs",
-            ctaLink: "/jobs",
-          },
-          companyInfo: {
-            phone: "+91 1234567890",
-            address: "123 Main Street, India",
-            email: "info@ihire.com",
-          },
-          sections: {
-            candidates: apiData.candidates || [],
-            employers: apiData.employers || [],
-            about: apiData.about || [],
-          },
-          bottomLinks: [
-            { name: "Privacy Policy", path: "/privacy" },
-            { name: "Terms of Service", path: "/terms" },
-          ],
-        };
+        state.data = action.payload;
       })
       .addCase(fetchFooter.rejected, (state, action) => {
         state.status = "failed";
-        state.error = action.payload || action.error.message;
+        state.error = action.payload || "An unexpected error occurred";
       });
   },
 });
