@@ -1,45 +1,69 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Fetch single company by ID
-export const fetchCompany = createAsyncThunk(
-  "company/fetchCompany",
-  async (id, { rejectWithValue }) => {
+const API_URL = "http://localhost:5000/api/companies";
+
+// Fetch profile
+export const fetchCompanyProfile = createAsyncThunk(
+  "company/fetchProfile",
+  async (_, { rejectWithValue }) => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/companies/${id}`);
-      // Ensure socialLinks is parsed
-      const company = {
-        ...res.data,
-        socialLinks: typeof res.data.socialLinks === "string"
-          ? JSON.parse(res.data.socialLinks)
-          : res.data.socialLinks || {},
-      };
-      return company;
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found");
+      }
+      const res = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return res.data;
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: err.message });
+      if (err.response?.status === 404) {
+        return rejectWithValue(null); // No profile exists
+      }
+      if (err.response?.status === 401) {
+        return rejectWithValue("Unauthorized access. Please log in again.");
+      }
+      return rejectWithValue(
+        err.response?.data?.error || "Failed to fetch company profile"
+      );
     }
   }
 );
 
-// Update company
-export const updateCompany = createAsyncThunk(
-  "company/updateCompany",
-  async ({ id, data }, { rejectWithValue }) => {
+// Save profile (create/update)
+export const saveCompanyProfile = createAsyncThunk(
+  "company/saveProfile",
+  async (formData, { rejectWithValue }) => {
     try {
-      // Ensure socialLinks is stringified before sending
-      if (data.socialLinks && typeof data.socialLinks !== "string") {
-        data.socialLinks = JSON.stringify(data.socialLinks);
+      const token = localStorage.getItem("token");
+      if (!token) {
+        return rejectWithValue("No authentication token found");
       }
-      const res = await axios.put(`http://localhost:5000/api/companies/${id}`, data);
-      const company = {
-        ...res.data,
-        socialLinks: typeof res.data.socialLinks === "string"
-          ? JSON.parse(res.data.socialLinks)
-          : res.data.socialLinks || {},
-      };
-      return company;
+      const res = await axios.post(API_URL, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      // Fetch updated profile to ensure state consistency
+      const profileRes = await axios.get(API_URL, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return { ...res.data, profile: profileRes.data };
     } catch (err) {
-      return rejectWithValue(err.response?.data || { message: err.message });
+      if (err.response?.status === 400) {
+        return rejectWithValue(
+          err.response?.data?.error || "Invalid data provided"
+        );
+      }
+      if (err.response?.status === 401) {
+        return rejectWithValue("Unauthorized access. Please log in again.");
+      }
+      return rejectWithValue(
+        err.response?.data?.error ||
+          err.response?.data?.details ||
+          "Failed to save company profile"
+      );
     }
   }
 );
@@ -47,47 +71,59 @@ export const updateCompany = createAsyncThunk(
 const companySlice = createSlice({
   name: "company",
   initialState: {
-    company: null,
+    profile: null,
     loading: false,
     error: null,
+    success: false,
   },
   reducers: {
-    clearCompany: (state) => {
-      state.company = null;
+    clearCompanyError: (state) => {
+      state.error = null;
+    },
+    clearCompanySuccess: (state) => {
+      state.success = false;
+    },
+    resetCompanyState: (state) => {
+      state.profile = null;
       state.loading = false;
       state.error = null;
+      state.success = false;
     },
   },
   extraReducers: (builder) => {
     builder
       // Fetch
-      .addCase(fetchCompany.pending, (state) => {
+      .addCase(fetchCompanyProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
       })
-      .addCase(fetchCompany.fulfilled, (state, action) => {
+      .addCase(fetchCompanyProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.company = action.payload;
+        state.profile = action.payload;
       })
-      .addCase(fetchCompany.rejected, (state, action) => {
+      .addCase(fetchCompanyProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to fetch company";
+        state.error = action.payload;
       })
-      // Update
-      .addCase(updateCompany.pending, (state) => {
+      // Save
+      .addCase(saveCompanyProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
+        state.success = false;
       })
-      .addCase(updateCompany.fulfilled, (state, action) => {
+      .addCase(saveCompanyProfile.fulfilled, (state, action) => {
         state.loading = false;
-        state.company = action.payload;
+        state.profile = action.payload.profile;
+        state.success = true;
       })
-      .addCase(updateCompany.rejected, (state, action) => {
+      .addCase(saveCompanyProfile.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.payload?.message || "Failed to update company";
+        state.error = action.payload;
+        state.success = false;
       });
   },
 });
 
-export const { clearCompany } = companySlice.actions;
+export const { clearCompanyError, clearCompanySuccess, resetCompanyState } =
+  companySlice.actions;
 export default companySlice.reducer;

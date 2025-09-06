@@ -1,344 +1,541 @@
-import { useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { BarLoader } from 'react-spinners';
-import { applyToJobThunk, clearApplyState, fetchJobs, fetchUserApplications } from '../../store/jobsSlice.js';
+import React, { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { createSelector } from "@reduxjs/toolkit";
+import axios from "axios";
+import { BarLoader } from "react-spinners";
 
-const Application = ({ job, onClose }) => {
-  const dispatch = useDispatch();
-  const { loadingApply, errorApply, successApply } = useSelector((state) => state.jobs || {});
-  const user = useSelector((state) => state.auth?.user || { id: 'user123', name: 'John Doe' });
+// Memoized selector for auth state (assuming candidate_id comes from auth)
+const selectAuth = createSelector(
+  [(state) => state.auth],
+  (auth) => ({
+    candidate_id: auth.userId || "",
+  })
+);
 
+const Application = () => {
+  const { jobId } = useParams(); // Get job_id from URL
+  const { candidate_id } = useSelector(selectAuth); // Get candidate_id from Redux
   const [formData, setFormData] = useState({
-    name: user.name || '',
-    email: '',
-    phone: '',
-    location: '',
-    experience: '',
-    jobTitle: job?.title || '',
-    company: job?.company_name || '',
-    qualification: '',
-    specialization: '',
-    university: '',
-    skills: '',
-    coverLetter: '',
-    linkedIn: '',
-    portfolio: '',
-    job_id: job?.id?.toString() || '', // Ensure string
-    candidate_id: user.id || 'user123',
-    status: 'applied',
+    job_id: jobId || "",
+    candidate_id: candidate_id || "",
+    fullName: "",
+    email: "",
+    phone: "",
+    location: "",
+    experience: "",
+    jobTitle: "",
+    company: "",
+    qualification: "",
+    specialization: "",
+    university: "",
+    skills: "",
+    resume: null,
+    coverLetter: null,
+    linkedIn: "",
+    portfolio: "",
+    status: "applied",
   });
-  const [resume, setResume] = useState(null);
-  const [errors, setErrors] = useState({});
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Update candidate_id when auth changes
   useEffect(() => {
-    if (successApply) {
-      dispatch(clearApplyState());
-      dispatch(fetchJobs({
-        statusFilter: 'all',
-        searchQuery: '',
-        location: '',
-        page: 1,
-        jobsPerPage: 5,
-      }));
-      dispatch(fetchUserApplications(user.id)); // Refresh applied jobs
-      onClose();
-    }
-  }, [successApply, dispatch, onClose, user.id]);
+    setFormData((prev) => ({ ...prev, candidate_id }));
+  }, [candidate_id]);
 
-  const validate = () => {
-    const newErrors = {};
-    if (!formData.name) newErrors.name = 'Full name is required';
-    if (!formData.email) newErrors.email = 'Email is required';
-    else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email format';
-    if (!formData.job_id) newErrors.job_id = 'Invalid job ID';
-    if (!formData.candidate_id) newErrors.candidate_id = 'User ID is required';
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    setErrors({ ...errors, [e.target.name]: '' });
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        setErrors({ ...errors, resume: 'File size exceeds 5MB limit' });
-        return;
-      }
-      if (!['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(file.type)) {
-        setErrors({ ...errors, resume: 'Invalid file format. Use PDF or Word.' });
-        return;
-      }
-    }
-    setResume(file);
-    setErrors({ ...errors, resume: '' });
+    const { name, files } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: files[0] }));
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validate()) {
-      console.error('Validation failed:', errors);
+    setError(null);
+    setSuccess(false);
+
+    // Validate required fields
+    const requiredFields = ["job_id", "candidate_id", "fullName", "email", "phone", "resume"];
+    const missingFields = requiredFields.filter((field) => !formData[field]);
+    if (missingFields.length > 0) {
+      setError(`Please fill out required fields: ${missingFields.join(", ")}`);
       return;
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError("Please enter a valid email address.");
+      return;
+    }
+
+    // Validate phone format
+    const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+    if (!phoneRegex.test(formData.phone)) {
+      setError("Please enter a valid phone number.");
+      return;
+    }
+
+    // Validate job_id is a number
+    if (isNaN(parseInt(formData.job_id))) {
+      setError("Job ID must be a valid number.");
+      return;
+    }
+
+    setIsSubmitting(true);
     try {
-      const data = new FormData();
-      for (const key in formData) {
-        data.append(key, formData[key]);
-      }
-      if (resume) data.append('resume', resume);
+      const submissionData = new FormData();
+      Object.keys(formData).forEach((key) => {
+        if (formData[key] && key !== "resume" && key !== "coverLetter") {
+          submissionData.append(key, formData[key]);
+        }
+      });
+      if (formData.resume) submissionData.append("resume", formData.resume);
+      if (formData.coverLetter) submissionData.append("coverLetter", formData.coverLetter);
 
-      // Log FormData for debugging
-      for (const [key, value] of data.entries()) {
-        console.log(`${key}:`, value instanceof File ? value.name : value);
-      }
-
-      await dispatch(applyToJobThunk(data)).unwrap();
-    } catch (error) {
-      console.error('Application submission failed:', error, error?.payload, error?.meta);
+      const response = await axios.post(
+        "http://localhost:5000/api/applications",
+        submissionData,
+        { headers: { "Content-Type": "multipart/form-data" }, timeout: 10000 }
+      );
+      setSuccess(true);
+      setFormData({
+        job_id: formData.job_id,
+        candidate_id: candidate_id || "",
+        fullName: "",
+        email: "",
+        phone: "",
+        location: "",
+        experience: "",
+        jobTitle: "",
+        company: "",
+        qualification: "",
+        specialization: "",
+        university: "",
+        skills: "",
+        resume: null,
+        coverLetter: null,
+        linkedIn: "",
+        portfolio: "",
+        status: "applied",
+      });
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.details ||
+        "Failed to submit application. Please try again.";
+      setError(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8">
-      <h2 className="text-3xl font-bold text-center mb-6 text-gray-800">
-        Job Application Form
-      </h2>
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">Personal Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-1">Full Name</label>
+    <section className="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-lg shadow-sm">
+        <h2 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6 text-center">
+          Job Application
+        </h2>
+
+        {success && (
+          <div
+            className="mb-6 p-4 bg-green-100 text-green-700 rounded-md"
+            role="alert"
+            aria-live="polite"
+          >
+            Application submitted successfully!
+          </div>
+        )}
+
+        {error && (
+          <div
+            className="mb-6 p-4 bg-red-100 text-red-700 rounded-md"
+            role="alert"
+            aria-live="assertive"
+          >
+            {/* Safely render error message */}
+            {typeof error === "string" ? error : error?.details || error?.error || "An unexpected error occurred"}
+            {(error?.includes?.("job_id") || error?.details?.includes?.("job_id")) && (
+              <p className="mt-2 text-sm">
+                Please ensure you are applying for a valid job.{" "}
+                <a
+                  href="/jobs"
+                  className="text-blue-600 hover:underline"
+                  aria-label="Go to jobs page"
+                >
+                  Browse jobs
+                </a>
+              </p>
+            )}
+            {(error?.includes?.("File upload error") || error?.details?.includes?.("File upload error")) && (
+              <p className="mt-2 text-sm">
+                Please ensure uploaded files are valid (.pdf, .doc, .docx, max 5MB).
+              </p>
+            )}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} encType="multipart/form-data">
+          <div className="grid gap-6 sm:grid-cols-2">
+            {/* Job ID */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="job_id"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Job ID <span className="text-red-500">*</span>
+              </label>
               <input
                 type="text"
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className={`w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 ${errors.name ? 'border-red-500' : ''}`}
+                id="job_id"
+                name="job_id"
+                value={formData.job_id}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                readOnly={!!jobId}
                 required
-                aria-invalid={!!errors.name}
-                aria-describedby={errors.name ? 'name-error' : undefined}
+                aria-required="true"
               />
-              {errors.name && <p id="name-error" className="text-red-500 text-sm">{errors.name}</p>}
             </div>
+
+            {/* Candidate ID */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="candidate_id"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Candidate ID <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="candidate_id"
+                name="candidate_id"
+                value={formData.candidate_id}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                readOnly={!!candidate_id}
+                required
+                aria-required="true"
+              />
+            </div>
+
+            {/* Full Name */}
             <div>
-              <label htmlFor="email" className="block text-sm font-medium mb-1">Email</label>
+              <label
+                htmlFor="fullName"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Full Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                id="fullName"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                required
+                aria-required="true"
+              />
+            </div>
+
+            {/* Email */}
+            <div>
+              <label
+                htmlFor="email"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Email <span className="text-red-500">*</span>
+              </label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={formData.email}
-                onChange={handleChange}
-                className={`w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500 ${errors.email ? 'border-red-500' : ''}`}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 required
-                aria-invalid={!!errors.email}
-                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-required="true"
               />
-              {errors.email && <p id="email-error" className="text-red-500 text-sm">{errors.email}</p>}
             </div>
+
+            {/* Phone */}
             <div>
-              <label htmlFor="phone" className="block text-sm font-medium mb-1">Phone</label>
+              <label
+                htmlFor="phone"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Phone <span className="text-red-500">*</span>
+              </label>
               <input
                 type="tel"
                 id="phone"
                 name="phone"
                 value={formData.phone}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                required
+                aria-required="true"
               />
             </div>
+
+            {/* Location */}
             <div>
-              <label htmlFor="location" className="block text-sm font-medium mb-1">Location</label>
+              <label
+                htmlFor="location"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Location
+              </label>
               <input
                 type="text"
                 id="location"
                 name="location"
                 value={formData.location}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">Professional Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Experience */}
             <div>
-              <label htmlFor="experience" className="block text-sm font-medium mb-1">Experience (Years)</label>
+              <label
+                htmlFor="experience"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Years of Experience
+              </label>
               <input
                 type="number"
                 id="experience"
                 name="experience"
                 value={formData.experience}
-                onChange={handleChange}
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                 min="0"
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {/* Job Title */}
             <div>
-              <label htmlFor="jobTitle" className="block text-sm font-medium mb-1">Job Title</label>
+              <label
+                htmlFor="jobTitle"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Current/Last Job Title
+              </label>
               <input
                 type="text"
                 id="jobTitle"
                 name="jobTitle"
                 value={formData.jobTitle}
-                className="w-full border p-2 rounded-lg bg-gray-100"
-                readOnly
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
+
+            {/* Company */}
             <div>
-              <label htmlFor="company" className="block text-sm font-medium mb-1">Company</label>
+              <label
+                htmlFor="company"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Current/Last Company
+              </label>
               <input
                 type="text"
                 id="company"
                 name="company"
                 value={formData.company}
-                className="w-full border p-2 rounded-lg bg-gray-100"
-                readOnly
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">Education Details</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {/* Qualification */}
             <div>
-              <label htmlFor="qualification" className="block text-sm font-medium mb-1">Qualification</label>
+              <label
+                htmlFor="qualification"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Highest Qualification
+              </label>
               <input
                 type="text"
                 id="qualification"
                 name="qualification"
                 value={formData.qualification}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
+
+            {/* Specialization */}
             <div>
-              <label htmlFor="specialization" className="block text-sm font-medium mb-1">Specialization</label>
+              <label
+                htmlFor="specialization"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Specialization
+              </label>
               <input
                 type="text"
                 id="specialization"
                 name="specialization"
                 value={formData.specialization}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
+
+            {/* University */}
             <div>
-              <label htmlFor="university" className="block text-sm font-medium mb-1">University</label>
+              <label
+                htmlFor="university"
+                className="block text-sm font-medium text-gray-700"
+              >
+                University
+              </label>
               <input
                 type="text"
                 id="university"
                 name="university"
                 value={formData.university}
-                onChange={handleChange}
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">Skills & Resume</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="skills" className="block text-sm font-medium mb-1">Skills</label>
-              <input
-                type="text"
+            {/* Skills */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="skills"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Skills (comma-separated)
+              </label>
+              <textarea
                 id="skills"
                 name="skills"
                 value={formData.skills}
-                onChange={handleChange}
-                placeholder="e.g. Java, React, SQL"
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                rows="4"
               />
             </div>
-            <div>
-              <label htmlFor="resume" className="block text-sm font-medium mb-1">Resume</label>
+
+            {/* Resume */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="resume"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Resume <span className="text-red-500">*</span>
+              </label>
               <input
                 type="file"
                 id="resume"
                 name="resume"
-                accept=".pdf,.doc,.docx"
                 onChange={handleFileChange}
-                className={`w-full border p-2 rounded-lg ${errors.resume ? 'border-red-500' : ''}`}
-                aria-invalid={!!errors.resume}
-                aria-describedby={errors.resume ? 'resume-error' : undefined}
+                accept=".pdf,.doc,.docx"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                required
+                aria-required="true"
               />
-              {errors.resume && <p id="resume-error" className="text-red-500 text-sm">{errors.resume}</p>}
             </div>
-          </div>
-        </div>
 
-        <div>
-          <h3 className="text-lg font-semibold mb-3 text-blue-600">Additional Information</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label htmlFor="linkedIn" className="block text-sm font-medium mb-1">LinkedIn</label>
+            {/* Cover Letter */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="coverLetter"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Cover Letter (Optional)
+              </label>
+              <input
+                type="file"
+                id="coverLetter"
+                name="coverLetter"
+                onChange={handleFileChange}
+                accept=".pdf,.doc,.docx"
+                className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+
+            {/* LinkedIn */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="linkedIn"
+                className="block text-sm font-medium text-gray-700"
+              >
+                LinkedIn Profile (Optional)
+              </label>
               <input
                 type="url"
                 id="linkedIn"
                 name="linkedIn"
                 value={formData.linkedIn}
-                onChange={handleChange}
-                placeholder="LinkedIn Profile URL"
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
-            <div>
-              <label htmlFor="portfolio" className="block text-sm font-medium mb-1">Portfolio/GitHub</label>
+
+            {/* Portfolio */}
+            <div className="sm:col-span-2">
+              <label
+                htmlFor="portfolio"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Portfolio (Optional)
+              </label>
               <input
                 type="url"
                 id="portfolio"
                 name="portfolio"
                 value={formData.portfolio}
-                onChange={handleChange}
-                placeholder="Portfolio or GitHub URL"
-                className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
+                onChange={handleInputChange}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
               />
             </div>
           </div>
-          <div className="mt-4">
-            <label htmlFor="coverLetter" className="block text-sm font-medium mb-1">Cover Letter</label>
-            <textarea
-              id="coverLetter"
-              name="coverLetter"
-              value={formData.coverLetter}
-              onChange={handleChange}
-              rows="4"
-              placeholder="Write a short cover letter..."
-              className="w-full border p-2 rounded-lg focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
 
-        {loadingApply && (
-          <div className="text-center">
-            <BarLoader width="100%" color="#36d7b7" />
+          {/* Submit Button */}
+          <div className="flex justify-center mt-8">
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`inline-flex items-center px-6 py-3 rounded-md text-white font-semibold transition duration-300 ${
+                isSubmitting
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              }`}
+              aria-label="Submit application"
+            >
+              {isSubmitting ? (
+                <>
+                  <BarLoader
+                    width={24}
+                    height={4}
+                    color="#fff"
+                    className="mr-2"
+                    aria-hidden="true"
+                  />
+                  Submitting...
+                </>
+              ) : (
+                "Apply Now"
+              )}
+            </button>
           </div>
-        )}
-        {errorApply && <p className="text-red-500 text-center">{errorApply}</p>}
-        {errors.job_id && <p className="text-red-500 text-center">{errors.job_id}</p>}
-        {errors.candidate_id && <p className="text-red-500 text-center">{errors.candidate_id}</p>}
-
-        <div className="text-center">
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold shadow hover:bg-blue-700 transition disabled:opacity-50"
-            disabled={loadingApply}
-          >
-            Submit Application
-          </button>
-        </div>
-      </form>
-    </div>
+        </form>
+      </div>
+    </section>
   );
 };
 

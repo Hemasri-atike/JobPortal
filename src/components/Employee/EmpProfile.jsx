@@ -56,14 +56,11 @@ const EmpProfile = () => {
   // Initialize form with userInfo and fetch employee data
   useEffect(() => {
     if (!userInfo || !localStorage.getItem("token")) {
-      console.warn("No userInfo or token found, redirecting to login");
+    
       navigate("/login");
       return;
     }
 
-    console.log("UserInfo:", userInfo);
-    console.log("UserType:", userType);
-    console.log("Token:", localStorage.getItem("token"));
 
     const storedEmployeeId = localStorage.getItem("employeeId");
     setEmployeeId(storedEmployeeId);
@@ -344,7 +341,7 @@ const EmpProfile = () => {
       localStorage.setItem("employeeProfile", JSON.stringify({ employeeId: result.employeeId, ...profileData }));
       alert("Profile saved successfully!");
     } catch (error) {
-      console.error("Save profile error:", error);
+
       alert(error || "Failed to save profile");
     }
   };

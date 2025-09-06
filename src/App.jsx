@@ -19,9 +19,9 @@ import JobSearch from './components/job/JobSearch';
 import EmpPosting from './components/Employee/EmpPosting';
 import CadidateDetails from './components/candidate/CadidateDetails';
 import Company from './components/companies/Company';
-// import UserType from './login/UserType';
+
 import Applicants from './components/Employee/Applicants';
-import Compdetails from "./components/Employee/Compdetails"
+
 import Joblisting from './components/common/Joblisting';
 import Messages from './components/candidate/Messages';
 import Application from './components/job/Application';
@@ -29,6 +29,7 @@ import Admindashboard from './pages/dashboard/Admindashboard';
 import JobApply from './components/job/JobApply';
 import Subcategories from './pages/jobcategory/Subcategories';
 import PreviewResume from './pages/cvdetails/resumes/Previewresume';
+import CmpProfile from './components/Employee/CmpProfile';
 
 const App = () => {
   return (
@@ -41,7 +42,7 @@ const App = () => {
                 <Route path="/jobapplication" element={<Application />} />
                 <Route path="/admindashboard" element={<Admindashboard />} />
 
-{/* <Route path="/company/:id" element={<Compdetails />} /> */}
+
 
 
 
@@ -53,7 +54,8 @@ const App = () => {
           <Route path='/empdashboard' element={<EmpDashboard/>}/>
               <Route path='/empposting' element={<EmpPosting/>}/>
                   <Route path='/applicants' element={<Applicants/>}/>
-         <Route path="/cmpprofile/:id" element={<Compdetails />} />
+       
+
 
 
 
@@ -69,17 +71,14 @@ const App = () => {
 {/* Job Search */}
   <Route path='/jobsearch' element={<JobSearch/>}/>
     <Route path='/companies' element={<Company/>}/>
-     {/* <Route path='/cmpprofile' element={<Compdetails />}/> */}
-     <Route path="/cmpprofile" element={<Compdetails />} />
-<Route path="/cmpprofile/:id" element={<Compdetails />} />
+
+     <Route path="/cmpprofile" element={<CmpProfile/>} />
+
 
       <Route path='/category' element={<Category/>}/> 
        <Route path="/categories/:id" element={<Subcategories />} />
       
 
-      {/* <Route path="/login" element={<Login/>}/>
-         <Route path="/register" element={<Register/>}/> */}
-          {/* <Route path="/upload-cv" element={<Cvmanager/>}/> */}
             <Route path="/dashboard" element={<Dashboard/>}/>
               <Route path="/cadprofile" element={<Profile/>}/>
                  <Route path="/resume" element={<Myresume/>}/>
