@@ -13,7 +13,8 @@ import companyReducer from "../store/companySlice.js";
 import postingReducer from "../store/profileSlice.js";
 import jobalertsReducer from "../store/jobalertSlice.js"
 import categoriesReducer from "../store/categoriesSlice.js"
-import authReducer from '../store/authSlice.js'
+import authReducer from '../store/authSlice.js';
+import applicantReducer from "../store/applicantSlice.js"
 
 
 
@@ -35,6 +36,7 @@ const store = configureStore({
               jobalerts: jobalertsReducer, // ✅ add this
          
                  categories: categoriesReducer,
+                  applicants: applicantReducer,
 
 
 
