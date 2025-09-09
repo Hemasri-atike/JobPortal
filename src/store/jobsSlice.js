@@ -176,6 +176,21 @@ export const updateJob = createAsyncThunk(
     }
   }
 );
+export const applyForJob = createAsyncThunk(
+  'jobs/applyForJob',
+  async (submissionData, { rejectWithValue }) => {
+    try {
+      const response = await axios.post(
+        `/api/jobs/${submissionData.get('jobId')}/apply`,
+        submissionData,
+        { headers: { 'Content-Type': 'multipart/form-data' } }
+      );
+      return { jobId: submissionData.get('jobId'), applicant: response.data };
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.error || 'Failed to submit application');
+    }
+  }
+);
 
 // Delete job
 export const deleteJob = createAsyncThunk(

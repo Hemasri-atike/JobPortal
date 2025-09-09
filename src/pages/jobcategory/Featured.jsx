@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { createSelector } from "@reduxjs/toolkit";
 import { BarLoader } from "react-spinners";
 import JobCard from "../../components/ui/JobCard";
-import { fetchJobs } from "../../store/jobsSlice";
+import { fetchJobs } from "../../store/jobsSlice.js";
 
 // Utility function to get unique jobs
 const getUniqueJobs = (jobs) => {

@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams, useNavigate } from 'react-router-dom';
-import { fetchApplicantsByJob, clearApplicantsState } from '../../store/jobsSlice';
+import { fetchApplicantsByJob, clearApplicantsState } from '../../store/jobsSlice.js';
 
 const JobApplicants = () => {
   const { jobId } = useParams();
