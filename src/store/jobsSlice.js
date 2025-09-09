@@ -73,11 +73,12 @@ export const fetchCategories = createAsyncThunk(
         throw new Error('Authentication required');
       }
       const res = await axiosAuth(token).get('/jobs/categories');
+      console.log('fetchCategories: Response=', res.data);
       return Array.isArray(res.data) ? res.data : [];
     } catch (err) {
       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to fetch categories';
-      console.error('fetchCategories Error:', errorMessage);
-      return rejectWithValue(errorMessage); // Return string
+      console.error('fetchCategories Error:', errorMessage, 'Status:', err.response?.status);
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -196,6 +197,29 @@ export const deleteJob = createAsyncThunk(
     }
   }
 );
+export const fetchApplicantsByJob = createAsyncThunk(
+  'jobs/fetchApplicantsByJob',
+  async (jobId, { getState, rejectWithValue }) => {
+    try {
+      const { user: { userInfo } } = getState();
+      const token = userInfo?.token || localStorage.getItem('token');
+      console.log(`fetchApplicantsByJob: jobId=${jobId}, userInfo=`, userInfo, 'token=', token ? 'present' : 'missing');
+      if (!token || !userInfo) {
+        throw new Error('Authentication required');
+      }
+      if (!jobId || isNaN(Number(jobId))) {
+        throw new Error('Invalid job ID');
+      }
+      const response = await axiosAuth(token).get(`/jobs/${jobId}/applicants`);
+      console.log(`fetchApplicantsByJob: Response for jobId=${jobId}`, response.data);
+      return { jobId, applicants: response.data };
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to fetch applicants';
+      console.error('fetchApplicantsByJob Error:', { jobId, error: errorMessage, status: err.response?.status, data: err.response?.data });
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
 
 // Bulk delete jobs
 export const bulkDeleteJobs = createAsyncThunk(
@@ -240,29 +264,8 @@ export const toggleJobStatus = createAsyncThunk(
   }
 );
 
-// Fetch applicants by job ID
-export const fetchApplicantsByJob = createAsyncThunk(
-  'jobs/fetchApplicantsByJob',
-  async (jobId, { getState, rejectWithValue }) => {
-    try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
 
-      console.log(`fetchApplicantsByJob: Fetching applicants for jobId=${jobId}`);
-      const response = await axiosAuth(token).get(`/jobs/${jobId}/applicants`);
 
-      console.log(`fetchApplicantsByJob: Successfully fetched applicants for jobId=${jobId}`, response.data);
-      return { jobId, applicants: response.data };
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch applicants';
-      console.error(`fetchApplicantsByJob Error:`, errorMessage);
-      return rejectWithValue(errorMessage); // Return string
-    }
-  }
-);
 
 // Fetch all applicants for employer's jobs
 export const fetchApplicants = createAsyncThunk(
