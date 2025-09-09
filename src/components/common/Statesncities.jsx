@@ -1,43 +1,4 @@
-// const statesWithCities = {
-//   "Andhra Pradesh": ["Visakhapatnam", "Vijayawada", "Guntur", "Tirupati"],
-//   "Arunachal Pradesh": ["Itanagar", "Naharlagun", "Pasighat", "Tawang"],
-//   "Assam": ["Guwahati", "Silchar", "Dibrugarh", "Jorhat"],
-//   "Bihar": ["Patna", "Gaya", "Muzaffarpur", "Bhagalpur"],
-//   "Chhattisgarh": ["Raipur", "Bhilai", "Bilaspur", "Korba"],
-//   "Goa": ["Panaji", "Margao", "Vasco da Gama", "Mapusa"],
-//   "Gujarat": ["Ahmedabad", "Surat", "Vadodara", "Rajkot"],
-//   "Haryana": ["Gurgaon", "Faridabad", "Panipat", "Ambala"],
-//   "Himachal Pradesh": ["Shimla", "Manali", "Dharamshala", "Solan"],
-//   "Jharkhand": ["Ranchi", "Jamshedpur", "Dhanbad", "Bokaro"],
-//   "Karnataka": ["Bengaluru", "Mysuru", "Mangalore", "Hubli"],
-//   "Kerala": ["Kochi", "Thiruvananthapuram", "Kozhikode", "Thrissur"],
-//   "Madhya Pradesh": ["Bhopal", "Indore", "Jabalpur", "Gwalior"],
-//   "Maharashtra": ["Mumbai", "Pune", "Nagpur", "Nashik"],
-//   "Manipur": ["Imphal", "Thoubal", "Churachandpur", "Ukhrul"],
-//   "Meghalaya": ["Shillong", "Tura", "Jowai", "Nongpoh"],
-//   "Mizoram": ["Aizawl", "Lunglei", "Champhai", "Serchhip"],
-//   "Nagaland": ["Kohima", "Dimapur", "Mokokchung", "Tuensang"],
-//   "Odisha": ["Bhubaneswar", "Cuttack", "Rourkela", "Sambalpur"],
-//   "Punjab": ["Amritsar", "Ludhiana", "Jalandhar", "Patiala"],
-//   "Rajasthan": ["Jaipur", "Jodhpur", "Udaipur", "Kota"],
-//   "Sikkim": ["Gangtok", "Namchi", "Geyzing", "Mangan"],
-//   "Tamil Nadu": ["Chennai", "Coimbatore", "Madurai", "Salem"],
-//   "Telangana": ["Hyderabad", "Warangal", "Nizamabad", "Karimnagar"],
-//   "Tripura": ["Agartala", "Udaipur", "Dharmanagar", "Kailasahar"],
-//   "Uttar Pradesh": ["Lucknow", "Noida", "Ghaziabad", "Kanpur"],
-//   "Uttarakhand": ["Dehradun", "Haridwar", "Nainital", "Rishikesh"],
-//   "West Bengal": ["Kolkata", "Howrah", "Durgapur", "Siliguri"],
 
-//   // Union Territories
-//   "Andaman and Nicobar Islands": ["Port Blair", "Havelock", "Car Nicobar", "Diglipur"],
-//   "Chandigarh": ["Chandigarh"],
-//   "Dadra and Nagar Haveli and Daman and Diu": ["Daman", "Diu", "Silvassa"],
-//   "Delhi": ["New Delhi", "Dwarka", "Rohini", "Saket"],
-//   "Jammu and Kashmir": ["Srinagar", "Jammu", "Anantnag", "Baramulla"],
-//   "Ladakh": ["Leh", "Kargil"],
-//   "Lakshadweep": ["Kavaratti", "Agatti", "Minicoy", "Amini"],
-//   "Puducherry": ["Pondicherry", "Karaikal", "Mahe", "Yanam"]
-// };
 
 
 

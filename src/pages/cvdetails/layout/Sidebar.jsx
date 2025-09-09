@@ -3,12 +3,12 @@ import { Link, useLocation } from "react-router-dom";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { candidateSidebarItems, employeeSidebarItems } from "../../../store/sidebarItems.js";
 
-const Sidebar = ({ role = "candidate" }) => {
+const Sidebar = ({ role = "job_seeker" }) => {
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const location = useLocation();
 
   // Select sidebar items based on role
-  const sidebarItems = role === "employee" ? employeeSidebarItems : candidateSidebarItems;
+  const sidebarItems = role === "employer" ? employeeSidebarItems : candidateSidebarItems;
 
   return (
     <>
@@ -30,7 +30,7 @@ const Sidebar = ({ role = "candidate" }) => {
         <div className="mb-8">
           {/* Role Title */}
           <div className="text-xs text-indigo-600 uppercase tracking-wider font-semibold mb-4">
-            {role === "employee" ? "Employer Dashboard" : "Candidate Dashboard"}
+            {role === "employer" ? "Employer Dashboard" : "Candidate Dashboard"}
           </div>
 
           {/* Sidebar Navigation */}

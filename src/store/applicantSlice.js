@@ -2,32 +2,32 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
 // Fetch applicants
-export const fetchApplicants = createAsyncThunk(
-  "applicants/fetchApplicants",
-  async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
-    try {
-      const res = await axios.get("http://localhost:5000/api/applicants", {
-        params: { status: statusFilter, search: searchQuery, page, limit: jobsPerPage },
-      });
-      console.log("API Response:", res.data); // Debug log
-      // Normalize response
-      const data = res.data;
-      return {
-        applicants: Array.isArray(data.applicants)
-          ? data.applicants
-          : Array.isArray(data)
-          ? data
-          : [],
-        total: data.total || (Array.isArray(data.applicants) ? data.applicants.length : data.length || 0),
-        page: data.page || page,
-        limit: data.limit || jobsPerPage,
-      };
-    } catch (err) {
-      console.error("Fetch Applicants Error:", err.response?.data || err.message);
-      return rejectWithValue(err.response?.data?.message || "Error fetching applicants");
-    }
-  }
-);
+// export const fetchApplicants = createAsyncThunk(
+//   "applicants/fetchApplicants",
+//   async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
+//     try {
+//       const res = await axios.get("http://localhost:5000/api/applicants", {
+//         params: { status: statusFilter, search: searchQuery, page, limit: jobsPerPage },
+//       });
+//       console.log("API Response:", res.data); // Debug log
+//       // Normalize response
+//       const data = res.data;
+//       return {
+//         applicants: Array.isArray(data.applicants)
+//           ? data.applicants
+//           : Array.isArray(data)
+//           ? data
+//           : [],
+//         total: data.total || (Array.isArray(data.applicants) ? data.applicants.length : data.length || 0),
+//         page: data.page || page,
+//         limit: data.limit || jobsPerPage,
+//       };
+//     } catch (err) {
+//       console.error("Fetch Applicants Error:", err.response?.data || err.message);
+//       return rejectWithValue(err.response?.data?.message || "Error fetching applicants");
+//     }
+//   }
+// );
 
 // Update applicant status
 export const updateApplicantStatus = createAsyncThunk(
@@ -64,6 +64,26 @@ export const addApplicantNote = createAsyncThunk(
     }
   }
 );
+
+
+
+
+// In a new applicantsSlice.js or add to jobsSlice
+export const fetchApplicants = createAsyncThunk(
+  'applicants/fetchApplicants',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { auth: { token } } = getState(); // For employer auth
+      const res = await axios.get('http://localhost:5000/api/applications/employer', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      return res.data; // Array of applicants
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.message || 'Error fetching applicants');
+    }
+  }
+);
+// Add to extraReducers: similar to fetchJobs.
 
 const applicantSlice = createSlice({
   name: "applicants",

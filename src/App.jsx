@@ -30,6 +30,7 @@ import JobApply from './components/job/JobApply';
 import Subcategories from './pages/jobcategory/Subcategories';
 import PreviewResume from './pages/cvdetails/resumes/Previewresume';
 import CmpProfile from './components/Employee/CmpProfile';
+import JobApplicants from './components/common/JobApplicants';
 
 const App = () => {
   return (
@@ -54,6 +55,7 @@ const App = () => {
           <Route path='/empdashboard' element={<EmpDashboard/>}/>
               <Route path='/empposting' element={<EmpPosting/>}/>
                   <Route path='/applicants' element={<Applicants/>}/>
+                   <Route path='/jobs/:id/applicants' element={<JobApplicants/>}/>
        
 
 

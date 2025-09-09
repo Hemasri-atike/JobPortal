@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../store/userSlice";
+import { toast, ToastContainer } from "react-toastify"; // Import ToastContainer
+import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {
   const [mobile, setMobile] = useState("");
@@ -22,7 +24,7 @@ const Login = () => {
     location.state?.from?.pathname ||
     (loginType === "employer" ? "/empdashboard" : "/cadprofile");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!/^\d{10}$/.test(mobile)) {
@@ -31,19 +33,18 @@ const Login = () => {
     }
     setMobileError("");
 
-    dispatch(loginUser({ mobile, password }))
-      .unwrap()
-      .then(() => {
-        navigate(from, { replace: true });
-      })
-      .catch((err) => {
-        console.error("Login failed:", err);
-      });
+    try {
+      await dispatch(loginUser({ mobile, password, loginType })).unwrap();
+      navigate(from, { replace: true });
+      toast.success(`Logged in as ${loginType}`);
+    } catch (err) {
+      console.error("Login failed:", err);
+      toast.error(err?.message || "Login failed. Please try again.");
+    }
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white px-4 relative overflow-hidden">
-      {/* Animated Background */}
       <div className="absolute inset-0 z-0">
         <div className="absolute top-10 left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-float"></div>
         <div
@@ -132,25 +133,7 @@ const Login = () => {
           </div>
         </form>
       </div>
-
-      {/* Tailwind Animation Classes */}
-      <style jsx>{`
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-in-out;
-        }
-        .animate-float {
-          animation: float 6s ease-in-out infinite;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-          100% { transform: translateY(0px); }
-        }
-      `}</style>
+      <ToastContainer position="top-right" autoClose={3000} />
     </div>
   );
 };

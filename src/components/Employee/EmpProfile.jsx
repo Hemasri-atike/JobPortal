@@ -21,6 +21,8 @@ import {
   removeEmployeeCertification,
 } from "../../store/empprofileSlice.js";
 import { logoutUser } from "../../store/userSlice.js";
+// Import states with cities data
+import statesWithCities from "../../components/common/Statesncities.jsx";  
 
 const EmpProfile = () => {
   const dispatch = useDispatch();
@@ -52,15 +54,18 @@ const EmpProfile = () => {
   const [showExpForm, setShowExpForm] = useState(false);
   const [showCertForm, setShowCertForm] = useState(false);
   const [employeeId, setEmployeeId] = useState(null);
+  // Add state for filtered cities based on selected state
+  const [filteredCities, setFilteredCities] = useState([]);
+
+  // Extract states array from the imported object
+  const states = Object.keys(statesWithCities);
 
   // Initialize form with userInfo and fetch employee data
   useEffect(() => {
     if (!userInfo || !localStorage.getItem("token")) {
-    
       navigate("/login");
       return;
     }
-
 
     const storedEmployeeId = localStorage.getItem("employeeId");
     setEmployeeId(storedEmployeeId);
@@ -87,6 +92,13 @@ const EmpProfile = () => {
       dispatch(fetchEmployee(storedEmployeeId));
     }
   }, [dispatch, navigate, userInfo, userType]);
+
+  // Handle state change to filter cities
+  const handleStateChange = (e) => {
+    const selectedState = e.target.value;
+    setEduInput({ ...eduInput, state: selectedState, city: "" });  // Reset city when state changes
+    setFilteredCities(statesWithCities[selectedState] || []);
+  };
 
   // Profile Completion Score
   const calculateCompletionScore = () => {
@@ -131,8 +143,13 @@ const EmpProfile = () => {
     setFormErrors({ ...formErrors, [e.target.name]: "" });
   };
 
-  const handleEduChange = (e) =>
-    setEduInput({ ...eduInput, [e.target.name]: e.target.value });
+  const handleEduChange = (e) => {
+    if (e.target.name === "state") {
+      handleStateChange(e);
+    } else {
+      setEduInput({ ...eduInput, [e.target.name]: e.target.value });
+    }
+  };
 
   const handleExpChange = (e) =>
     setExpForm({ ...expForm, [e.target.name]: e.target.value });
@@ -174,6 +191,7 @@ const EmpProfile = () => {
         field_of_study: "",
         duration: "",
       });
+      setFilteredCities([]);  // Reset filtered cities
       setShowEduForm(false);
     } catch (error) {
       alert(error || "Failed to add education");
@@ -341,7 +359,6 @@ const EmpProfile = () => {
       localStorage.setItem("employeeProfile", JSON.stringify({ employeeId: result.employeeId, ...profileData }));
       alert("Profile saved successfully!");
     } catch (error) {
-
       alert(error || "Failed to save profile");
     }
   };
@@ -361,8 +378,7 @@ const EmpProfile = () => {
       <div className="flex">
         {/* Sidebar */}
         <aside className="w-64 bg-white shadow-lg hidden md:block">
-          
-          <Sidebar role="employee"/>
+          <Sidebar role="employer"/>
         </aside>
 
         {/* Main Content */}
@@ -579,8 +595,6 @@ const EmpProfile = () => {
                   {[
                     { name: "college", placeholder: "College Name", required: true },
                     { name: "university", placeholder: "University", required: true },
-                    { name: "city", placeholder: "City", required: true },
-                    { name: "state", placeholder: "State", required: true },
                     { name: "duration", placeholder: "Duration (e.g., 2018-2022)", required: true },
                     { name: "degree", placeholder: "Degree (e.g., B.Sc.)", required: false },
                     { name: "field_of_study", placeholder: "Field of Study", required: false },
@@ -598,6 +612,43 @@ const EmpProfile = () => {
                       />
                     </div>
                   ))}
+                  {/* State and City as dropdowns */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
+                    <select
+                      name="state"
+                      value={eduInput.state}
+                      onChange={handleEduChange}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                      required
+                      disabled={loading}
+                    >
+                      <option value="">Select State</option>
+                      {states.map((state) => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
+                    <select
+                      name="city"
+                      value={eduInput.city}
+                      onChange={handleEduChange}
+                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
+                      required
+                      disabled={loading || !eduInput.state}
+                    >
+                      <option value="">Select City (after selecting state)</option>
+                      {filteredCities.map((city) => (
+                        <option key={city} value={city}>
+                          {city}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <div className="col-span-1 sm:col-span-2">
                     <button
                       type="button"

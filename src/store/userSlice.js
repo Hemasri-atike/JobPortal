@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// 🔹 Helper to safely read from localStorage
+// Helper to safely read from localStorage
 const getStoredUserInfo = () => {
   try {
     const stored = localStorage.getItem("userInfo");
@@ -23,7 +23,7 @@ const getStoredUserType = () => {
   }
 };
 
-// 🔹 Register User
+// Register User
 export const registerUser = createAsyncThunk(
   "user/registerUser",
   async (userData, { rejectWithValue }) => {
@@ -39,25 +39,25 @@ export const registerUser = createAsyncThunk(
 
       // Save token and user
       localStorage.setItem("token", data.token);
-      localStorage.setItem("userInfo", JSON.stringify(data.user));
+      localStorage.setItem("userInfo", JSON.stringify({ ...data.user, token: data.token }));
       localStorage.setItem("userType", data.user.role);
 
-      return data.user;
+      return { ...data.user, token: data.token };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// 🔹 Login User (mobile + password)
+// Login User (mobile + password + loginType)
 export const loginUser = createAsyncThunk(
   "user/loginUser",
-  async ({ mobile, password }, { rejectWithValue }) => {
+  async ({ mobile, password, loginType }, { rejectWithValue }) => {
     try {
       const response = await fetch("http://localhost:5000/api/users/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile, password }),
+        body: JSON.stringify({ mobile, password, loginType }), // Include loginType
       });
 
       const data = await response.json();
@@ -65,17 +65,17 @@ export const loginUser = createAsyncThunk(
 
       // Save token and user
       localStorage.setItem("token", data.token);
-      localStorage.setItem("userInfo", JSON.stringify(data.user));
+      localStorage.setItem("userInfo", JSON.stringify({ ...data.user, token: data.token }));
       localStorage.setItem("userType", data.user.role);
 
-      return data.user; 
+      return { ...data.user, token: data.token };
     } catch (error) {
       return rejectWithValue(error.message);
     }
   }
 );
 
-// 🔹 Initial state
+// Initial state
 const initialState = {
   userInfo: getStoredUserInfo(),
   userType: getStoredUserType(),
@@ -83,7 +83,7 @@ const initialState = {
   error: null,
 };
 
-// 🔹 Slice
+// Slice
 const userSlice = createSlice({
   name: "user",
   initialState,
@@ -113,7 +113,6 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.error = action.payload;
       })
-
       // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;

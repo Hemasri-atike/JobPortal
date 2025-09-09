@@ -1,22 +1,30 @@
-// src/store/postingSlice.js
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-// Fetch jobs posted by the logged-in employee
+const axiosAuth = (token) =>
+  axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 10000,
+  });
+
 export const fetchPostedJobs = createAsyncThunk(
-  "postedJobs/fetchPostedJobs",
-  async (_, { rejectWithValue }) => {
+  'postedJobs/fetchPostedJobs',
+  async ({ userInfo, userType, token }, { rejectWithValue }) => {
     try {
-      const res = await axios.get("http://localhost:5000/api/jobs/posted");
-      return res.data; // Expecting an array of jobs
-    } catch (err) {
-      return rejectWithValue(err.response?.data || "Error fetching posted jobs");
+      console.log('fetchPostedJobs: userInfo=', userInfo, 'userType=', userType, 'token=', token ? 'present' : 'missing');
+      const response = await axiosAuth(token).get('/jobs/posted');
+      return response.data;
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch posted jobs';
+      console.error('fetchPostedJobs Error:', errorMessage);
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 const postingSlice = createSlice({
-  name: "postedJobs",
+  name: 'postedJobs',
   initialState: {
     list: [],
     loading: false,
@@ -31,7 +39,7 @@ const postingSlice = createSlice({
       })
       .addCase(fetchPostedJobs.fulfilled, (state, action) => {
         state.loading = false;
-        state.list = Array.isArray(action.payload) ? action.payload : [];
+        state.list = action.payload || [];
       })
       .addCase(fetchPostedJobs.rejected, (state, action) => {
         state.loading = false;
