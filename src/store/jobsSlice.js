@@ -11,31 +11,41 @@ const axiosAuth = (token) =>
 
 
 
-// Fetch jobs
+
+
+
 export const fetchJobs = createAsyncThunk(
   'jobs/fetchJobs',
-  async (params = {}, { getState, rejectWithValue }) => {
+  async ({ statusFilter = 'open', searchQuery = '', page = 1, jobsPerPage = 6, subcategory }, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
       if (!token) {
         throw new Error('No authentication token found');
       }
-      console.log('fetchJobs: userInfo=', user.userInfo, 'userType=', user.userType, 'token=', token ? 'present' : 'missing', 'params=', params);
+      const params = {
+        status: statusFilter,
+        query: searchQuery,
+        page,
+        perPage: jobsPerPage,
+        ...(subcategory && { subcategory }),
+      };
       const response = await axiosAuth(token).get('/jobs', { params });
-      return response.data;
+      return {
+        jobs: response.data.jobs || [],
+        total: response.data.total || 0,
+        page: response.data.page || page,
+        perPage: response.data.perPage || jobsPerPage,
+      };
     } catch (error) {
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch jobs';
-      console.error('fetchJobs Error:', errorMessage);
       if (error.response?.status === 404) {
-        console.log('fetchJobs: No jobs found, returning empty array');
-        return { jobs: [], total: 0, page: 1, limit: 10 };
+        return { jobs: [], total: 0, page, perPage: jobsPerPage };
       }
       return rejectWithValue(errorMessage);
     }
   }
 );
-
 
 // Fetch job by ID
 export const fetchJobById = createAsyncThunk(
@@ -770,10 +780,3 @@ export default jobsSlice.reducer;
 
 
 
-
-// ///
-
-
-
-
-// ... (other thunks unchanged, but update token access similarly)

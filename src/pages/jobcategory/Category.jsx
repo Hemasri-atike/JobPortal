@@ -17,33 +17,51 @@ const Category = () => {
     }
   }, [status, dispatch]);
 
-  console.log('Category component rendered:', { status, categories, error });
-
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h3 className="text-3xl font-bold text-center text-gray-900 mb-10">
+        <h3 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-10">
           Popular Job Categories
         </h3>
 
         {status === 'loading' && (
-          <p className="text-center text-gray-500" aria-live="polite">
-            Loading categories...
-          </p>
+          <div className="text-center" aria-live="polite">
+            <svg
+              className="animate-spin h-6 w-6 text-blue-600 mx-auto"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              ></circle>
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span className="sr-only">Loading categories...</span>
+          </div>
         )}
 
         {status === 'failed' && (
           <p
-            className="text-center text-red-500"
+            className="text-center text-red-600 p-4 bg-red-50 rounded-md"
             role="alert"
             aria-live="assertive"
           >
-            Failed to load categories. Please try again later.
+            {error || 'Failed to load categories. Please try again later.'}
           </p>
         )}
 
         {status === 'succeeded' && categories.length === 0 && (
-          <p className="text-center text-gray-500" aria-live="polite">
+          <p className="text-center text-gray-600 p-4 bg-white rounded-md shadow-sm" aria-live="polite">
             No categories available.
           </p>
         )}
@@ -51,7 +69,6 @@ const Category = () => {
         {status === 'succeeded' && categories.length > 0 && (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {categories.map((category, index) => {
-              // Validate category data
               const categoryId = category.id || `category-${index}`;
               const categoryName = category.name || 'Unnamed Category';
               const openPositions = category.openPositions ?? 0;
@@ -62,20 +79,20 @@ const Category = () => {
               return (
                 <Link
                   key={categoryId}
-                  to={`/categories/${category.id}`}
-                  className="p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 block focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  aria-label={`View jobs in ${categoryName} category with ${openPositions} open positions`}
+                  to={`/categories/${categoryId}`}
+                  className="p-4 sm:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  aria-label={`View subcategories for ${categoryName} with ${openPositions} open positions`}
                 >
-                  <div className="flex items-center space-x-4 mb-4">
+                  <div className="flex items-center space-x-4 mb-3">
                     <div
-                      className={`w-14 h-14 ${bgColor} rounded-xl flex items-center justify-center`}
+                      className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center`}
                     >
                       <IconComponent
-                        className={`w-7 h-7 ${iconColor}`}
+                        className={`w-6 h-6 ${iconColor}`}
                         aria-hidden="true"
                       />
                     </div>
-                    <h3 className="font-semibold text-lg text-gray-800">
+                    <h3 className="font-semibold text-base sm:text-lg text-gray-800 line-clamp-1">
                       {categoryName}
                     </h3>
                   </div>

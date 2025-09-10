@@ -5,7 +5,7 @@ import Application from '../../components/job/Application';
 const JobCard = ({ job }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { applications } = useSelector((state) => state.jobs || {});
-  const hasApplied = applications.includes(job.id);
+  const hasApplied = applications?.includes(job.id) || false;
 
   if (!job) return null;
 
@@ -22,15 +22,26 @@ const JobCard = ({ job }) => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-md p-5 hover:shadow-lg transition duration-300">
-        <h3 className="text-lg font-semibold text-gray-800">{title}</h3>
-        <p className="text-sm text-gray-500">{company_name}</p>
-        <p className="text-sm text-gray-400">{location}</p>
-        <p className="text-sm text-gray-500 mt-1">Salary: {salary}</p>
-        {/* <p className="text-sm text-gray-500 mt-1">Status: {status}</p> */}
+      <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition duration-300 flex flex-col min-h-[240px] max-w-full border border-gray-200">
+        <div className="mb-2">
+          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-1">{title}</h3>
+          <p className="text-sm text-gray-500">{company_name}</p>
+        </div>
+
+        <div className="text-sm text-gray-400 mb-2">
+          <span className="inline-flex items-center">
+            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+            </svg>
+            {location}
+          </span>
+        </div>
+
+        <p className="text-sm text-gray-500 mb-2">Salary: {salary}</p>
+        {/* <p className="text-sm text-gray-500 mb-2">Status: {status}</p> */}
 
         {tags.length > 0 && (
-          <div className="flex gap-2 mt-3 flex-wrap">
+          <div className="flex gap-2 mb-2 flex-wrap">
             {tags.map((tag, i) => (
               <span
                 key={`${id}-${tag}-${i}`}
@@ -42,16 +53,17 @@ const JobCard = ({ job }) => {
           </div>
         )}
 
-        <p className="mt-4 text-gray-600">{description}</p>
+        <p className="text-sm text-gray-600 flex-grow line-clamp-2">{description}</p>
+
         <button
-          className={`mt-4 px-4 py-2 rounded-lg text-sm text-white ${
+          className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium text-white w-full sm:w-auto self-end ${
             hasApplied
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
+              : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
           }`}
           onClick={() => setIsModalOpen(true)}
           disabled={hasApplied}
-          aria-label={hasApplied ? 'Already applied' : 'Apply for job'}
+          aria-label={hasApplied ? 'Already applied' : `Apply for ${title} at ${company_name}`}
         >
           {hasApplied ? 'Applied' : 'Apply Now'}
         </button>
@@ -59,22 +71,22 @@ const JobCard = ({ job }) => {
 
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 sm:p-0"
           role="dialog"
           aria-modal="true"
           aria-labelledby="application-modal-title"
         >
-          <div className="bg-white rounded-lg w-full max-w-4xl overflow-y-auto max-h-[90vh]">
-            <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          <div className="bg-white rounded-lg w-full max-w-lg sm:max-w-2xl lg:max-w-3xl overflow-y-auto max-h-[90vh]">
+            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
               <h2
                 id="application-modal-title"
-                className="text-lg font-semibold text-gray-900"
+                className="text-lg sm:text-xl font-semibold text-gray-900"
               >
                 Apply for {title} at {company_name}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-gray-500 hover:text-gray-700 text-lg"
                 aria-label="Close application modal"
               >
                 ✕
