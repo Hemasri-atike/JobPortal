@@ -1,13 +1,25 @@
 // src/store/categoriesSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
-
+const axiosAuth = (token) =>
+  axios.create({
+    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api', // Use Vite env variable
+    headers: { Authorization: `Bearer ${token}` },
+    timeout: 10000,
+  });
 // Fetch categories from backend
 export const fetchCategories = createAsyncThunk(
   "categories/fetchCategories",
-  async (_, { rejectWithValue }) => {
+    async (params = {}, { getState, rejectWithValue }) => {
     try {
-      const res = await axios.get("http://localhost:5000/api/categories");
+      const { user } = getState();
+      console.log("s",user)
+
+      const token = user.userInfo?.token || localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+      const res =await axiosAuth(token).get("/categories/getCategories");
       return res.data; // expected array of categories
     } catch (err) {
       // Ensure a string error is returned

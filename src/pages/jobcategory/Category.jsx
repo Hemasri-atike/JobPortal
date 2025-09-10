@@ -22,9 +22,9 @@ const Category = () => {
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-10">
+        <h3 className="text-3xl font-bold text-center text-gray-900 mb-10">
           Popular Job Categories
-        </h2>
+        </h3>
 
         {status === 'loading' && (
           <p className="text-center text-gray-500" aria-live="polite">
