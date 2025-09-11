@@ -4,12 +4,14 @@ import { Link, useNavigate } from "react-router-dom";
 import { User, Edit, GraduationCap, Briefcase, MapPin, FileText } from "lucide-react";
 import Sidebar from "../layout/Sidebar.jsx";
 import Header from "../../navbar/Header.jsx";
-import { fetchProfile, clearMessages } from "../../../store/profileSlice.js";
+import { fetchProfile, clearMessages as clearProfileMessages } from "../../../store/profileSlice.js";
+import { loadCandidate, clearCandidateMessages } from "../../../store/candidateSlice.js";
 
 const Profile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { profile, loading, error, success } = useSelector((state) => state.profile);
+  const { profile, loading: profileLoading, error: profileError, success: profileSuccess } = useSelector((state) => state.profile);
+  const { data: candidate, loading: candidateLoading, error: candidateError, success: candidateSuccess } = useSelector((state) => state.candidate);
   const { userInfo } = useSelector((state) => state.user);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
@@ -20,16 +22,25 @@ const Profile = () => {
     }
   }, [userInfo, navigate]);
 
-  // Fetch profile data and cleanup
+  // Fetch profile and candidate data
   useEffect(() => {
-    if (userInfo?.role === "job_seeker") {
+    if (userInfo?.role === "job_seeker" && userInfo?.id) {
       dispatch(fetchProfile());
+      dispatch(loadCandidate(userInfo.id));
     }
-    return () => dispatch(clearMessages());
+    return () => {
+      dispatch(clearProfileMessages());
+      dispatch(clearCandidateMessages());
+    };
   }, [dispatch, userInfo]);
 
+  // Combined states
+  const isLoading = profileLoading || candidateLoading;
+  const error = profileError || candidateError;
+  const success = profileSuccess || candidateSuccess;
+
   // Loading state
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -41,29 +52,32 @@ const Profile = () => {
     );
   }
 
-  // Error state
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
-        <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-          <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg animate-slide-down">
-            {error}
-            <button
-              onClick={() => dispatch(clearMessages())}
-              className="ml-4 text-red-800 hover:text-red-900 font-medium focus:outline-none focus:underline"
-              aria-label="Dismiss error"
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // // Error state
+  // if (error) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+  //       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
+  //       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
+  //         <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg animate-slide-down">
+  //           {error}
+  //           <button
+  //             onClick={() => {
+  //               dispatch(clearProfileMessages());
+  //               dispatch(clearCandidateMessages());
+  //             }}
+  //             className="ml-4 text-red-800 hover:text-red-900 font-medium focus:outline-none focus:underline"
+  //             aria-label="Dismiss error"
+  //           >
+  //             Dismiss
+  //           </button>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
 
-  // No profile state
-  if (!profile) {
+  // No profile or candidate data
+  if (!profile && !candidate) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -85,13 +99,9 @@ const Profile = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
-      {/* Header */}
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-
-      {/* Main Content */}
       <div className="flex">
-        {/* Sidebar */}
-        <div className="hidden lg:block w-72  text-white shadow-2xl">
+        <div className="hidden lg:block w-72 text-white shadow-2xl">
           <Sidebar role="job_seeker" />
         </div>
         {isSidebarOpen && (
@@ -108,14 +118,11 @@ const Profile = () => {
             </div>
           </div>
         )}
-
-        {/* Main Content */}
         <main className="flex-1 p-6 lg:p-12 max-w-7xl mx-auto">
-          {/* Header Section */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
             <div className="flex items-center justify-between">
               <div className="flex items-center">
-                {profile.avatar && (
+                {profile?.avatar && (
                   <img
                     src={profile.avatar}
                     alt={`${profile.name || "User"}'s avatar`}
@@ -124,7 +131,7 @@ const Profile = () => {
                 )}
                 <div>
                   <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                    {profile.name || "Candidate Profile"}
+                    {profile?.name || "Candidate Profile"}
                   </h1>
                   <p className="mt-3 text-gray-600 text-sm font-medium">
                     Your professional profile to attract employers.
@@ -141,15 +148,11 @@ const Profile = () => {
               </button>
             </div>
           </div>
-
-          {/* Success Message */}
           {success && (
             <div className="bg-green-50 border-l-4 border-green-600 text-green-800 p-4 rounded-lg mb-10 animate-slide-down">
               {success}
             </div>
           )}
-
-          {/* Personal Information */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center tracking-tight border-b border-gray-200 pb-2">
               <User className="w-5 h-5 text-indigo-600 mr-2" />
@@ -158,31 +161,31 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Name:</strong>{" "}
-                {profile.name || "Not provided"}
+                {profile?.name || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Email:</strong>{" "}
-                {profile.email || "Not provided"}
+                {profile?.email || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Mobile:</strong>{" "}
-                {profile.mobile || "Not provided"}
+                {profile?.mobile || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Address:</strong>{" "}
-                {profile.address || "Not provided"}
+                {candidate?.address || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">LinkedIn:</strong>{" "}
-                {profile.linkedin ? (
+                {candidate?.linkedin ? (
                   <a
-                    href={profile.linkedin}
+                    href={candidate.linkedin}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-indigo-600 hover:text-indigo-800 transition-colors"
                     aria-label="View LinkedIn profile"
                   >
-                    {profile.linkedin}
+                    {candidate.linkedin}
                   </a>
                 ) : (
                   "Not provided"
@@ -190,15 +193,15 @@ const Profile = () => {
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">GitHub:</strong>{" "}
-                {profile.github ? (
+                {candidate?.github ? (
                   <a
-                    href={profile.github}
+                    href={candidate.github}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-indigo-600 hover:text-indigo-800 transition-colors"
                     aria-label="View GitHub profile"
                   >
-                    {profile.github}
+                    {candidate.github}
                   </a>
                 ) : (
                   "Not provided"
@@ -206,102 +209,95 @@ const Profile = () => {
               </p>
               <p className="text-sm text-gray-600 col-span-2">
                 <strong className="font-medium text-gray-900">Objective:</strong>{" "}
-                {profile.objective || "Not provided"}
+                {candidate?.objective || "Not provided"}
               </p>
             </div>
           </div>
-
-          {/* Education */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center tracking-tight border-b border-gray-200 pb-2">
               <GraduationCap className="w-5 h-5 text-indigo-600 mr-2" />
               Education
             </h2>
             <div className="space-y-6">
-              {/* Graduation */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Graduation</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Degree:</strong>{" "}
-                    {profile.graduationDegree || "Not provided"}
+                    {candidate?.graduationDegree || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">University:</strong>{" "}
-                    {profile.graduationUniversity || "Not provided"}
+                    {candidate?.graduationUniversity || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">College:</strong>{" "}
-                    {profile.graduationCollege || "Not provided"}
+                    {candidate?.graduationCollege || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Location:</strong>{" "}
-                    {profile.graduationCity && profile.graduationState
-                      ? `${profile.graduationCity}, ${profile.graduationState}`
+                    {candidate?.graduationCity && candidate?.graduationState
+                      ? `${candidate.graduationCity}, ${candidate.graduationState}`
                       : "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Year:</strong>{" "}
-                    {profile.graduationYear || "Not provided"}
+                    {candidate?.graduationYear || "Not provided"}
                   </p>
                 </div>
               </div>
-              {/* Intermediate */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">Intermediate</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Board:</strong>{" "}
-                    {profile.interBoard || "Not provided"}
+                    {candidate?.interBoard || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Stream:</strong>{" "}
-                    {profile.interStream || "Not provided"}
+                    {candidate?.interStream || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">College:</strong>{" "}
-                    {profile.interCollege || "Not provided"}
+                    {candidate?.interCollege || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Location:</strong>{" "}
-                    {profile.interCity && profile.interState
-                      ? `${profile.interCity}, ${profile.interState}`
+                    {candidate?.interCity && candidate?.interState
+                      ? `${candidate.interCity}, ${candidate.interState}`
                       : "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Year:</strong>{" "}
-                    {profile.interYear || "Not provided"}
+                    {candidate?.interYear || "Not provided"}
                   </p>
                 </div>
               </div>
-              {/* 10th */}
               <div>
                 <h3 className="text-lg font-medium text-gray-900 mb-2">10th</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Board:</strong>{" "}
-                    {profile.tenthBoard || "Not provided"}
+                    {candidate?.tenthBoard || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">School:</strong>{" "}
-                    {profile.tenthSchool || "Not provided"}
+                    {candidate?.tenthSchool || "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Location:</strong>{" "}
-                    {profile.tenthCity && profile.tenthState
-                      ? `${profile.tenthCity}, ${profile.tenthState}`
+                    {candidate?.tenthCity && candidate?.tenthState
+                      ? `${candidate.tenthCity}, ${candidate.tenthState}`
                       : "Not provided"}
                   </p>
                   <p className="text-sm text-gray-600">
                     <strong className="font-medium text-gray-900">Year:</strong>{" "}
-                    {profile.tenthYear || "Not provided"}
+                    {candidate?.tenthYear || "Not provided"}
                   </p>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* Experience */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center tracking-tight border-b border-gray-200 pb-2">
               <Briefcase className="w-5 h-5 text-indigo-600 mr-2" />
@@ -310,28 +306,26 @@ const Profile = () => {
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Years of Experience:</strong>{" "}
-                {profile.experience || "Not provided"}
+                {candidate?.experience || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Company:</strong>{" "}
-                {profile.companyName || "Not provided"}
+                {candidate?.companyName || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Job Title:</strong>{" "}
-                {profile.jobTitle || "Not provided"}
+                {candidate?.jobTitle || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Duration:</strong>{" "}
-                {profile.duration || "Not provided"}
+                {candidate?.duration || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Responsibilities:</strong>{" "}
-                {profile.responsibilities || "Not provided"}
+                {candidate?.responsibilities || "Not provided"}
               </p>
             </div>
           </div>
-
-          {/* Location */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center tracking-tight border-b border-gray-200 pb-2">
               <MapPin className="w-5 h-5 text-indigo-600 mr-2" />
@@ -340,25 +334,23 @@ const Profile = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Current Location:</strong>{" "}
-                {profile.currentLocation || "Not provided"}
+                {candidate?.currentLocation || "Not provided"}
               </p>
               <p className="text-sm text-gray-600">
                 <strong className="font-medium text-gray-900">Preferred Location:</strong>{" "}
-                {profile.preferredLocation || "Not provided"}
+                {candidate?.preferredLocation || "Not provided"}
               </p>
             </div>
           </div>
-
-          {/* Resume */}
           <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
             <h2 className="text-2xl font-semibold text-gray-900 mb-6 flex items-center tracking-tight border-b border-gray-200 pb-2">
               <FileText className="w-5 h-5 text-indigo-600 mr-2" />
               Resume
             </h2>
             <p className="text-sm text-gray-600">
-              {profile.resume ? (
+              {candidate?.resume ? (
                 <a
-                  href={profile.resume}
+                  href={candidate.resume}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-indigo-600 hover:text-indigo-800 transition-colors"

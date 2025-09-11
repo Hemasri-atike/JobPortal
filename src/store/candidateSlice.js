@@ -1,44 +1,19 @@
+
+
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-// Fetch candidate by ID
-export const loadCandidate = createAsyncThunk(
-  "candidate/load",
-  async (id, { rejectWithValue, getState }) => {
-    try {
-      const { userInfo } = getState().user; // Get user info from Redux state
-      const token = userInfo?.token; // Assume token is stored in userInfo
-      if (!token) throw new Error("No authentication token found");
 
-      const res = await fetch(`http://localhost:5000/candidates/${id}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (!res.ok) {
-        const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to fetch candidate");
-      }
-      const responseData = await res.json();
-      if (!responseData || typeof responseData !== "object") {
-        throw new Error("Invalid candidate data received");
-      }
-      return responseData;
-    } catch (err) {
-      console.error("loadCandidate error:", err.message);
-      return rejectWithValue(err.message);
-    }
-  }
-);
 
 // Save new candidate
 export const saveCandidate = createAsyncThunk(
   "candidate/save",
   async (formData, { rejectWithValue, getState }) => {
     try {
-      const { userInfo } = getState().user; // Get user info from Redux state
-      const token = userInfo?.token; // Assume token is stored in userInfo
+      const { userInfo } = getState().user;
+      const token = userInfo?.token;
       if (!token) throw new Error("No authentication token found");
 
+      console.log("saveCandidate: FormData contents:", [...formData.entries()]);
       const res = await fetch("http://localhost:5000/api/candidates/add", {
         method: "POST",
         headers: {
@@ -48,7 +23,8 @@ export const saveCandidate = createAsyncThunk(
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to save candidate");
+        console.error("saveCandidate: Backend error response:", { status: res.status, errorData });
+        throw new Error(errorData.message || `Failed to save candidate (Status: ${res.status})`);
       }
       const responseData = await res.json();
       if (!responseData || typeof responseData !== "object") {
@@ -56,7 +32,7 @@ export const saveCandidate = createAsyncThunk(
       }
       return responseData;
     } catch (err) {
-      console.error("saveCandidate error:", err.message);
+      console.error("saveCandidate error:", { message: err.message, stack: err.stack });
       return rejectWithValue(err.message);
     }
   }
@@ -67,8 +43,8 @@ export const updateCandidate = createAsyncThunk(
   "candidate/update",
   async ({ formData, user_id }, { rejectWithValue, getState }) => {
     try {
-      const { userInfo } = getState().user; // Get user info from Redux state
-      const token = userInfo?.token; // Assume token is stored in userInfo
+      const { userInfo } = getState().user;
+      const token = userInfo?.token;
       if (!token) throw new Error("No authentication token found");
 
       const payload = new FormData();
@@ -77,7 +53,8 @@ export const updateCandidate = createAsyncThunk(
         payload.append(key, val ?? "");
       });
 
-      const res = await fetch("http://localhost:5000/candidates", {
+      console.log("updateCandidate: FormData contents:", [...payload.entries()]);
+      const res = await fetch(`http://localhost:5000/api/candidates/${user_id}`, {
         method: "PUT",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -86,7 +63,8 @@ export const updateCandidate = createAsyncThunk(
       });
       if (!res.ok) {
         const errorData = await res.json();
-        throw new Error(errorData.message || "Failed to update candidate");
+        console.error("updateCandidate: Backend error response:", { status: res.status, errorData });
+        throw new Error(errorData.message || `Failed to update candidate (Status: ${res.status})`);
       }
       const responseData = await res.json();
       if (!responseData || typeof responseData !== "object") {
@@ -94,7 +72,7 @@ export const updateCandidate = createAsyncThunk(
       }
       return responseData;
     } catch (err) {
-      console.error("updateCandidate error:", err.message);
+      console.error("updateCandidate error:", { message: err.message, stack: err.stack });
       return rejectWithValue(err.message);
     }
   }
@@ -129,7 +107,7 @@ const candidateSlice = createSlice({
       .addCase(loadCandidate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to load candidate";
-        state.data = null; // Ensure data is reset
+        state.data = null;
       })
       // Save candidate
       .addCase(saveCandidate.pending, (state) => {
@@ -163,6 +141,37 @@ const candidateSlice = createSlice({
       });
   },
 });
+
+
+
+
+
+
+
+export const loadCandidate = createAsyncThunk(
+  "candidate/loadCandidate",
+  async (id, { rejectWithValue, getState }) => {
+    try {
+      console.log(`loadCandidate: Fetching candidate for id: ${id}`);
+      const { userInfo } = getState().user;
+      const response = await fetch(`http://localhost:5000/api/candidates/${id}`, {
+        headers: { Authorization: `Bearer ${userInfo.token}` },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.log("loadCandidate: Backend error response:", { status: response.status, errorData });
+        throw new Error(errorData.message || "Failed to load candidate");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error("loadCandidate error:", error);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
+
 
 export const { clearCandidateMessages } = candidateSlice.actions;
 export default candidateSlice.reducer;
