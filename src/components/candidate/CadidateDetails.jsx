@@ -4,20 +4,27 @@ import { useNavigate } from "react-router-dom";
 import { ChevronLeft, ChevronRight, User, GraduationCap, Briefcase, MapPin, Upload } from "lucide-react";
 import Sidebar from "../../pages/cvdetails/layout/Sidebar.jsx";
 import Header from "../../pages/navbar/Header.jsx";
-import { loadCandidate, saveCandidate, clearCandidateMessages } from "../../store/candidateSlice.js";
+import { fetchProfile, clearMessages as clearProfileMessages } from "../../store/profileSlice.js";
+import { loadCandidate, saveCandidate, updateCandidate, clearCandidateMessages } from "../../store/candidateSlice.js";
 import statesWithCities from "../common/Statesncities.jsx";
 
 const CandidateDetails = ({ candidateId }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { data, loading, success, error } = useSelector((state) => state.candidate);
+  const { data: candidateData, loading: candidateLoading, success: candidateSuccess, error: candidateError } = useSelector((state) => state.candidate);
   const { userInfo } = useSelector((state) => state.user);
+  const { profile, loading: profileLoading, error: profileError } = useSelector((state) => state.profile);
+
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [step, setStep] = useState(1);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
+    address: "",
+    linkedin: "",
+    github: "",
+    objective: "",
     graduationDegree: "",
     graduationState: "",
     graduationCity: "",
@@ -27,10 +34,10 @@ const CandidateDetails = ({ candidateId }) => {
     interBoard: "",
     interState: "",
     interStateBoard: "",
-    interCity: "",
     interCollege: "",
     interStream: "",
     interYear: "",
+    interCity: "",
     tenthBoard: "",
     tenthState: "",
     tenthCity: "",
@@ -46,6 +53,7 @@ const CandidateDetails = ({ candidateId }) => {
     resume: null,
   });
   const [formErrors, setFormErrors] = useState({});
+  const [retryCount, setRetryCount] = useState(0);
 
   // Redirect to login if not job_seeker
   useEffect(() => {
@@ -54,27 +62,61 @@ const CandidateDetails = ({ candidateId }) => {
     }
   }, [userInfo, navigate]);
 
-  // Load candidate data
+  // Fetch profile data
   useEffect(() => {
-    if (candidateId && userInfo?.role === "job_seeker") {
-      dispatch(loadCandidate(candidateId));
+    if (userInfo?.role === "job_seeker" && userInfo?.id) {
+      dispatch(fetchProfile(userInfo.id));
+    }
+    return () => dispatch(clearProfileMessages());
+  }, [dispatch, userInfo?.id]);
+
+  // Load candidate data with retry logic for ECONNRESET
+  useEffect(() => {
+    if (candidateId && userInfo?.role === "job_seeker" && userInfo?.id && retryCount < 3) {
+      dispatch(loadCandidate(userInfo.id)).then((result) => {
+        if (result.error && result.error.message.includes("ECONNRESET")) {
+          setTimeout(() => setRetryCount(retryCount + 1), 1000 * retryCount);
+        }
+      });
     }
     return () => dispatch(clearCandidateMessages());
-  }, [candidateId, dispatch, userInfo]);
+  }, [candidateId, dispatch, userInfo?.id, retryCount]);
 
-  // Merge backend data safely
+  // Merge profile data into formData
   useEffect(() => {
-    if (data && typeof data === "object" && data !== null) {
-      console.log("Merging candidate data:", data); // Debug log
+    if (profile && typeof profile === "object" && profile !== null) {
+      console.log("Merging profile data:", profile);
       setFormData((prev) => ({
         ...prev,
-        ...Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val ?? ""])),
-        resume: null, // Reset file input to avoid invalid file objects
+        name: profile.name || prev.name,
+        email: profile.email || prev.email,
+        phone: profile.mobile || prev.mobile,
       }));
     } else {
-      console.warn("Candidate data is invalid or null:", data); // Debug log
+      console.warn("Profile data is invalid or null:", profile);
     }
-  }, [data]);
+  }, [profile]);
+
+  // Merge candidate data into formData
+  useEffect(() => {
+    if (candidateData && typeof candidateData === "object" && candidateData !== null) {
+      console.log("Merging candidate data:", candidateData);
+      setFormData((prev) => ({
+        ...prev,
+        ...Object.fromEntries(Object.entries(candidateData).map(([key, val]) => [key, val ?? ""])),
+        resume: null, // Reset file input
+      }));
+    } else {
+      console.warn("Candidate data is invalid or null:", candidateData);
+    }
+  }, [candidateData]);
+
+  // Navigate to profile on success
+  useEffect(() => {
+    if (candidateSuccess) {
+      navigate("/cadprofile");
+    }
+  }, [candidateSuccess, navigate]);
 
   // Validate form fields
   const validateStep = () => {
@@ -91,7 +133,7 @@ const CandidateDetails = ({ candidateId }) => {
       if (!formData.graduationCity) errors.graduationCity = "City is required";
       if (!formData.graduationYear) errors.graduationYear = "Year is required";
     } else if (step === 5) {
-      if (!formData.resume && !data?.resume) errors.resume = "Resume is required"; // Skip if resume exists in data
+      if (!formData.resume && !candidateData?.resume) errors.resume = "Resume is required";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -100,7 +142,7 @@ const CandidateDetails = ({ candidateId }) => {
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData({ ...formData, [name]: files ? files[0] : value });
-    setFormErrors({ ...formErrors, [name]: "" }); // Clear error on change
+    setFormErrors({ ...formErrors, [name]: "" });
   };
 
   const handleNext = () => {
@@ -109,26 +151,31 @@ const CandidateDetails = ({ candidateId }) => {
 
   const handlePrev = () => step > 1 && setStep(step - 1);
 
-  const handleSubmit = (e) => {
-  e.preventDefault();
-  if (validateStep()) {
-    if (!userInfo?.id) {
-      setFormErrors({ form: "User not authenticated" });
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (validateStep()) {
+      if (!userInfo?.id) {
+        setFormErrors({ form: "User not authenticated" });
+        return;
+      }
+      console.log("Submitting form data:", formData);
+      const payload = new FormData();
+      Object.entries(formData).forEach(([key, val]) => {
+        if (key !== "resume" || val) payload.append(key, val);
+      });
+      try {
+        if (candidateData?.id) {
+          await dispatch(updateCandidate(payload)).unwrap();
+        } else {
+          payload.append("user_id", userInfo.id);
+          await dispatch(saveCandidate(payload)).unwrap();
+        }
+      } catch (err) {
+        console.error("Submit error:", err);
+        setFormErrors({ form: err.message || "Failed to submit candidate details" });
+      }
     }
-    console.log("Submitting form data:", formData); // Debug log
-    const payload = new FormData();
-    payload.append("user_id", userInfo.id);
-    Object.entries(formData).forEach(([key, val]) => {
-      payload.append(key, val ?? "");
-    });
-    if (data?.id) {
-      dispatch(updateCandidate({ formData, user_id: userInfo.id })); // Update existing candidate
-    } else {
-      dispatch(saveCandidate(payload)); // Create new candidate
-    }
-  }
-};
+  };
 
   const steps = [
     { label: "Personal", icon: <User className="w-5 h-5" /> },
@@ -138,7 +185,7 @@ const CandidateDetails = ({ candidateId }) => {
     { label: "Resume", icon: <Upload className="w-5 h-5" /> },
   ];
 
-  if (loading) {
+  if (candidateLoading || profileLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
@@ -156,9 +203,9 @@ const CandidateDetails = ({ candidateId }) => {
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       {/* Main Content */}
-      <div className="flex">
+      <div className="flex flex-col lg:flex-row">
         {/* Sidebar */}
-        <div className="hidden lg:block w-72 text-white shadow-2xl">
+        <div className="lg:w-72 text-white shadow-2xl hidden lg:block">
           <Sidebar role="job_seeker" />
         </div>
         {isSidebarOpen && (
@@ -168,7 +215,7 @@ const CandidateDetails = ({ candidateId }) => {
             aria-hidden="true"
           >
             <div
-              className="absolute left-0 top-0 h-full w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
+              className="absolute left-0 top-0 h-full w-64 sm:w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
               onClick={(e) => e.stopPropagation()}
             >
               <Sidebar role="job_seeker" />
@@ -177,44 +224,53 @@ const CandidateDetails = ({ candidateId }) => {
         )}
 
         {/* Form Content */}
-        <main className="flex-1 p-6 lg:p-12 max-w-7xl mx-auto">
+        <main className="flex-1 p-4 sm:p-6 lg:p-12 max-w-7xl mx-auto w-full">
           {/* Header Section */}
-          <div className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 mb-10 hover:shadow-lg transition-all duration-300">
-            <h1 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 mb-6 sm:mb-10 hover:shadow-lg transition-all duration-300">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
               Complete Your Profile
             </h1>
-            <p className="mt-3 text-gray-600 text-sm font-medium">
+            <p className="mt-2 sm:mt-3 text-gray-600 text-sm sm:text-base font-medium">
               Provide your details to enhance your job applications.
             </p>
           </div>
 
-          {/* Success/Error Messages */}
-          {success && (
-            <div className="bg-green-50 border-l-4 border-green-600 text-green-800 p-4 rounded-lg mb-10 animate-slide-down">
-              {success}
+          {candidateSuccess && (
+            <div className="bg-green-50 border-l-4 border-green-600 text-green-800 p-4 rounded-lg mb-6 sm:mb-10 animate-slide-down">
+              {candidateSuccess}
             </div>
           )}
-          {error && (
-            <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg mb-10 animate-slide-down flex justify-between items-center">
-              {error}
+          {/* {(candidateError || profileError) && (
+            <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg mb-6 sm:mb-10 animate-slide-down flex justify-between items-center">
+              {candidateError === "Candidate not found" ? (
+                <p>Please fill out your candidate details to proceed.</p>
+              ) : (
+                candidateError || profileError
+              )}
               <button
-                onClick={() => dispatch(clearCandidateMessages())}
+                onClick={() => {
+                  dispatch(clearCandidateMessages());
+                  dispatch(clearProfileMessages());
+                  if (candidateError?.includes("ECONNRESET")) {
+                    setRetryCount(retryCount + 1);
+                  }
+                }}
                 className="text-red-800 hover:text-red-900 font-medium focus:outline-none focus:underline"
                 aria-label="Dismiss error"
               >
                 Dismiss
               </button>
             </div>
-          )}
+          )} */}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white p-8 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
+          <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
             {/* Progress Steps */}
-            <div className="flex items-center justify-between mb-10">
+            <div className="flex flex-row overflow-x-auto sm:flex-wrap sm:gap-2 mb-6 sm:mb-10">
               {steps.map(({ label, icon }, index) => (
-                <div key={label} className="flex-1 flex flex-col items-center relative">
+                <div key={label} className="flex-1 flex flex-col items-center relative min-w-[80px] sm:min-w-0">
                   <div
-                    className={`w-12 h-12 flex items-center justify-center rounded-full transition-all duration-300 shadow-md ${
+                    className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition-all duration-300 shadow-md ${
                       step === index + 1
                         ? "bg-indigo-600 text-white scale-110"
                         : step > index + 1
@@ -224,14 +280,14 @@ const CandidateDetails = ({ candidateId }) => {
                   >
                     {icon}
                   </div>
-                  <p className={`mt-2 text-sm font-medium ${step === index + 1 ? "text-indigo-600" : "text-gray-500"}`}>
+                  <p className={`mt-1 sm:mt-2 text-xs sm:text-sm font-medium ${step === index + 1 ? "text-indigo-600" : "text-gray-500"}`}>
                     {label}
                   </p>
                   {index < steps.length - 1 && (
                     <div
-                      className={`absolute top-6 left-1/2 w-full h-1 -z-10 ${
+                      className={`absolute top-5 sm:top-6 left-1/2 w-full h-1 -z-10 ${
                         step > index + 1 ? "bg-green-600" : "bg-gray-200"
-                      }`}
+                      } sm:hidden`}
                     ></div>
                   )}
                 </div>
@@ -240,7 +296,7 @@ const CandidateDetails = ({ candidateId }) => {
 
             {/* Step 1: Personal */}
             {step === 1 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
                     Full Name <span className="text-red-500">*</span>
@@ -253,7 +309,7 @@ const CandidateDetails = ({ candidateId }) => {
                     placeholder="Full Name"
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                       formErrors.name ? "border-red-500" : "border-gray-200"
-                    }`}
+                    } text-sm sm:text-base`}
                     aria-required="true"
                     aria-describedby={formErrors.name ? "name-error" : undefined}
                   />
@@ -273,7 +329,7 @@ const CandidateDetails = ({ candidateId }) => {
                     placeholder="Email"
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                       formErrors.email ? "border-red-500" : "border-gray-200"
-                    }`}
+                    } text-sm sm:text-base`}
                     aria-required="true"
                     aria-describedby={formErrors.email ? "email-error" : undefined}
                   />
@@ -290,16 +346,70 @@ const CandidateDetails = ({ candidateId }) => {
                     name="phone"
                     value={formData.phone}
                     onChange={handleChange}
+                    disabled
                     placeholder="Phone (10 digits)"
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                       formErrors.phone ? "border-red-500" : "border-gray-200"
-                    }`}
+                    } text-sm sm:text-base`}
                     aria-required="true"
                     aria-describedby={formErrors.phone ? "phone-error" : undefined}
                   />
                   {formErrors.phone && (
                     <p id="phone-error" className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
                   )}
+                </div>
+                <div>
+                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                    Address
+                  </label>
+                  <input
+                    id="address"
+                    name="address"
+                    value={formData.address}
+                    onChange={handleChange}
+                    placeholder="Address"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-1">
+                    LinkedIn
+                  </label>
+                  <input
+                    id="linkedin"
+                    name="linkedin"
+                    value={formData.linkedin}
+                    onChange={handleChange}
+                    placeholder="LinkedIn URL"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="github" className="block text-sm font-medium text-gray-700 mb-1">
+                    GitHub
+                  </label>
+                  <input
+                    id="github"
+                    name="github"
+                    value={formData.github}
+                    onChange={handleChange}
+                    placeholder="GitHub URL"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label htmlFor="objective" className="block text-sm font-medium text-gray-700 mb-1">
+                    Objective
+                  </label>
+                  <textarea
+                    id="objective"
+                    name="objective"
+                    value={formData.objective}
+                    onChange={handleChange}
+                    placeholder="Your career objective"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 resize-y text-sm sm:text-base"
+                    rows={4}
+                  />
                 </div>
               </div>
             )}
@@ -308,9 +418,9 @@ const CandidateDetails = ({ candidateId }) => {
             {step === 2 && (
               <div className="space-y-6">
                 {/* Graduation */}
-                <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100">
+                <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Graduation</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="graduationDegree" className="block text-sm font-medium text-gray-700 mb-1">
                         Degree <span className="text-red-500">*</span>
@@ -323,7 +433,7 @@ const CandidateDetails = ({ candidateId }) => {
                         placeholder="Degree"
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                           formErrors.graduationDegree ? "border-red-500" : "border-gray-200"
-                        }`}
+                        } text-sm sm:text-base`}
                         aria-required="true"
                         aria-describedby={formErrors.graduationDegree ? "graduationDegree-error" : undefined}
                       />
@@ -342,7 +452,7 @@ const CandidateDetails = ({ candidateId }) => {
                         onChange={handleChange}
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                           formErrors.graduationState ? "border-red-500" : "border-gray-200"
-                        }`}
+                        } text-sm sm:text-base`}
                         aria-required="true"
                         aria-describedby={formErrors.graduationState ? "graduationState-error" : undefined}
                       >
@@ -368,7 +478,7 @@ const CandidateDetails = ({ candidateId }) => {
                         onChange={handleChange}
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                           formErrors.graduationCity ? "border-red-500" : "border-gray-200"
-                        }`}
+                        } text-sm sm:text-base`}
                         aria-required="true"
                         aria-describedby={formErrors.graduationCity ? "graduationCity-error" : undefined}
                       >
@@ -393,7 +503,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.graduationUniversity}
                         onChange={handleChange}
                         placeholder="University"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -406,7 +516,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.graduationCollege}
                         onChange={handleChange}
                         placeholder="College"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -421,7 +531,7 @@ const CandidateDetails = ({ candidateId }) => {
                         placeholder="Year"
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                           formErrors.graduationYear ? "border-red-500" : "border-gray-200"
-                        }`}
+                        } text-sm sm:text-base`}
                         aria-required="true"
                         aria-describedby={formErrors.graduationYear ? "graduationYear-error" : undefined}
                       />
@@ -433,9 +543,9 @@ const CandidateDetails = ({ candidateId }) => {
                 </div>
 
                 {/* Intermediate */}
-                <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100">
+                <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Intermediate</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="interBoard" className="block text-sm font-medium text-gray-700 mb-1">
                         Board
@@ -446,7 +556,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.interBoard}
                         onChange={handleChange}
                         placeholder="Board"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -458,7 +568,7 @@ const CandidateDetails = ({ candidateId }) => {
                         name="interState"
                         value={formData.interState}
                         onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       >
                         <option value="">Select State</option>
                         {Object.keys(statesWithCities).map((state) => (
@@ -478,7 +588,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.interStateBoard}
                         onChange={handleChange}
                         placeholder="State Board"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -490,7 +600,7 @@ const CandidateDetails = ({ candidateId }) => {
                         name="interCity"
                         value={formData.interCity}
                         onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       >
                         <option value="">Select City</option>
                         {statesWithCities[formData.interState]?.map((city) => (
@@ -510,7 +620,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.interCollege}
                         onChange={handleChange}
                         placeholder="College"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -523,7 +633,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.interStream}
                         onChange={handleChange}
                         placeholder="Stream"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -536,16 +646,16 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.interYear}
                         onChange={handleChange}
                         placeholder="Year"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* 10th */}
-                <div className="p-6 bg-white rounded-xl shadow-md border border-gray-100">
+                <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">10th</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
                       <label htmlFor="tenthBoard" className="block text-sm font-medium text-gray-700 mb-1">
                         Board
@@ -556,7 +666,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.tenthBoard}
                         onChange={handleChange}
                         placeholder="Board"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -568,7 +678,7 @@ const CandidateDetails = ({ candidateId }) => {
                         name="tenthState"
                         value={formData.tenthState}
                         onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       >
                         <option value="">Select State</option>
                         {Object.keys(statesWithCities).map((state) => (
@@ -587,7 +697,7 @@ const CandidateDetails = ({ candidateId }) => {
                         name="tenthCity"
                         value={formData.tenthCity}
                         onChange={handleChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       >
                         <option value="">Select City</option>
                         {statesWithCities[formData.tenthState]?.map((city) => (
@@ -607,7 +717,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.tenthSchool}
                         onChange={handleChange}
                         placeholder="School"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                     <div>
@@ -620,7 +730,7 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.tenthYear}
                         onChange={handleChange}
                         placeholder="Year"
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                       />
                     </div>
                   </div>
@@ -641,7 +751,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.experience}
                     onChange={handleChange}
                     placeholder="Years of Experience"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -654,7 +764,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.companyName}
                     onChange={handleChange}
                     placeholder="Company Name"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -667,7 +777,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.jobTitle}
                     onChange={handleChange}
                     placeholder="Job Title"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -680,7 +790,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.duration}
                     onChange={handleChange}
                     placeholder="Duration (e.g., 2020-2022)"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -693,9 +803,9 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.responsibilities}
                     onChange={handleChange}
                     placeholder="Describe your responsibilities"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 resize-y"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 resize-y text-sm sm:text-base"
                     rows={4}
-                  ></textarea>
+                  />
                 </div>
               </div>
             )}
@@ -713,7 +823,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.currentLocation}
                     onChange={handleChange}
                     placeholder="Current Location"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
                 <div>
@@ -726,7 +836,7 @@ const CandidateDetails = ({ candidateId }) => {
                     value={formData.preferredLocation}
                     onChange={handleChange}
                     placeholder="Preferred Location"
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200"
+                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm border-gray-200 text-sm sm:text-base"
                   />
                 </div>
               </div>
@@ -747,7 +857,7 @@ const CandidateDetails = ({ candidateId }) => {
                     accept=".pdf,.doc,.docx"
                     className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
                       formErrors.resume ? "border-red-500" : "border-gray-200"
-                    }`}
+                    } text-sm sm:text-base`}
                     aria-required="true"
                     aria-describedby={formErrors.resume ? "resume-error" : undefined}
                   />
@@ -757,20 +867,25 @@ const CandidateDetails = ({ candidateId }) => {
                   {formData.resume && (
                     <p className="text-sm text-gray-600 mt-1">Selected: {formData.resume.name}</p>
                   )}
+                  {candidateData?.resume && !formData.resume && (
+                    <p className="text-sm text-gray-600 mt-1">
+                      Current resume: <a href={candidateData.resume} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">View Resume</a>
+                    </p>
+                  )}
                 </div>
               </div>
             )}
 
             {/* Navigation Buttons */}
-            <div className="flex justify-between mt-8">
+            <div className="flex flex-col sm:flex-row sm:justify-between gap-4 mt-6 sm:mt-8">
               {step > 1 && (
                 <button
                   type="button"
                   onClick={handlePrev}
-                  className="px-6 py-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 shadow-md"
+                  className="px-4 sm:px-6 py-2 bg-gray-500 text-white rounded-full hover:bg-gray-600 transition-colors focus:outline-none focus:ring-2 focus:ring-gray-400 shadow-md text-sm sm:text-base"
                   aria-label="Previous step"
                 >
-                  <ChevronLeft className="w-4 h-4 inline mr-2" />
+                  <ChevronLeft className="w-4 h-4 inline mr-1 sm:mr-2" />
                   Previous
                 </button>
               )}
@@ -778,19 +893,20 @@ const CandidateDetails = ({ candidateId }) => {
                 <button
                   type="button"
                   onClick={handleNext}
-                  className="px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-md"
+                  className="px-4 sm:px-6 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-md text-sm sm:text-base"
                   aria-label="Next step"
                 >
                   Next
-                  <ChevronRight className="w-4 h-4 inline ml-2" />
+                  <ChevronRight className="w-4 h-4 inline ml-1 sm:ml-2" />
                 </button>
               ) : (
                 <button
                   type="submit"
-                  className="px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md"
+                  className="px-4 sm:px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors focus:outline-none focus:ring-2 focus:ring-green-500 shadow-md text-sm sm:text-base"
                   aria-label="Submit form"
+                  disabled={candidateLoading || profileLoading}
                 >
-                  Submit
+                  {candidateLoading || profileLoading ? "Submitting..." : "Submit"}
                 </button>
               )}
             </div>
