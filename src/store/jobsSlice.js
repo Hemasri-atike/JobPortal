@@ -10,10 +10,6 @@ const axiosAuth = (token) =>
   });
 
 
-
-
-
-
 export const fetchJobs = createAsyncThunk(
   'jobs/fetchJobs',
   async ({ statusFilter = 'open', searchQuery = '', page = 1, jobsPerPage = 6, subcategory }, { getState, rejectWithValue }) => {

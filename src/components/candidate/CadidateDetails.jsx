@@ -64,12 +64,15 @@ const CandidateDetails = ({ candidateId }) => {
 
   // Merge backend data safely
   useEffect(() => {
-    if (data) {
+    if (data && typeof data === "object" && data !== null) {
+      console.log("Merging candidate data:", data); // Debug log
       setFormData((prev) => ({
         ...prev,
         ...Object.fromEntries(Object.entries(data).map(([key, val]) => [key, val ?? ""])),
         resume: null, // Reset file input to avoid invalid file objects
       }));
+    } else {
+      console.warn("Candidate data is invalid or null:", data); // Debug log
     }
   }, [data]);
 
@@ -88,7 +91,7 @@ const CandidateDetails = ({ candidateId }) => {
       if (!formData.graduationCity) errors.graduationCity = "City is required";
       if (!formData.graduationYear) errors.graduationYear = "Year is required";
     } else if (step === 5) {
-      if (!formData.resume) errors.resume = "Resume is required";
+      if (!formData.resume && !data?.resume) errors.resume = "Resume is required"; // Skip if resume exists in data
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -107,15 +110,25 @@ const CandidateDetails = ({ candidateId }) => {
   const handlePrev = () => step > 1 && setStep(step - 1);
 
   const handleSubmit = (e) => {
-    e.preventDefault();
-    if (validateStep()) {
-      const payload = new FormData();
-      Object.entries(formData).forEach(([key, val]) => {
-        payload.append(key, val ?? "");
-      });
-      dispatch(saveCandidate(payload));
+  e.preventDefault();
+  if (validateStep()) {
+    if (!userInfo?.id) {
+      setFormErrors({ form: "User not authenticated" });
+      return;
     }
-  };
+    console.log("Submitting form data:", formData); // Debug log
+    const payload = new FormData();
+    payload.append("user_id", userInfo.id);
+    Object.entries(formData).forEach(([key, val]) => {
+      payload.append(key, val ?? "");
+    });
+    if (data?.id) {
+      dispatch(updateCandidate({ formData, user_id: userInfo.id })); // Update existing candidate
+    } else {
+      dispatch(saveCandidate(payload)); // Create new candidate
+    }
+  }
+};
 
   const steps = [
     { label: "Personal", icon: <User className="w-5 h-5" /> },
@@ -145,7 +158,7 @@ const CandidateDetails = ({ candidateId }) => {
       {/* Main Content */}
       <div className="flex">
         {/* Sidebar */}
-        <div className="hidden lg:block w-72  text-white shadow-2xl">
+        <div className="hidden lg:block w-72 text-white shadow-2xl">
           <Sidebar role="job_seeker" />
         </div>
         {isSidebarOpen && (

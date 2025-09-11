@@ -3,33 +3,98 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 // Fetch candidate by ID
 export const loadCandidate = createAsyncThunk(
   "candidate/load",
-  async (id, { rejectWithValue }) => {
+  async (id, { rejectWithValue, getState }) => {
     try {
-      const res = await fetch(`http://localhost:5000/candidates/${id}`);
-      if (!res.ok) throw new Error("Failed to fetch candidate");
-      return await res.json();
+      const { userInfo } = getState().user; // Get user info from Redux state
+      const token = userInfo?.token; // Assume token is stored in userInfo
+      if (!token) throw new Error("No authentication token found");
+
+      const res = await fetch(`http://localhost:5000/candidates/${id}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to fetch candidate");
+      }
+      const responseData = await res.json();
+      if (!responseData || typeof responseData !== "object") {
+        throw new Error("Invalid candidate data received");
+      }
+      return responseData;
     } catch (err) {
+      console.error("loadCandidate error:", err.message);
       return rejectWithValue(err.message);
     }
   }
 );
 
-
-
-
-
-// Save candidate (FormData is prepared in component)
+// Save new candidate
 export const saveCandidate = createAsyncThunk(
   "candidate/save",
-  async (formData, { rejectWithValue }) => {
+  async (formData, { rejectWithValue, getState }) => {
     try {
-  const res = await fetch("http://localhost:5000/candidates", {
-  method: "POST",
-  body: formData, // sending FormData
-});
-      if (!res.ok) throw new Error("Failed to save candidate");
-      return await res.json();
+      const { userInfo } = getState().user; // Get user info from Redux state
+      const token = userInfo?.token; // Assume token is stored in userInfo
+      if (!token) throw new Error("No authentication token found");
+
+      const res = await fetch("http://localhost:5000/api/candidates/add", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to save candidate");
+      }
+      const responseData = await res.json();
+      if (!responseData || typeof responseData !== "object") {
+        throw new Error("Invalid response data");
+      }
+      return responseData;
     } catch (err) {
+      console.error("saveCandidate error:", err.message);
+      return rejectWithValue(err.message);
+    }
+  }
+);
+
+// Update existing candidate
+export const updateCandidate = createAsyncThunk(
+  "candidate/update",
+  async ({ formData, user_id }, { rejectWithValue, getState }) => {
+    try {
+      const { userInfo } = getState().user; // Get user info from Redux state
+      const token = userInfo?.token; // Assume token is stored in userInfo
+      if (!token) throw new Error("No authentication token found");
+
+      const payload = new FormData();
+      payload.append("user_id", user_id);
+      Object.entries(formData).forEach(([key, val]) => {
+        payload.append(key, val ?? "");
+      });
+
+      const res = await fetch("http://localhost:5000/candidates", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+        body: payload,
+      });
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to update candidate");
+      }
+      const responseData = await res.json();
+      if (!responseData || typeof responseData !== "object") {
+        throw new Error("Invalid response data");
+      }
+      return responseData;
+    } catch (err) {
+      console.error("updateCandidate error:", err.message);
       return rejectWithValue(err.message);
     }
   }
@@ -64,8 +129,8 @@ const candidateSlice = createSlice({
       .addCase(loadCandidate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to load candidate";
+        state.data = null; // Ensure data is reset
       })
-
       // Save candidate
       .addCase(saveCandidate.pending, (state) => {
         state.loading = true;
@@ -80,6 +145,21 @@ const candidateSlice = createSlice({
       .addCase(saveCandidate.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload || "Failed to save candidate";
+      })
+      // Update candidate
+      .addCase(updateCandidate.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+        state.success = null;
+      })
+      .addCase(updateCandidate.fulfilled, (state, action) => {
+        state.loading = false;
+        state.data = { ...state.data, ...action.payload };
+        state.success = "Profile updated successfully";
+      })
+      .addCase(updateCandidate.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload || "Failed to update candidate";
       });
   },
 });
