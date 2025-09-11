@@ -86,6 +86,17 @@ export const resumeSections = {
       placeholder: "e.g., 85",
     },
   ],
+
+
+
+
+   experience: [
+    { key: "companyName", label: "Company Name", type: "text", required: true, maxLength: 255 },
+    { key: "jobTitle", label: "Job Title", type: "text", required: true, maxLength: 255 },
+    { key: "duration", label: "Duration", type: "text", required: true, maxLength: 255, placeholder: "e.g., Jan 2020 - Dec 2022" },
+    { key: "responsibilities", label: "Responsibilities", type: "textarea", required: true, maxLength: 1000 },
+    { key: "description", label: "Description", type: "textarea", maxLength: 1000 }, // Optional, maps to `experience`
+  ],
   projects: [
     {
       key: "title",

@@ -1,5 +1,3 @@
-import React from "react";
-
 const PreviewResume = ({ resumeData, userInfo }) => {
   if (!resumeData || !resumeData.personalInfo?.length) {
     return (
@@ -103,6 +101,38 @@ const PreviewResume = ({ resumeData, userInfo }) => {
         </div>
       )}
 
+      {resumeData.experience?.length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">
+            Experience
+          </h2>
+          {resumeData.experience.map((exp) => (
+            <div key={exp.id} className="mb-4">
+              <h3 className="text-lg font-medium text-gray-800">
+                {exp.title} at {exp.companyName}
+              </h3>
+              <p className="text-gray-600">{exp.duration}</p>
+              <p className="text-gray-700">{exp.description}</p>
+              <p className="text-gray-500 text-sm">{exp.responsibilities}</p>
+              {exp.technologies && (
+                <p className="text-gray-500 text-sm">Technologies: {exp.technologies}</p>
+              )}
+              {exp.link && (
+                <a
+                  href={exp.link}
+                  className="text-indigo-600 hover:text-indigo-800 text-sm transition-colors"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`Experience link for ${exp.title}`}
+                >
+                  {exp.link}
+                </a>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+
       {resumeData.projects?.length > 0 && (
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 border-b border-gray-200 pb-2 mb-4">
@@ -180,3 +210,4 @@ const PreviewResume = ({ resumeData, userInfo }) => {
 };
 
 export default PreviewResume;
+

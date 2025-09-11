@@ -4,7 +4,7 @@ import { fetchResume, updateResume, clearError } from "../../../store/resumeSlic
 import { resumeSections } from "../../../config/resumeConfig.js";
 import Header from "../../navbar/Header.jsx";
 import Sidebar from "../layout/Sidebar.jsx";
-import PreviewResume from "./Previewresume.jsx"; 
+import PreviewResume from "./Previewresume.jsx";
 
 const MyResume = () => {
   const dispatch = useDispatch();
@@ -19,12 +19,14 @@ const MyResume = () => {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    dispatch(fetchResume());
-  }, [dispatch]);
+    if (userInfo) {
+      dispatch(fetchResume());
+    }
+  }, [dispatch, userInfo]);
 
   useEffect(() => {
     if (resumeData) {
-      setEditableData(structuredClone(resumeData)); 
+      setEditableData(structuredClone(resumeData));
     }
   }, [resumeData]);
 
@@ -114,7 +116,7 @@ const MyResume = () => {
       return;
     }
 
-    if (!localStorage.getItem("token")) {
+    if (!localStorage.getItem("token") || !userInfo) {
       setFormErrors({ global: "You must be logged in to save your resume" });
       return;
     }
@@ -123,11 +125,9 @@ const MyResume = () => {
       return;
     }
 
-    const { id, ...dataToSave } = editableData;
-
     setSaving(true);
     try {
-      const resultAction = await dispatch(updateResume(dataToSave));
+      const resultAction = await dispatch(updateResume(editableData));
       if (updateResume.fulfilled.match(resultAction)) {
         setEditableData(resultAction.payload);
         setIsEditing(false);
@@ -139,152 +139,153 @@ const MyResume = () => {
         setFormErrors({ global: resultAction.payload || "Failed to save resume" });
       }
     } catch (error) {
-      setFormErrors({ global: "Unexpected error occurred while saving resume" });
+      setFormErrors({ global: error.message || "Unexpected error occurred while saving resume" });
     } finally {
       setSaving(false);
     }
   };
-const renderSection = (sectionKey) => {
-  const fields = resumeSections[sectionKey];
-  const sectionData = editableData?.[sectionKey] || [];
 
-  if (sectionData.length === 0) {
-    return isEditing ? (
-      <div className="text-gray-500 text-sm flex items-center gap-2">
-        No data available.
-        {sectionKey !== "personalInfo" && ( // Disable "Add" for personalInfo
+  const renderSection = (sectionKey) => {
+    const fields = resumeSections[sectionKey];
+    const sectionData = editableData?.[sectionKey] || [];
+
+    if (sectionData.length === 0) {
+      return isEditing ? (
+        <div className="text-gray-500 text-sm flex items-center gap-2">
+          No data available.
+          {sectionKey !== "personalInfo" && (
+            <button
+              onClick={() => addEntry(sectionKey)}
+              className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
+              aria-label={`Add new ${sectionKey} entry`}
+            >
+              Add {sectionKey.replace(/([A-Z])/g, " $1").trim()}
+            </button>
+          )}
+        </div>
+      ) : (
+        <p className="text-gray-500 text-sm">No data available.</p>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {sectionData.map((entry) => (
+          <div
+            key={entry.id}
+            className="relative bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg"
+          >
+            {isEditing && sectionKey !== "personalInfo" && (
+              <button
+                onClick={() => removeEntry(sectionKey, entry.id)}
+                className="absolute top-4 right-4 text-red-500 hover:text-red-700 font-bold text-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full"
+                aria-label={`Remove ${sectionKey} entry`}
+              >
+                ×
+              </button>
+            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {fields.map((field) => {
+                const fieldId = `${sectionKey}-${entry.id}-${field.key}`;
+                const errorMessage = formErrors[fieldId];
+
+                return (
+                  <div key={field.key} className="mb-4">
+                    <label
+                      htmlFor={fieldId}
+                      className="block text-sm font-medium text-gray-700 mb-1"
+                    >
+                      {field.label}
+                      {field.required && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+                    {isEditing ? (
+                      field.type === "textarea" ? (
+                        <textarea
+                          id={fieldId}
+                          value={entry[field.key] || ""}
+                          onChange={(e) =>
+                            updateNestedField(sectionKey, entry.id, field.key, e.target.value)
+                          }
+                          className={`w-full p-3 border ${
+                            errorMessage ? "border-red-500" : "border-gray-200"
+                          } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-y shadow-sm`}
+                          rows="4"
+                          maxLength={field.maxLength}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          aria-invalid={!!errorMessage}
+                          aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
+                        />
+                      ) : field.type === "select" ? (
+                        <select
+                          id={fieldId}
+                          value={entry[field.key] || ""}
+                          onChange={(e) =>
+                            updateNestedField(sectionKey, entry.id, field.key, e.target.value)
+                          }
+                          className={`w-full p-3 border ${
+                            errorMessage ? "border-red-500" : "border-gray-200"
+                          } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm`}
+                          required={field.required}
+                          aria-invalid={!!errorMessage}
+                          aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
+                        >
+                          <option value="" disabled>
+                            {field.placeholder}
+                          </option>
+                          {field.options?.map((option) => (
+                            <option key={option.value} value={option.value}>
+                              {option.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          id={fieldId}
+                          type={field.type}
+                          value={entry[field.key] || ""}
+                          onChange={(e) =>
+                            updateNestedField(sectionKey, entry.id, field.key, e.target.value)
+                          }
+                          className={`w-full p-3 border ${
+                            errorMessage ? "border-red-500" : "border-gray-200"
+                          } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm`}
+                          maxLength={field.maxLength}
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          pattern={field.pattern}
+                          min={field.min}
+                          max={field.max}
+                          aria-invalid={!!errorMessage}
+                          aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
+                        />
+                      )
+                    ) : (
+                      <p className="text-gray-800">{entry[field.key] || "-"}</p>
+                    )}
+                    {errorMessage && (
+                      <p id={`${fieldId}-error`} className="text-red-500 text-xs mt-1">
+                        {errorMessage}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+        {isEditing && sectionKey !== "personalInfo" && (
           <button
             onClick={() => addEntry(sectionKey)}
-            className="text-indigo-600 hover:text-indigo-800 font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-md"
+            className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
             aria-label={`Add new ${sectionKey} entry`}
           >
-            Add {sectionKey.replace(/([A-Z])/g, " $1").trim()}
+            + Add {sectionKey.replace(/([A-Z])/g, " $1").trim()}
           </button>
         )}
       </div>
-    ) : (
-      <p className="text-gray-500 text-sm">No data available.</p>
     );
-  }
-
-  return (
-    <div className="space-y-6">
-      {sectionData.map((entry) => (
-        <div
-          key={entry.id}
-          className="relative bg-white p-6 rounded-xl shadow-md border border-gray-100 transition-all duration-300 hover:shadow-lg"
-        >
-          {isEditing && sectionKey !== "personalInfo" && ( // Disable "Remove" for personalInfo
-            <button
-              onClick={() => removeEntry(sectionKey, entry.id)}
-              className="absolute top-4 right-4 text-red-500 hover:text-red-700 font-bold text-lg transition-colors focus:outline-none focus:ring-2 focus:ring-red-500 rounded-full"
-              aria-label={`Remove ${sectionKey} entry`}
-            >
-              ×
-            </button>
-          )}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {fields.map((field) => {
-              const fieldId = `${sectionKey}-${entry.id}-${field.key}`;
-              const errorMessage = formErrors[fieldId];
-
-              return (
-                <div key={field.key} className="mb-4">
-                  <label
-                    htmlFor={fieldId}
-                    className="block text-sm font-medium text-gray-700 mb-1"
-                  >
-                    {field.label}
-                    {field.required && <span className="text-red-500 ml-1">*</span>}
-                  </label>
-                  {isEditing ? (
-                    field.type === "textarea" ? (
-                      <textarea
-                        id={fieldId}
-                        value={entry[field.key] || ""}
-                        onChange={(e) =>
-                          updateNestedField(sectionKey, entry.id, field.key, e.target.value)
-                        }
-                        className={`w-full p-3 border ${
-                          errorMessage ? "border-red-500" : "border-gray-200"
-                        } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors resize-y shadow-sm`}
-                        rows="4"
-                        maxLength={field.maxLength}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        aria-invalid={!!errorMessage}
-                        aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
-                      />
-                    ) : field.type === "select" ? (
-                      <select
-                        id={fieldId}
-                        value={entry[field.key] || ""}
-                        onChange={(e) =>
-                          updateNestedField(sectionKey, entry.id, field.key, e.target.value)
-                        }
-                        className={`w-full p-3 border ${
-                          errorMessage ? "border-red-500" : "border-gray-200"
-                        } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm`}
-                        required={field.required}
-                        aria-invalid={!!errorMessage}
-                        aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
-                      >
-                        <option value="" disabled>
-                          {field.placeholder}
-                        </option>
-                        {field.options?.map((option) => (
-                          <option key={option.value} value={option.value}>
-                            {option.label}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        id={fieldId}
-                        type={field.type}
-                        value={entry[field.key] || ""}
-                        onChange={(e) =>
-                          updateNestedField(sectionKey, entry.id, field.key, e.target.value)
-                        }
-                        className={`w-full p-3 border ${
-                          errorMessage ? "border-red-500" : "border-gray-200"
-                        } rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm`}
-                        maxLength={field.maxLength}
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        pattern={field.pattern}
-                        min={field.min}
-                        max={field.max}
-                        aria-invalid={!!errorMessage}
-                        aria-describedby={errorMessage ? `${fieldId}-error` : undefined}
-                      />
-                    )
-                  ) : (
-                    <p className="text-gray-800">{entry[field.key] || "-"}</p>
-                  )}
-                  {errorMessage && (
-                    <p id={`${fieldId}-error`} className="text-red-500 text-xs mt-1">
-                      {errorMessage}
-                    </p>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      ))}
-      {isEditing && sectionKey !== "personalInfo" && ( // Disable "Add" for personalInfo
-        <button
-          onClick={() => addEntry(sectionKey)}
-          className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 shadow-sm"
-          aria-label={`Add new ${sectionKey} entry`}
-        >
-          + Add {sectionKey.replace(/([A-Z])/g, " $1").trim()}
-        </button>
-      )}
-    </div>
-  );
-};
+  };
 
   const initializeResumeData = () => ({
     personalInfo: [
@@ -292,7 +293,7 @@ const renderSection = (sectionKey) => {
         id: Date.now(),
         fullName: userInfo?.name || "",
         email: userInfo?.email || "",
-        phone: userInfo?.mobile|| "",
+        phone: userInfo?.mobile || "",
         address: "",
         linkedin: "",
         github: "",
@@ -300,6 +301,7 @@ const renderSection = (sectionKey) => {
       },
     ],
     education: [],
+    experience: [],
     projects: [],
     skills: [],
     certifications: [],
@@ -318,7 +320,7 @@ const renderSection = (sectionKey) => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
       <div className="flex">
-        <div className="hidden lg:block w-72  text-white shadow-2xl">
+        <div className="hidden lg:block w-72 text-white shadow-2xl">
           <Sidebar />
         </div>
         {isSidebarOpen && (
