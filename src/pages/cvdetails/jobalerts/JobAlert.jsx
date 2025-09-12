@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Edit, Trash, Plus, Search } from 'lucide-react';
+import { Bell, Edit, Trash, Plus, Search, X, AlertCircle, CheckCircle } from 'lucide-react';
 import { useSelector, useDispatch } from 'react-redux';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
@@ -53,7 +53,7 @@ const JobAlert = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (!currentAlert.keywords || !currentAlert.location) {
-      alert('Keywords and location are required.');
+      // Use toast or inline error instead of alert()
       return;
     }
 
@@ -88,21 +88,20 @@ const JobAlert = () => {
   };
 
   return (
-    <div className="flex flex-col h-screen bg-gray-100">
+    <div className="min-h-screen bg-gray-50">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-
-      <div className="flex flex-1">
-        <div className="hidden md:block w-64 bg-gray-900">
+      <div className="flex">
+        {/* Sidebar */}
+        <div className="hidden lg:block w-64 bg-white shadow-sm">
           <Sidebar />
         </div>
-
         {isSidebarOpen && (
           <div
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 bg-black bg-opacity-60 z-40 lg:hidden"
             onClick={() => setIsSidebarOpen(false)}
           >
             <div
-              className="absolute left-0 top-0 h-full w-64 bg-gray-900 text-white z-50"
+              className="absolute left-0 top-0 h-full w-64 bg-white shadow-2xl z-50 transform transition-transform"
               onClick={(e) => e.stopPropagation()}
             >
               <Sidebar />
@@ -110,101 +109,146 @@ const JobAlert = () => {
           </div>
         )}
 
-        <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-auto">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl sm:text-2xl font-semibold text-gray-800">Job Alerts</h3>
+        {/* Main Content */}
+        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <div>
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Job Alerts</h1>
+              <p className="text-gray-600 mt-1">Manage your personalized job alert preferences</p>
+            </div>
             {isEmployee && (
               <button
                 onClick={() => setIsEditing(true)}
-                className="flex items-center bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition-colors shadow-sm"
               >
-                <Plus size={16} className="mr-2" /> Create Alert
+                <Plus size={18} className="mr-2" />
+                Create Alert
               </button>
             )}
           </div>
 
           {/* Success/Error Messages */}
-          {success && <div className="text-green-600 mb-4">{success}</div>}
-          {error && <div className="text-red-600 mb-4">{error}</div>}
+          {success && (
+            <div className="mb-4 bg-green-50 border border-green-200 rounded-lg p-4 flex items-center">
+              <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+              <span className="text-green-800 text-sm">{success}</span>
+              <button
+                onClick={() => dispatch(clearJobAlertMessages())}
+                className="ml-auto text-green-600 hover:text-green-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
+          {error && (
+            <div className="mb-4 bg-red-50 border border-red-200 rounded-lg p-4 flex items-center">
+              <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
+              <span className="text-red-800 text-sm">{error}</span>
+              <button
+                onClick={() => dispatch(clearJobAlertMessages())}
+                className="ml-auto text-red-600 hover:text-red-800"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          )}
 
           {/* Create/Edit Form */}
           {isEditing && isEmployee && (
-            <div className="bg-white shadow rounded-lg p-4 sm:p-6 mb-6">
-              <h4 className="text-lg font-semibold text-gray-800 mb-4">
-                {currentAlert.id ? 'Edit Job Alert' : 'Create New Job Alert'}
-              </h4>
-              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm text-gray-600">Job Title Keywords</label>
+            <div className="bg-white shadow-sm rounded-xl p-6 mb-6 border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {currentAlert.id ? 'Edit Job Alert' : 'Create New Job Alert'}
+                </h2>
+                <button
+                  onClick={() => {
+                    setIsEditing(false);
+                    setCurrentAlert({
+                      id: null,
+                      keywords: '',
+                      location: '',
+                      salaryMin: '',
+                      salaryMax: '',
+                      jobType: '',
+                      frequency: 'Daily',
+                    });
+                  }}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+              <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Job Keywords *</label>
                   <input
                     type="text"
                     value={currentAlert.keywords}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, keywords: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., React Developer, Full Stack"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600">Location</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Location *</label>
                   <input
                     type="text"
                     value={currentAlert.location}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, location: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., Remote, New York"
                     required
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600">Salary Range (Min)</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Salary Min ($)</label>
                   <input
                     type="number"
                     value={currentAlert.salaryMin}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, salaryMin: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., 50000"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600">Salary Range (Max)</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Salary Max ($)</label>
                   <input
                     type="number"
                     value={currentAlert.salaryMax}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, salaryMax: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                    placeholder="e.g., 100000"
                   />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600">Job Type</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Job Type</label>
                   <select
                     value={currentAlert.jobType}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, jobType: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                   >
-                    <option value="">Select Job Type</option>
+                    <option value="">Any</option>
                     <option value="Full Time">Full Time</option>
                     <option value="Part Time">Part Time</option>
-                    <option value="Freelancer">Freelancer</option>
-                    <option value="Temporary">Temporary</option>
+                    <option value="Freelance">Freelance</option>
+                    <option value="Contract">Contract</option>
                   </select>
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-600">Notification Frequency</label>
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">Frequency</label>
                   <select
                     value={currentAlert.frequency}
                     onChange={(e) => setCurrentAlert({ ...currentAlert, frequency: e.target.value })}
-                    className="w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
                   >
                     <option value="Daily">Daily</option>
                     <option value="Weekly">Weekly</option>
                     <option value="Monthly">Monthly</option>
                   </select>
                 </div>
-                <div className="md:col-span-2 flex gap-4">
-                  <button
-                    type="submit"
-                    className="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors text-sm"
-                  >
-                    {currentAlert.id ? 'Update' : 'Create'}
-                  </button>
+                <div className="md:col-span-2 flex justify-end gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
@@ -219,94 +263,116 @@ const JobAlert = () => {
                         frequency: 'Daily',
                       });
                     }}
-                    className="text-gray-600 hover:text-gray-800 text-sm"
+                    className="px-4 py-2 text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500 transition-colors"
                   >
                     Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors shadow-sm"
+                  >
+                    {currentAlert.id ? 'Update Alert' : 'Create Alert'}
                   </button>
                 </div>
               </form>
             </div>
           )}
 
-          {/* Search */}
+          {/* Search Bar */}
           <div className="mb-6">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-500" />
+            <div className="relative max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
               <input
                 type="text"
-                placeholder="Search alerts by keywords or location"
+                placeholder="Search alerts by keywords or location..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm"
               />
             </div>
           </div>
 
-          {/* Alerts List */}
+          {/* Alerts Grid */}
           {loading ? (
-            <div className="flex justify-center items-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-blue-500"></div>
+            <div className="flex justify-center items-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
+              <span className="ml-2 text-gray-600">Loading alerts...</span>
             </div>
           ) : filteredAlerts.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredAlerts.map((alert) => (
-                <div key={alert.id} className="bg-white shadow rounded-lg p-4 sm:p-6">
-                  <div className="flex items-center mb-4">
-                    <Bell className="w-6 h-6 text-blue-600 mr-3" />
-                    <div>
-                      <h4 className="text-base font-semibold text-gray-800">{alert.keywords}</h4>
-                      <p className="text-sm text-gray-600">{alert.location}</p>
+                <div key={alert.id} className="bg-white shadow-sm rounded-xl p-6 border border-gray-200 hover:shadow-md transition-shadow">
+                  <div className="flex items-start mb-4">
+                    <div className="p-2 bg-indigo-100 rounded-lg mr-3">
+                      <Bell className="w-5 h-5 text-indigo-600" />
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-gray-900 truncate">{alert.keywords}</h4>
+                      <p className="text-sm text-gray-600 mt-1">{alert.location}</p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-600 space-y-1">
-                    <p>
-                      <span className="font-medium">Salary Range:</span>{' '}
-                      {alert.salaryMin && alert.salaryMax
-                        ? `$${alert.salaryMin} - $${alert.salaryMax}`
-                        : 'Not specified'}
-                    </p>
-                    <p>
-                      <span className="font-medium">Job Type:</span> {alert.jobType || 'Not specified'}
-                    </p>
-                    <p>
-                      <span className="font-medium">Frequency:</span> {alert.frequency}
-                    </p>
+                  <div className="space-y-3 mb-4">
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-sm text-gray-500">Salary</span>
+                      <span className="text-sm font-medium text-gray-900">
+                        {alert.salaryMin && alert.salaryMax
+                          ? `$${alert.salaryMin}k - $${alert.salaryMax}k`
+                          : 'Any'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-sm text-gray-500">Type</span>
+                      <span className="text-sm font-medium text-gray-900">{alert.jobType || 'Any'}</span>
+                    </div>
+                    <div className="flex justify-between items-center py-1">
+                      <span className="text-sm text-gray-500">Frequency</span>
+                      <span className="text-sm font-medium text-gray-900">{alert.frequency}</span>
+                    </div>
                   </div>
-                  {isEmployee && (
-                    <div className="flex gap-4 mt-4">
-                      <Link
-                        to={`/jobsearch?keywords=${encodeURIComponent(alert.keywords)}&location=${encodeURIComponent(alert.location)}`}
-                        className="text-blue-600 hover:underline text-sm flex items-center"
-                      >
-                        View Matching Jobs
-                      </Link>
-                      <button onClick={() => handleEdit(alert)} className="text-blue-600 hover:text-blue-700 text-sm">
-                        <Edit size={16} />
-                      </button>
-                      <button onClick={() => handleDelete(alert.id)} className="text-red-600 hover:text-red-700 text-sm">
-                        <Trash size={16} />
-                      </button>
-                    </div>
-                  )}
-                  {isCandidate && (
-                    <div className="mt-4">
-                      <Link
-                        to={`/jobsearch?keywords=${encodeURIComponent(alert.keywords)}&location=${encodeURIComponent(alert.location)}`}
-                        className="text-blue-600 hover:underline text-sm"
-                      >
-                        View Matching Jobs
-                      </Link>
-                    </div>
-                  )}
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-4 border-t border-gray-100">
+                    <Link
+                      to={`/jobsearch?keywords=${encodeURIComponent(alert.keywords)}&location=${encodeURIComponent(alert.location)}&salaryMin=${alert.salaryMin}&salaryMax=${alert.salaryMax}&jobType=${alert.jobType}`}
+                      className="inline-flex items-center px-3 py-1 bg-indigo-600 text-white text-sm rounded-md hover:bg-indigo-700 transition-colors"
+                    >
+                      View Jobs
+                    </Link>
+                    {isEmployee && (
+                      <>
+                        <button
+                          onClick={() => handleEdit(alert)}
+                          className="p-1 text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50 rounded-md transition-colors"
+                          aria-label="Edit alert"
+                        >
+                          <Edit size={16} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(alert.id)}
+                          className="p-1 text-red-600 hover:text-red-800 hover:bg-red-50 rounded-md transition-colors"
+                          aria-label="Delete alert"
+                        >
+                          <Trash size={16} />
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
           ) : (
-            <div className="bg-white shadow rounded-lg p-4 sm:p-6 text-center">
-              <p className="text-gray-700">
-                No job alerts found.
-                {isEmployee ? ' Create a new alert to get started.' : ''}
+            <div className="bg-white shadow-sm rounded-xl p-12 text-center border border-gray-200">
+              <Bell className="w-12 h-12 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Job Alerts Yet</h3>
+              <p className="text-gray-600 mb-6">
+                Set up your first alert to receive personalized job notifications.
               </p>
+              {isEmployee && (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-colors"
+                >
+                  Create Your First Alert
+                </button>
+              )}
             </div>
           )}
         </main>

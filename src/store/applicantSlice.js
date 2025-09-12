@@ -1,33 +1,29 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import axios from "axios";
 
-// Fetch applicants
-// export const fetchApplicants = createAsyncThunk(
-//   "applicants/fetchApplicants",
-//   async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
-//     try {
-//       const res = await axios.get("http://localhost:5000/api/applicants", {
-//         params: { status: statusFilter, search: searchQuery, page, limit: jobsPerPage },
-//       });
-//       console.log("API Response:", res.data); // Debug log
-//       // Normalize response
-//       const data = res.data;
-//       return {
-//         applicants: Array.isArray(data.applicants)
-//           ? data.applicants
-//           : Array.isArray(data)
-//           ? data
-//           : [],
-//         total: data.total || (Array.isArray(data.applicants) ? data.applicants.length : data.length || 0),
-//         page: data.page || page,
-//         limit: data.limit || jobsPerPage,
-//       };
-//     } catch (err) {
-//       console.error("Fetch Applicants Error:", err.response?.data || err.message);
-//       return rejectWithValue(err.response?.data?.message || "Error fetching applicants");
-//     }
-//   }
-// );
+// Fetch applicants for employer
+export const fetchApplicants = createAsyncThunk(
+  'applicants/fetchApplicants',
+  async (_, { getState, rejectWithValue }) => {
+    try {
+      const { auth: { token } } = getState(); // Assuming auth slice has token
+      const res = await axios.get('http://localhost:5000/api/applications/employer', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      console.log("Fetch Applicants Response:", res.data);
+      // Normalize response to match expected format
+      return {
+        applicants: Array.isArray(res.data) ? res.data : res.data.applicants || [],
+        total: res.data.total || res.data.length || 0,
+        page: res.data.page || 1,
+        limit: res.data.limit || 8,
+      };
+    } catch (err) {
+      console.error("Fetch Applicants Error:", err.response?.data || err.message);
+      return rejectWithValue(err.response?.data?.message || 'Error fetching applicants');
+    }
+  }
+);
 
 // Update applicant status
 export const updateApplicantStatus = createAsyncThunk(
@@ -42,6 +38,7 @@ export const updateApplicantStatus = createAsyncThunk(
       );
       return { id, status };
     } catch (err) {
+      console.error("Update Applicant Status Error:", err.response?.data || err.message);
       return rejectWithValue(err.response?.data?.message || "Error updating status");
     }
   }
@@ -58,34 +55,15 @@ export const addApplicantNote = createAsyncThunk(
         { note },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      return { id, note };
+      return { id, note: res.data.note || note }; // Assume response includes the new note
     } catch (err) {
+      console.error("Add Applicant Note Error:", err.response?.data || err.message);
       return rejectWithValue(err.response?.data?.message || "Error adding note");
     }
   }
 );
 
-
-
-
-// In a new applicantsSlice.js or add to jobsSlice
-export const fetchApplicants = createAsyncThunk(
-  'applicants/fetchApplicants',
-  async (_, { getState, rejectWithValue }) => {
-    try {
-      const { auth: { token } } = getState(); // For employer auth
-      const res = await axios.get('http://localhost:5000/api/applications/employer', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      return res.data; // Array of applicants
-    } catch (err) {
-      return rejectWithValue(err.response?.data?.message || 'Error fetching applicants');
-    }
-  }
-);
-// Add to extraReducers: similar to fetchJobs.
-
-const applicantSlice = createSlice({
+const applicantsSlice = createSlice({
   name: "applicants",
   initialState: {
     applicants: [],
@@ -94,57 +72,82 @@ const applicantSlice = createSlice({
     jobsPerPage: 8,
     statusFilter: "All",
     searchQuery: "",
-    applicantsStatus: "idle",
-    applicantsError: null,
+    status: "idle", // Renamed from applicantsStatus for consistency
+    error: null, // Renamed from applicantsError for consistency
   },
   reducers: {
-    setApplicantSearchQuery: (state, action) => {
+    setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
       state.page = 1;
     },
-    setApplicantStatusFilter: (state, action) => {
+    setStatusFilter: (state, action) => {
       state.statusFilter = action.payload;
       state.page = 1;
     },
-    setApplicantPage: (state, action) => {
+    setPage: (state, action) => {
       state.page = action.payload;
+    },
+    clearError: (state) => {
+      state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
+      // Fetch Applicants
       .addCase(fetchApplicants.pending, (state) => {
-        state.applicantsStatus = "loading";
-        state.applicantsError = null;
+        state.status = "loading";
+        state.error = null;
       })
       .addCase(fetchApplicants.fulfilled, (state, action) => {
-        state.applicantsStatus = "succeeded";
+        state.status = "succeeded";
         state.applicants = action.payload.applicants || [];
         state.total = action.payload.total || 0;
         state.page = action.payload.page || 1;
         state.jobsPerPage = action.payload.limit || state.jobsPerPage;
       })
       .addCase(fetchApplicants.rejected, (state, action) => {
-        state.applicantsStatus = "failed";
-        state.applicantsError = action.payload;
+        state.status = "failed";
+        state.error = action.payload || "Failed to fetch applicants";
+        state.applicants = [];
+      })
+      // Update Applicant Status
+      .addCase(updateApplicantStatus.pending, (state) => {
+        state.status = "loading";
       })
       .addCase(updateApplicantStatus.fulfilled, (state, action) => {
+        state.status = "succeeded";
         const { id, status } = action.payload;
         const index = state.applicants.findIndex((applicant) => applicant.id === id);
         if (index !== -1) {
           state.applicants[index].status = status;
         }
       })
+      .addCase(updateApplicantStatus.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload || "Failed to update status";
+      })
+      // Add Applicant Note
+      .addCase(addApplicantNote.pending, (state) => {
+        state.status = "loading";
+      })
       .addCase(addApplicantNote.fulfilled, (state, action) => {
+        state.status = "succeeded";
         const { id, note } = action.payload;
         const index = state.applicants.findIndex((applicant) => applicant.id === id);
         if (index !== -1) {
-          state.applicants[index].notes = [...(state.applicants[index].notes || []), note];
+          if (!state.applicants[index].notes) {
+            state.applicants[index].notes = [];
+          }
+          state.applicants[index].notes.push(note);
         }
+      })
+      .addCase(addApplicantNote.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload || "Failed to add note";
       });
   },
 });
 
-export const { setApplicantSearchQuery, setApplicantStatusFilter, setApplicantPage } =
-  applicantSlice.actions;
+export const { setSearchQuery, setStatusFilter, setPage, clearError } = applicantsSlice.actions;
 
-export default applicantSlice.reducer;
+export default applicantsSlice.reducer;
