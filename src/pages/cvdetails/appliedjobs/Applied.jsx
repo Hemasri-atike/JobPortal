@@ -1,13 +1,19 @@
+// In src/components/Applied.jsx
 import { useState, useEffect } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Search, Mail, Download, Filter } from 'lucide-react';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
+import axios from 'axios';
+import { logoutUser } from '../../../store/userSlice.js';  // Fixed: Changed from 'logout' to 'logoutUser'
+
 
 const Applied = () => {
-  const candidateId = useSelector(state => state.profile.data?.id);
+  const dispatch = useDispatch();
+  const candidateId = useSelector((state) => state.user.userInfo?.id);
   const [jobs, setJobs] = useState([]);
+  const [totalJobs, setTotalJobs] = useState(0);
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -17,7 +23,36 @@ const Applied = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const jobsPerPage = 4;
 
-  const fetchJobs = async () => {
+  const axiosAuth = (token) => {
+    const instance = axios.create({
+      baseURL: 'http://localhost:5000/api',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    instance.interceptors.response.use(
+      (response) => response,
+      async (error) => {
+        const originalRequest = error.config;
+        if (error.response?.status === 401 && !originalRequest._retry) {
+          originalRequest._retry = true;
+          try {
+            const res = await axios.post('http://localhost:5000/api/auth/refresh', {}, { withCredentials: true });
+            const newToken = res.data.token;
+            localStorage.setItem('token', newToken);
+            originalRequest.headers.Authorization = `Bearer ${newToken}`;
+            return instance(originalRequest);
+          } catch (refreshError) {
+            dispatch(logoutUser());  // Fixed: Changed from 'logout()' to 'logoutUser()'
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          }
+        }
+        return Promise.reject(error);
+      }
+    );
+    return instance;
+  };
+
+  const fetchJobs = async (reset = false) => {
     if (!candidateId) {
       setError('Please log in to view applied jobs.');
       return;
@@ -25,27 +60,29 @@ const Applied = () => {
     setIsLoading(true);
     setError(null);
 
-    const params = new URLSearchParams({
-      search: searchQuery,
-      status: statusFilter,
-      page,
-      limit: jobsPerPage,
-    });
-
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`http://localhost:5000/api/candidate/${candidateId}/applied-jobs?${params}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      if (!token) throw new Error('No authentication token found');
+      const params = new URLSearchParams({
+        search: searchQuery,
+        status: statusFilter,
+        page,
+        limit: jobsPerPage,
       });
-      if (!res.ok) throw new Error('Failed to fetch applied jobs');
-      const data = await res.json();
-      if (page === 1) setJobs(data);
-      else setJobs(prev => [...prev, ...data]);
+      const res = await axiosAuth(token).get(`/candidate/${candidateId}/applied-jobs?${params}`);
+      if (reset || page === 1) {
+        setJobs(res.data);
+      } else {
+        setJobs((prev) => [...prev, ...res.data]);
+      }
+      setTotalJobs(res.data.length === jobsPerPage ? totalJobs + res.data.length : totalJobs);
+      console.log(`Fetched applied jobs:`, res.data);
     } catch (err) {
-      console.error('Fetch jobs error:', err.message);
-      setError('Failed to load applied jobs. Please try again.');
+      console.error('Fetch jobs error:', err.message, { status: err.response?.status });
+      setError(err.response?.data?.details || err.message || 'Failed to load applied jobs.');
+      if (err.response?.status === 401) {
+        setTimeout(() => window.location.href = '/login', 2000);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -53,7 +90,7 @@ const Applied = () => {
 
   useEffect(() => {
     setPage(1);
-    fetchJobs();
+    fetchJobs(true);
   }, [candidateId, searchQuery, statusFilter]);
 
   useEffect(() => {
@@ -67,11 +104,9 @@ const Applied = () => {
     <div className="min-h-screen bg-white">
       <Header toggleSidebar={toggleSidebar} />
       <div className="flex flex-1">
-        {/* Desktop Sidebar */}
-        <div className="hidden lg:block w-72  text-white shadow-2xl">
+        <div className="hidden lg:block w-72 text-white shadow-2xl">
           <Sidebar />
         </div>
-        {/* Mobile Sidebar */}
         {isSidebarOpen && (
           <div
             className="fixed inset-0 bg-black bg-opacity-60 z-40 lg:hidden transition-opacity duration-300 ease-in-out"
@@ -98,7 +133,6 @@ const Applied = () => {
             </button>
           </div>
 
-          {/* Error Message */}
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6 animate-fade-in">
               {error}
@@ -112,7 +146,6 @@ const Applied = () => {
             </div>
           )}
 
-          {/* Filters */}
           <div
             className={`${
               isFilterOpen ? 'block' : 'hidden sm:block'
@@ -137,15 +170,15 @@ const Applied = () => {
                 aria-label="Filter by application status"
               >
                 <option value="All">All Statuses</option>
-                <option value="Applied">Applied</option>
+                <option value="applied">Applied</option>
                 <option value="Under Review">Under Review</option>
                 <option value="Shortlisted">Shortlisted</option>
                 <option value="Interview Scheduled">Interview Scheduled</option>
+                <option value="Rejected">Rejected</option>
               </select>
             </div>
           </div>
 
-          {/* Job List */}
           {isLoading && jobs.length === 0 ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-teal-600"></div>
@@ -212,6 +245,8 @@ const Applied = () => {
                           ? 'text-teal-600'
                           : job.status === 'Under Review'
                           ? 'text-amber-600'
+                          : job.status === 'Rejected'
+                          ? 'text-red-600'
                           : 'text-gray-600'
                       } font-medium`}
                     >
@@ -245,8 +280,7 @@ const Applied = () => {
             </div>
           )}
 
-          {/* Load More */}
-          {jobs.length >= jobsPerPage && (
+          {jobs.length > 0 && jobs.length >= page * jobsPerPage && (
             <div className="mt-6 text-center">
               <button
                 onClick={() => setPage(page + 1)}
@@ -269,24 +303,6 @@ const Applied = () => {
           )}
         </main>
       </div>
-
-      {/* Tailwind Animation Classes */}
-      <style jsx>{`
-        .animate-fade-in {
-          animation: fadeIn 0.5s ease-in-out;
-        }
-        .animate-slide-down {
-          animation: slideDown 0.3s ease-in-out;
-        }
-        @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-      `}</style>
     </div>
   );
 };

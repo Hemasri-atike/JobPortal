@@ -1,11 +1,14 @@
+// In src/components/Application.jsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
 import { BarLoader } from 'react-spinners';
-import { applyForJob } from '../../store/jobsSlice.js';
+import { applyForJob } from '../../store/jobsSlice';
 import { toast } from 'react-toastify';
 
 const Application = ({ job, onClose }) => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.user || {});
   const [formData, setFormData] = useState({
     fullName: userInfo?.name || '',
@@ -41,14 +44,12 @@ const Application = ({ job, onClose }) => {
     e.preventDefault();
     setError(null);
 
-    // Validate job ID
     if (!job?.id) {
       setError('Invalid job ID. Please select a valid job.');
       console.error('Invalid job ID in Application:', job);
       return;
     }
 
-    // Validate required fields
     const requiredFields = ['fullName', 'email', 'phone', 'resume'];
     const missingFields = requiredFields.filter((field) => !formData[field]);
     if (missingFields.length > 0) {
@@ -56,21 +57,18 @@ const Application = ({ job, onClose }) => {
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address.');
       return;
     }
 
-    // Validate phone format
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError('Please enter a valid phone number.');
       return;
     }
 
-    // Validate file types and size
     if (
       formData.resume &&
       !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(
@@ -84,6 +82,7 @@ const Application = ({ job, onClose }) => {
       setError('Resume file size must be less than 5MB.');
       return;
     }
+
     if (
       formData.coverLetter &&
       !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(
@@ -98,11 +97,13 @@ const Application = ({ job, onClose }) => {
       return;
     }
 
+    // Removed authorization check - no longer requiring login
+
     setIsSubmitting(true);
     try {
       const submissionData = {
         jobId: job.id,
-        candidate_id: userInfo?.id || '',
+        // Removed candidate_id since no auth
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
@@ -121,13 +122,24 @@ const Application = ({ job, onClose }) => {
       };
 
       console.log('Submitting application:', submissionData);
-      await dispatch(applyForJob(submissionData)).unwrap();
+      const response = await dispatch(applyForJob(submissionData)).unwrap();
+      console.log('Application submitted successfully:', response);
       toast.success('Application submitted successfully!');
       onClose();
+      navigate('/applied'); // Redirect to Applied page
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : err.message || 'Failed to submit application. Please try again.';
-      console.error('Application submission error:', err);
+      console.error('Application submission error:', err, {
+        message: err.message,
+        stack: err.stack,
+        response: err.response?.data,
+        status: err.response?.status,
+      });
       setError(errorMessage);
+      // Removed auth-specific redirects
+      if (errorMessage.includes('inactive') || errorMessage.includes('already applied')) {
+        setTimeout(() => navigate('/jobs'), 2000);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -146,11 +158,7 @@ const Application = ({ job, onClose }) => {
             {error.includes('Invalid job ID') || error.includes('Job not found') ? (
               <p className="mt-2">
                 Please ensure you are applying for a valid job.{' '}
-                <a
-                  href="/jobs"
-                  className="text-blue-600 hover:underline"
-                  aria-label="Go to jobs page"
-                >
+                <a href="/jobs" className="text-blue-600 hover:underline">
                   Browse jobs
                 </a>
               </p>
@@ -158,14 +166,20 @@ const Application = ({ job, onClose }) => {
               <p className="mt-2">
                 Please ensure uploaded files are valid (.pdf, .doc, .docx, max 5MB).
               </p>
-            ) : error.includes('Authentication') || error.includes('logged in') ? (
+            ) : error.includes('already applied') ? (
               <p className="mt-2">
-                Please <a href="/login" className="text-blue-600 hover:underline">log in</a> to apply.
+                You have already applied to this job.{' '}
+                <a href="/jobs" className="text-blue-600 hover:underline">
+                  Browse other jobs
+                </a>
               </p>
-            ) : error.includes('already submitted') ? (
-              <p className="mt-2">You have already applied to this job.</p>
-            ) : error.includes('Invalid application data') ? (
-              <p className="mt-2">Please check your form inputs and try again.</p>
+            ) : error.includes('inactive') ? (
+              <p className="mt-2">
+                This job is no longer accepting applications.{' '}
+                <a href="/jobs" className="text-blue-600 hover:underline">
+                  Browse other jobs
+                </a>
+              </p>
             ) : null}
           </div>
         )}
@@ -174,7 +188,6 @@ const Application = ({ job, onClose }) => {
             <BarLoader width="100%" color="#2563EB" />
           </div>
         )}
-
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <label htmlFor="fullName" className="block text-sm font-medium text-gray-700">
@@ -188,6 +201,7 @@ const Application = ({ job, onClose }) => {
               onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               required
+              aria-required="true"
             />
           </div>
           <div>
@@ -202,6 +216,7 @@ const Application = ({ job, onClose }) => {
               onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               required
+              aria-required="true"
             />
           </div>
           <div>
@@ -216,6 +231,7 @@ const Application = ({ job, onClose }) => {
               onChange={handleInputChange}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
               required
+              aria-required="true"
             />
           </div>
           <div>
@@ -334,6 +350,7 @@ const Application = ({ job, onClose }) => {
               onChange={handleFileChange}
               className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
               required
+              aria-required="true"
             />
           </div>
           <div>
@@ -375,29 +392,28 @@ const Application = ({ job, onClose }) => {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring focus:ring-blue-500 focus:ring-opacity-50"
             />
           </div>
-        </div>
-
-        <div className="mt-6 flex justify-end gap-4">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
-            aria-label="Cancel application"
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className={`px-4 py-2 rounded-md text-white ${
-              isSubmitting
-                ? 'bg-blue-400 cursor-not-allowed'
-                : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
-            }`}
-            aria-label="Submit application"
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Application'}
-          </button>
+          <div className="mt-6 flex justify-end gap-4 sm:col-span-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+              aria-label="Cancel application"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={isSubmitting}
+              className={`px-4 py-2 rounded-md text-white ${
+                isSubmitting
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              }`}
+              aria-label="Submit application"
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
         </div>
       </form>
     </div>
