@@ -27,12 +27,15 @@ export const fetchJobs = createAsyncThunk(
         ...(subcategory && { subcategory }),
       };
       const response = await axiosAuth(token).get('/jobs', { params });
+            console.log('fetchJobs: Successfully fetched jobs', response.data.jobs);
       return {
+        
         jobs: response.data.jobs || [],
         total: response.data.total || 0,
         page: response.data.page || page,
         perPage: response.data.perPage || jobsPerPage,
       };
+
     } catch (error) {
       const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch jobs';
       if (error.response?.status === 404) {
@@ -142,26 +145,32 @@ export const fetchUserApplications = createAsyncThunk(
 );
 
 // Add job
-export const addJob = createAsyncThunk(
-  'jobs/addJob',
-  async (jobData, { rejectWithValue, getState }) => {
-    try {
-      const { user: { userInfo } } = getState();
-      const token = userInfo?.token || localStorage.getItem('token');
-      console.log('addJob: jobData=', jobData, 'userInfo=', userInfo, 'token=', token ? 'present' : 'missing');
-      if (!token || !userInfo) {
-        throw new Error('Authentication required');
-      }
-      const res = await axiosAuth(token).post('/jobs', { ...jobData, user_id: userInfo.id });
-      return { jobId: res.data.jobId, job: { ...res.data, createdAt: res.data.created_at || new Date().toISOString() } };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to add job';
-      console.error('addJob Error:', errorMessage);
-      return rejectWithValue(errorMessage); // Return string
-    }
-  }
-);
-
+// export const addJob = createAsyncThunk(
+//   'jobs/addJob',
+//   async (jobData, { rejectWithValue, getState }) => {
+//     try {
+//       const { user: { userInfo } } = getState();
+//       const token = userInfo?.token || localStorage.getItem('token');
+//       console.log('addJob: jobData=', jobData, 'userInfo=', userInfo, 'token=', token ? 'present' : 'missing');
+//       if (!token || !userInfo) {
+//         throw new Error('Authentication required');
+//       }
+//       const res = await axiosAuth(token).post('/jobs', { ...jobData, user_id: userInfo.id });
+//       return { jobId: res.data.jobId, job: { ...res.data, createdAt: res.data.created_at || new Date().toISOString() } };
+//     } catch (err) {
+//       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to add job';
+//       console.error('addJob Error:', errorMessage);
+//       return rejectWithValue(errorMessage); // Return string
+//     }
+//   }
+// );
+export const addJob = (jobData) => {
+  console.log("addJob action dispatched:", jobData);
+  return {
+    type: "jobs/addJob",
+    payload: jobData,
+  };
+};
 // Update job
 export const updateJob = createAsyncThunk(
   'jobs/updateJob',
@@ -574,6 +583,12 @@ const jobsSlice = createSlice({
     toggleStatusSuccess: false,
   },
   reducers: {
+        addJob: (state, action) => {
+      state.addJobStatus = 'succeeded';
+      state.addJobSuccess = true;
+      state.jobs = [...state.jobs, { ...action.payload, applicantCount: 0, views: 0, createdAt: action.payload.createdAt || new Date().toISOString() }];
+      state.total += 1;
+    },
     setSearchQuery: (state, action) => {
       state.searchQuery = action.payload;
       state.page = 1;
@@ -647,242 +662,463 @@ const jobsSlice = createSlice({
       state.jobsError = null;
     },
   },
-  extraReducers: (builder) => {
-    builder
-      // Fetch Jobs
-      .addCase(fetchJobs.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchJobs.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.jobs = action.payload.jobs || [];
-        state.total = action.payload.total || 0;
-        state.page = action.payload.page || 1;
-        state.jobsPerPage = action.payload.limit || state.jobsPerPage;
-      })
-      .addCase(fetchJobs.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-        state.jobs = [];
-        state.total = 0;
-      })
-      // Fetch Job by ID
-      .addCase(fetchJobById.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchJobById.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        const existingJobIndex = state.jobs.findIndex((job) => job.id === action.payload.id);
-        if (existingJobIndex >= 0) {
-          state.jobs[existingJobIndex] = action.payload;
-        } else {
-          state.jobs.push(action.payload);
-        }
-      })
-      .addCase(fetchJobById.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      })
-      // Fetch Categories
-      .addCase(fetchCategories.pending, (state) => {
-        state.categoriesStatus = 'loading';
-        state.categoriesError = null;
-      })
-      .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.categoriesStatus = 'succeeded';
-        state.categories = action.payload || [];
-      })
-      .addCase(fetchCategories.rejected, (state, action) => {
-        state.categoriesStatus = 'failed';
-        state.categoriesError = action.payload; // String
-        state.categories = [];
-      })
-      // Fetch Jobs by Category
-      .addCase(fetchJobsByCategory.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchJobsByCategory.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.jobsByCategory = action.payload.jobs || [];
-        state.total = action.payload.total || 0;
-      })
-      .addCase(fetchJobsByCategory.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-        state.jobsByCategory = [];
-      })
-      // Fetch User Applications
-      .addCase(fetchUserApplications.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchUserApplications.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.applications = action.payload || [];
-      })
-      .addCase(fetchUserApplications.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      })
-      // Apply to Job
-      .addCase(applyToJobThunk.pending, (state) => {
-        state.applying = true;
-        state.applyError = null;
-        state.applySuccess = null;
-      })
-      .addCase(applyToJobThunk.fulfilled, (state, action) => {
-        state.applying = false;
-        state.applySuccess = action.payload;
-        state.applications = [...new Set([...state.applications, action.payload.jobId])];
-        state.applicationsData = [...state.applicationsData, action.payload];
-      })
-      .addCase(applyToJobThunk.rejected, (state, action) => {
-        state.applying = false;
-        state.applyError = action.payload; // String
-      })
-      // Add Job
-      .addCase(addJob.pending, (state) => {
-        state.addJobStatus = 'loading';
-        state.addJobError = null;
-        state.addJobSuccess = false;
-      })
-      .addCase(addJob.fulfilled, (state, action) => {
-        state.addJobStatus = 'succeeded';
-        state.addJobSuccess = true;
-        state.jobs = [...state.jobs, { id: action.payload.jobId, ...action.payload.job, applicantCount: 0, views: 0 }];
-        state.total += 1;
-      })
-      .addCase(addJob.rejected, (state, action) => {
-        state.addJobStatus = 'failed';
-        state.addJobError = action.payload; // String
-      })
-      // Update Job
-      .addCase(updateJob.pending, (state) => {
-        state.updateJobStatus = 'loading';
-        state.updateJobError = null;
-        state.updateJobSuccess = false;
-      })
-      .addCase(updateJob.fulfilled, (state, action) => {
-        state.updateJobStatus = 'succeeded';
-        state.updateJobSuccess = true;
-        const index = state.jobs.findIndex((job) => job.id === action.payload.id);
-        if (index !== -1) {
-          state.jobs[index] = { ...state.jobs[index], ...action.payload, applicantCount: state.jobs[index].applicantCount, views: state.jobs[index].views };
-        }
-      })
-      .addCase(updateJob.rejected, (state, action) => {
-        state.updateJobStatus = 'failed';
-        state.updateJobError = action.payload; // String
-      })
-      // Delete Job
-      .addCase(deleteJob.pending, (state) => {
-        state.deleteJobStatus = 'loading';
-        state.deleteJobError = null;
-        state.deleteJobSuccess = false;
-      })
-      .addCase(deleteJob.fulfilled, (state, action) => {
-        state.deleteJobStatus = 'succeeded';
-        state.deleteJobSuccess = true;
-        state.jobs = state.jobs.filter((job) => job.id !== action.payload);
-        state.total -= 1;
-      })
-      .addCase(deleteJob.rejected, (state, action) => {
-        state.deleteJobStatus = 'failed';
-        state.deleteJobError = action.payload; // String
-      })
-      // Bulk Delete Jobs
-      .addCase(bulkDeleteJobs.pending, (state) => {
-        state.bulkDeleteStatus = 'loading';
-        state.bulkDeleteError = null;
-        state.bulkDeleteSuccess = false;
-      })
-      .addCase(bulkDeleteJobs.fulfilled, (state, action) => {
-        state.bulkDeleteStatus = 'succeeded';
-        state.bulkDeleteSuccess = true;
-        state.jobs = state.jobs.filter((job) => !action.payload.includes(job.id));
-        state.total -= action.payload.length;
-      })
-      .addCase(bulkDeleteJobs.rejected, (state, action) => {
-        state.bulkDeleteStatus = 'failed';
-        state.bulkDeleteError = action.payload; // String
-      })
-      // Toggle Job Status
-      .addCase(toggleJobStatus.pending, (state) => {
-        state.toggleStatus = 'loading';
-        state.toggleStatusError = null;
-        state.toggleStatusSuccess = false;
-      })
-      .addCase(toggleJobStatus.fulfilled, (state, action) => {
-        state.toggleStatus = 'succeeded';
-        state.toggleStatusSuccess = true;
-        const index = state.jobs.findIndex((job) => job.id === action.payload.id);
-        if (index !== -1) {
-          state.jobs[index].status = action.payload.status;
-        }
-      })
-      .addCase(toggleJobStatus.rejected, (state, action) => {
-        state.toggleStatus = 'failed';
-        state.toggleStatusError = action.payload; // String
-      })
-      // Fetch Applicants by Job
-      .addCase(fetchApplicantsByJob.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchApplicantsByJob.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.applicants[action.payload.jobId] = action.payload.applicants;
-      })
-      .addCase(fetchApplicantsByJob.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      })
-      // Fetch Applicants (all for employer)
-      .addCase(fetchApplicants.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchApplicants.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.applicants.all = action.payload || [];
-      })
-      .addCase(fetchApplicants.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      })
-      // Fetch Analytics
-      .addCase(fetchAnalytics.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchAnalytics.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.analytics = action.payload || {};
-      })
-      .addCase(fetchAnalytics.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      })
-      // Fetch Interviews
-      .addCase(fetchInterviews.pending, (state) => {
-        state.jobsStatus = 'loading';
-        state.jobsError = null;
-      })
-      .addCase(fetchInterviews.fulfilled, (state, action) => {
-        state.jobsStatus = 'succeeded';
-        state.upcomingInterviews = action.payload || [];
-      })
-      .addCase(fetchInterviews.rejected, (state, action) => {
-        state.jobsStatus = 'failed';
-        state.jobsError = action.payload; // String
-      });
-  },
+  // extraReducers: (builder) => {
+  //   builder
+  //     // Fetch Jobs
+  //     .addCase(fetchJobs.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchJobs.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.jobs = action.payload.jobs || [];
+  //       state.total = action.payload.total || 0;
+  //       state.page = action.payload.page || 1;
+  //       state.jobsPerPage = action.payload.limit || state.jobsPerPage;
+  //     })
+  //     .addCase(fetchJobs.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //       state.jobs = [];
+  //       state.total = 0;
+  //     })
+  //     // Fetch Job by ID
+  //     .addCase(fetchJobById.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchJobById.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       const existingJobIndex = state.jobs.findIndex((job) => job.id === action.payload.id);
+  //       if (existingJobIndex >= 0) {
+  //         state.jobs[existingJobIndex] = action.payload;
+  //       } else {
+  //         state.jobs.push(action.payload);
+  //       }
+  //     })
+  //     .addCase(fetchJobById.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     })
+  //     // Fetch Categories
+  //     .addCase(fetchCategories.pending, (state) => {
+  //       state.categoriesStatus = 'loading';
+  //       state.categoriesError = null;
+  //     })
+  //     .addCase(fetchCategories.fulfilled, (state, action) => {
+  //       state.categoriesStatus = 'succeeded';
+  //       state.categories = action.payload || [];
+  //     })
+  //     .addCase(fetchCategories.rejected, (state, action) => {
+  //       state.categoriesStatus = 'failed';
+  //       state.categoriesError = action.payload; // String
+  //       state.categories = [];
+  //     })
+  //     // Fetch Jobs by Category
+  //     .addCase(fetchJobsByCategory.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchJobsByCategory.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.jobsByCategory = action.payload.jobs || [];
+  //       state.total = action.payload.total || 0;
+  //     })
+  //     .addCase(fetchJobsByCategory.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //       state.jobsByCategory = [];
+  //     })
+  //     // Fetch User Applications
+  //     .addCase(fetchUserApplications.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchUserApplications.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.applications = action.payload || [];
+  //     })
+  //     .addCase(fetchUserApplications.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     })
+  //     // Apply to Job
+  //     .addCase(applyToJobThunk.pending, (state) => {
+  //       state.applying = true;
+  //       state.applyError = null;
+  //       state.applySuccess = null;
+  //     })
+  //     .addCase(applyToJobThunk.fulfilled, (state, action) => {
+  //       state.applying = false;
+  //       state.applySuccess = action.payload;
+  //       state.applications = [...new Set([...state.applications, action.payload.jobId])];
+  //       state.applicationsData = [...state.applicationsData, action.payload];
+  //     })
+  //     .addCase(applyToJobThunk.rejected, (state, action) => {
+  //       state.applying = false;
+  //       state.applyError = action.payload; // String
+  //     })
+  //     // Add Job
+  //     .addCase(addJob.pending, (state) => {
+  //       state.addJobStatus = 'loading';
+  //       state.addJobError = null;
+  //       state.addJobSuccess = false;
+  //     })
+  //     .addCase(addJob.fulfilled, (state, action) => {
+  //       state.addJobStatus = 'succeeded';
+  //       state.addJobSuccess = true;
+  //       state.jobs = [...state.jobs, { id: action.payload.jobId, ...action.payload.job, applicantCount: 0, views: 0 }];
+  //       state.total += 1;
+  //     })
+  //     .addCase(addJob.rejected, (state, action) => {
+  //       state.addJobStatus = 'failed';
+  //       state.addJobError = action.payload; // String
+  //     })
+  //     // Update Job
+  //     .addCase(updateJob.pending, (state) => {
+  //       state.updateJobStatus = 'loading';
+  //       state.updateJobError = null;
+  //       state.updateJobSuccess = false;
+  //     })
+  //     .addCase(updateJob.fulfilled, (state, action) => {
+  //       state.updateJobStatus = 'succeeded';
+  //       state.updateJobSuccess = true;
+  //       const index = state.jobs.findIndex((job) => job.id === action.payload.id);
+  //       if (index !== -1) {
+  //         state.jobs[index] = { ...state.jobs[index], ...action.payload, applicantCount: state.jobs[index].applicantCount, views: state.jobs[index].views };
+  //       }
+  //     })
+  //     .addCase(updateJob.rejected, (state, action) => {
+  //       state.updateJobStatus = 'failed';
+  //       state.updateJobError = action.payload; // String
+  //     })
+  //     // Delete Job
+  //     .addCase(deleteJob.pending, (state) => {
+  //       state.deleteJobStatus = 'loading';
+  //       state.deleteJobError = null;
+  //       state.deleteJobSuccess = false;
+  //     })
+  //     .addCase(deleteJob.fulfilled, (state, action) => {
+  //       state.deleteJobStatus = 'succeeded';
+  //       state.deleteJobSuccess = true;
+  //       state.jobs = state.jobs.filter((job) => job.id !== action.payload);
+  //       state.total -= 1;
+  //     })
+  //     .addCase(deleteJob.rejected, (state, action) => {
+  //       state.deleteJobStatus = 'failed';
+  //       state.deleteJobError = action.payload; // String
+  //     })
+  //     // Bulk Delete Jobs
+  //     .addCase(bulkDeleteJobs.pending, (state) => {
+  //       state.bulkDeleteStatus = 'loading';
+  //       state.bulkDeleteError = null;
+  //       state.bulkDeleteSuccess = false;
+  //     })
+  //     .addCase(bulkDeleteJobs.fulfilled, (state, action) => {
+  //       state.bulkDeleteStatus = 'succeeded';
+  //       state.bulkDeleteSuccess = true;
+  //       state.jobs = state.jobs.filter((job) => !action.payload.includes(job.id));
+  //       state.total -= action.payload.length;
+  //     })
+  //     .addCase(bulkDeleteJobs.rejected, (state, action) => {
+  //       state.bulkDeleteStatus = 'failed';
+  //       state.bulkDeleteError = action.payload; // String
+  //     })
+  //     // Toggle Job Status
+  //     .addCase(toggleJobStatus.pending, (state) => {
+  //       state.toggleStatus = 'loading';
+  //       state.toggleStatusError = null;
+  //       state.toggleStatusSuccess = false;
+  //     })
+  //     .addCase(toggleJobStatus.fulfilled, (state, action) => {
+  //       state.toggleStatus = 'succeeded';
+  //       state.toggleStatusSuccess = true;
+  //       const index = state.jobs.findIndex((job) => job.id === action.payload.id);
+  //       if (index !== -1) {
+  //         state.jobs[index].status = action.payload.status;
+  //       }
+  //     })
+  //     .addCase(toggleJobStatus.rejected, (state, action) => {
+  //       state.toggleStatus = 'failed';
+  //       state.toggleStatusError = action.payload; // String
+  //     })
+  //     // Fetch Applicants by Job
+  //     .addCase(fetchApplicantsByJob.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchApplicantsByJob.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.applicants[action.payload.jobId] = action.payload.applicants;
+  //     })
+  //     .addCase(fetchApplicantsByJob.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     })
+  //     // Fetch Applicants (all for employer)
+  //     .addCase(fetchApplicants.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchApplicants.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.applicants.all = action.payload || [];
+  //     })
+  //     .addCase(fetchApplicants.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     })
+  //     // Fetch Analytics
+  //     .addCase(fetchAnalytics.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchAnalytics.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.analytics = action.payload || {};
+  //     })
+  //     .addCase(fetchAnalytics.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     })
+  //     // Fetch Interviews
+  //     .addCase(fetchInterviews.pending, (state) => {
+  //       state.jobsStatus = 'loading';
+  //       state.jobsError = null;
+  //     })
+  //     .addCase(fetchInterviews.fulfilled, (state, action) => {
+  //       state.jobsStatus = 'succeeded';
+  //       state.upcomingInterviews = action.payload || [];
+  //     })
+  //     .addCase(fetchInterviews.rejected, (state, action) => {
+  //       state.jobsStatus = 'failed';
+  //       state.jobsError = action.payload; // String
+  //     });
+  // },
+
+extraReducers: (builder) => {
+  builder
+    // Fetch Jobs
+    .addCase(fetchJobs.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchJobs.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.jobs = action.payload.jobs || [];
+      state.total = action.payload.total || 0;
+      state.page = action.payload.page || 1;
+      state.jobsPerPage = action.payload.perPage || state.jobsPerPage;
+    })
+    .addCase(fetchJobs.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+      state.jobs = [];
+      state.total = 0;
+    })
+    // Fetch Job by ID
+    .addCase(fetchJobById.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchJobById.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      const existingJobIndex = state.jobs.findIndex((job) => job.id === action.payload.id);
+      if (existingJobIndex >= 0) {
+        state.jobs[existingJobIndex] = action.payload;
+      } else {
+        state.jobs.push(action.payload);
+      }
+    })
+    .addCase(fetchJobById.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    })
+    // Fetch Categories
+    .addCase(fetchCategories.pending, (state) => {
+      state.categoriesStatus = 'loading';
+      state.categoriesError = null;
+    })
+    .addCase(fetchCategories.fulfilled, (state, action) => {
+      state.categoriesStatus = 'succeeded';
+      state.categories = action.payload || [];
+    })
+    .addCase(fetchCategories.rejected, (state, action) => {
+      state.categoriesStatus = 'failed';
+      state.categoriesError = action.payload;
+      state.categories = [];
+    })
+    // Fetch Jobs by Category
+    .addCase(fetchJobsByCategory.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchJobsByCategory.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.jobsByCategory = action.payload.jobs || [];
+      state.total = action.payload.total || 0;
+    })
+    .addCase(fetchJobsByCategory.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+      state.jobsByCategory = [];
+    })
+    // Fetch User Applications
+    .addCase(fetchUserApplications.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchUserApplications.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.applications = action.payload || [];
+    })
+    .addCase(fetchUserApplications.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    })
+    // Apply to Job
+    .addCase(applyToJobThunk.pending, (state) => {
+      state.applying = true;
+      state.applyError = null;
+      state.applySuccess = null;
+    })
+    .addCase(applyToJobThunk.fulfilled, (state, action) => {
+      state.applying = false;
+      state.applySuccess = action.payload;
+      state.applications = [...new Set([...state.applications, action.payload.jobId])];
+      state.applicationsData = [...state.applicationsData, action.payload];
+    })
+    .addCase(applyToJobThunk.rejected, (state, action) => {
+      state.applying = false;
+      state.applyError = action.payload;
+    })
+    // Update Job
+    .addCase(updateJob.pending, (state) => {
+      state.updateJobStatus = 'loading';
+      state.updateJobError = null;
+      state.updateJobSuccess = false;
+    })
+    .addCase(updateJob.fulfilled, (state, action) => {
+      state.updateJobStatus = 'succeeded';
+      state.updateJobSuccess = true;
+      const index = state.jobs.findIndex((job) => job.id === action.payload.id);
+      if (index !== -1) {
+        state.jobs[index] = { ...state.jobs[index], ...action.payload, applicantCount: state.jobs[index].applicantCount, views: state.jobs[index].views };
+      }
+    })
+    .addCase(updateJob.rejected, (state, action) => {
+      state.updateJobStatus = 'failed';
+      state.updateJobError = action.payload;
+    })
+    // Delete Job
+    .addCase(deleteJob.pending, (state) => {
+      state.deleteJobStatus = 'loading';
+      state.deleteJobError = null;
+      state.deleteJobSuccess = false;
+    })
+    .addCase(deleteJob.fulfilled, (state, action) => {
+      state.deleteJobStatus = 'succeeded';
+      state.deleteJobSuccess = true;
+      state.jobs = state.jobs.filter((job) => job.id !== action.payload);
+      state.total -= 1;
+    })
+    .addCase(deleteJob.rejected, (state, action) => {
+      state.deleteJobStatus = 'failed';
+      state.deleteJobError = action.payload;
+    })
+    // Bulk Delete Jobs
+    .addCase(bulkDeleteJobs.pending, (state) => {
+      state.bulkDeleteStatus = 'loading';
+      state.bulkDeleteError = null;
+      state.bulkDeleteSuccess = false;
+    })
+    .addCase(bulkDeleteJobs.fulfilled, (state, action) => {
+      state.bulkDeleteStatus = 'succeeded';
+      state.bulkDeleteSuccess = true;
+      state.jobs = state.jobs.filter((job) => !action.payload.includes(job.id));
+      state.total -= action.payload.length;
+    })
+    .addCase(bulkDeleteJobs.rejected, (state, action) => {
+      state.bulkDeleteStatus = 'failed';
+      state.bulkDeleteError = action.payload;
+    })
+    // Toggle Job Status
+    .addCase(toggleJobStatus.pending, (state) => {
+      state.toggleStatus = 'loading';
+      state.toggleStatusError = null;
+      state.toggleStatusSuccess = false;
+    })
+    .addCase(toggleJobStatus.fulfilled, (state, action) => {
+      state.toggleStatus = 'succeeded';
+      state.toggleStatusSuccess = true;
+      const index = state.jobs.findIndex((job) => job.id === action.payload.id);
+      if (index !== -1) {
+        state.jobs[index].status = action.payload.status;
+      }
+    })
+    .addCase(toggleJobStatus.rejected, (state, action) => {
+      state.toggleStatus = 'failed';
+      state.toggleStatusError = action.payload;
+    })
+    // Fetch Applicants by Job
+    .addCase(fetchApplicantsByJob.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchApplicantsByJob.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.applicants[action.payload.jobId] = action.payload.applicants;
+    })
+    .addCase(fetchApplicantsByJob.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    })
+    // Fetch Applicants (all for employer)
+    .addCase(fetchApplicants.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchApplicants.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.applicants.all = action.payload || [];
+    })
+    .addCase(fetchApplicants.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    })
+    // Fetch Analytics
+    .addCase(fetchAnalytics.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchAnalytics.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.analytics = action.payload || {};
+    })
+    .addCase(fetchAnalytics.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    })
+    // Fetch Interviews
+    .addCase(fetchInterviews.pending, (state) => {
+      state.jobsStatus = 'loading';
+      state.jobsError = null;
+    })
+    .addCase(fetchInterviews.fulfilled, (state, action) => {
+      state.jobsStatus = 'succeeded';
+      state.upcomingInterviews = action.payload || [];
+    })
+    .addCase(fetchInterviews.rejected, (state, action) => {
+      state.jobsStatus = 'failed';
+      state.jobsError = action.payload;
+    });
+},
+
+
 });
 
 export const {
+    addJob: addJobAction,
   setSearchQuery,
   setLocation,
   setStatusFilter,

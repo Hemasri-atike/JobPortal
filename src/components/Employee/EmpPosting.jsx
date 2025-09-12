@@ -14,6 +14,7 @@ const EmpPosting = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { state } = useLocation();
+  console.log("state:", state);
   const skills = useSelector((state) => state.skills.list);
   const isEditing = !!id;
 
@@ -34,6 +35,7 @@ const EmpPosting = () => {
     startDate: state?.startDate || "",
     endDate: state?.deadline || "",
   });
+  console.log("formData:", formData);
   const [skillInput, setSkillInput] = useState("");
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -118,11 +120,15 @@ const EmpPosting = () => {
   // Handle form submission
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) {
+      console.log("Submission blocked: already submitting");
+      return;
+    }
+    console.log("handleSubmit called with formData:", formData);
     if (!validateForm()) {
       toast.error("Please fill all required fields correctly.");
       return;
     }
-
     setIsSubmitting(true);
     const location = `${formData.city}, ${formData.state}`;
     const jobData = {
@@ -142,7 +148,6 @@ const EmpPosting = () => {
       contactPerson: formData.contactPerson || null,
       startDate: formData.startDate || null,
     };
-
     try {
       if (isEditing) {
         await axiosAuth.patch(`/jobs/${id}`, jobData);
@@ -188,7 +193,7 @@ const EmpPosting = () => {
 
           {/* Company Name */}
           <div>
-            <label className="block text-gray-700 font-medium mb-1">
+            <label    className="block text-gray-700 font-medium mb-1" >
               Company Name <span className="text-red-500">*</span>
             </label>
             <input

@@ -36,6 +36,7 @@ const JobListing = () => {
     categoriesStatus,
     categoriesError,
   } = useSelector((state) => state.jobs || {});
+  console.log('jobs:', jobs);
   const { userInfo, userType } = useSelector((state) => state.user || {});
   const [viewMode, setViewMode] = useState('grid');
   const [selectedJobs, setSelectedJobs] = useState([]);
