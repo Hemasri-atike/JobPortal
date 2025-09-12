@@ -1,13 +1,18 @@
+
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Application from '../../components/job/Application';
 
 const JobCard = ({ job }) => {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { applications } = useSelector((state) => state.jobs || {});
-  const hasApplied = applications?.includes(job.id) || false;
+  const { applications = [] } = useSelector((state) => state.jobs || {});
+  const hasApplied = job?.id ? applications.includes(job.id) : false;
 
-  if (!job) return null;
+  // Validate job and job.id
+  if (!job || !job.id) {
+    console.error('Invalid job data in JobCard:', job);
+    return null; // Skip rendering if job or job.id is missing
+  }
 
   const {
     id,
@@ -20,25 +25,57 @@ const JobCard = ({ job }) => {
     status = 'Not specified',
   } = job;
 
+  const handleApply = () => {
+    if (!id) {
+      console.error('Cannot apply: job.id is undefined', job);
+      alert('Cannot apply to this job. Please try another.');
+      return;
+    }
+    if (hasApplied) {
+      alert('You have already applied to this job.');
+      return;
+    }
+    setIsModalOpen(true);
+  };
+
   return (
     <>
-      <div className="bg-white rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition duration-300 flex flex-col min-h-[240px] max-w-full border border-gray-200">
+      <div
+        className="bg-white rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition duration-300 flex flex-col min-h-[240px] max-w-full border border-gray-200"
+        role="article"
+        aria-labelledby={`job-title-${id}`}
+      >
         <div className="mb-2">
-          <h3 className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-1">{title}</h3>
+          <h3
+            id={`job-title-${id}`}
+            className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-1"
+          >
+            {title}
+          </h3>
           <p className="text-sm text-gray-500">{company_name}</p>
         </div>
 
         <div className="text-sm text-gray-400 mb-2">
           <span className="inline-flex items-center">
-            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z" />
+            <svg
+              className="w-4 h-4 mr-1"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
+              />
             </svg>
             {location}
           </span>
         </div>
 
         <p className="text-sm text-gray-500 mb-2">Salary: {salary}</p>
-        {/* <p className="text-sm text-gray-500 mb-2">Status: {status}</p> */}
 
         {tags.length > 0 && (
           <div className="flex gap-2 mb-2 flex-wrap">
@@ -57,13 +94,13 @@ const JobCard = ({ job }) => {
 
         <button
           className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium text-white w-full sm:w-auto self-end ${
-            hasApplied
+            hasApplied || !id
               ? 'bg-gray-400 cursor-not-allowed'
               : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
           }`}
-          onClick={() => setIsModalOpen(true)}
-          disabled={hasApplied}
-          aria-label={hasApplied ? 'Already applied' : `Apply for ${title} at ${company_name}`}
+          onClick={handleApply}
+          disabled={hasApplied || !id}
+          aria-label={hasApplied ? `Already applied to ${title} at ${company_name}` : `Apply for ${title} at ${company_name}`}
         >
           {hasApplied ? 'Applied' : 'Apply Now'}
         </button>

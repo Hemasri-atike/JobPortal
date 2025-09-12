@@ -182,21 +182,7 @@ export const updateJob = createAsyncThunk(
     }
   }
 );
-export const applyForJob = createAsyncThunk(
-  'jobs/applyForJob',
-  async (submissionData, { rejectWithValue }) => {
-    try {
-      const response = await axios.post(
-        `/api/jobs/${submissionData.get('jobId')}/apply`,
-        submissionData,
-        { headers: { 'Content-Type': 'multipart/form-data' } }
-      );
-      return { jobId: submissionData.get('jobId'), applicant: response.data };
-    } catch (error) {
-      return rejectWithValue(error.response?.data?.error || 'Failed to submit application');
-    }
-  }
-);
+
 
 // Delete job
 export const deleteJob = createAsyncThunk(
@@ -775,4 +761,62 @@ export const {
 export default jobsSlice.reducer;
 
 
+export const applyForJob = createAsyncThunk(
+  'jobs/applyForJob',
+  async (applicationData, { rejectWithValue, getState, dispatch }) => {
+    try {
+      const { user: { userInfo, userType } } = getState();
+      let token = userInfo?.token || localStorage.getItem('token');
+      console.log('applyForJob: jobId=', applicationData.jobId, 'userInfo=', userInfo, 'userType=', userType, 'token=', token ? 'present' : 'missing');
 
+      if (!applicationData.jobId || applicationData.jobId === 'undefined' || isNaN(applicationData.jobId)) {
+        throw new Error('Invalid job ID');
+      }
+      if (!token || !userInfo || userType !== 'job_seeker') {
+        throw new Error('Authentication required or unauthorized access');
+      }
+
+      const formData = new FormData();
+      Object.entries(applicationData).forEach(([key, value]) => {
+        if (key === 'resume' && value) formData.append('resume', value);
+        else if (key === 'coverLetter' && value) formData.append('coverLetter', value);
+        else if (value) formData.append(key, value);
+      });
+      formData.append('status', 'applied');
+      formData.append('candidate_id', userInfo.id);
+
+      try {
+        const response = await axiosAuth(token).post(`/jobs/${applicationData.jobId}/apply`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+        console.log('applyForJob: Success, response=', response.data);
+        return response.data;
+      } catch (err) {
+        if (err.response?.status === 401 && err.response.data.error === 'Invalid or expired token') {
+          console.error('applyForJob: Token expired, redirecting to login');
+          throw new Error('Your session has expired. Please log in again.');
+        }
+        throw err;
+      }
+    } catch (err) {
+      let errorMessage = 'Failed to apply to job';
+      if (err.response) {
+        if (err.response.status === 401) {
+          errorMessage = err.response.data.details || 'Your session has expired. Please log in again.';
+        } else if (err.response.status === 400) {
+          errorMessage = err.response.data.details || 'Invalid application data. Please check your inputs.';
+        } else if (err.response.status === 403) {
+          errorMessage = err.response.data.details || 'You are not authorized to apply to this job. It may be inactive or you have already applied.';
+        } else if (err.response.status === 404) {
+          errorMessage = 'Job not found. It may have been removed.';
+        } else {
+          errorMessage = err.response.data.error || err.response.data.message || errorMessage;
+        }
+      } else {
+        errorMessage = err.message || errorMessage;
+      }
+      console.error('applyForJob Error:', errorMessage, err.response?.data);
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
