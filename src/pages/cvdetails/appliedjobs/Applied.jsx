@@ -1,4 +1,3 @@
-// In src/components/Applied.jsx
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { Link } from 'react-router-dom';
@@ -6,8 +5,7 @@ import { ChevronRight, Search, Mail, Download, Filter } from 'lucide-react';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
 import axios from 'axios';
-import { logoutUser } from '../../../store/userSlice.js';  // Fixed: Changed from 'logout' to 'logoutUser'
-
+import { logoutUser } from '../../../store/userSlice.js';
 
 const Applied = () => {
   const dispatch = useDispatch();
@@ -41,7 +39,7 @@ const Applied = () => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return instance(originalRequest);
           } catch (refreshError) {
-            dispatch(logoutUser());  // Fixed: Changed from 'logout()' to 'logoutUser()'
+            dispatch(logoutUser());
             window.location.href = '/login';
             return Promise.reject(refreshError);
           }
@@ -63,23 +61,33 @@ const Applied = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) throw new Error('No authentication token found');
+      console.log('Fetching applied jobs for:', { candidateId, token: token.substring(0, 20) + '...', searchQuery, statusFilter, page, limit: jobsPerPage });
       const params = new URLSearchParams({
         search: searchQuery,
         status: statusFilter,
         page,
         limit: jobsPerPage,
       });
-      const res = await axiosAuth(token).get(`/candidate/${candidateId}/applied-jobs?${params}`);
+      const res = await axiosAuth(token).get(`/applications?${params}`); // Changed to /api/applications
+      const { jobs: fetchedJobs, total } = res.data;
       if (reset || page === 1) {
-        setJobs(res.data);
+        setJobs(fetchedJobs || []);
       } else {
-        setJobs((prev) => [...prev, ...res.data]);
+        setJobs((prev) => [...prev, ...(fetchedJobs || [])]);
       }
-      setTotalJobs(res.data.length === jobsPerPage ? totalJobs + res.data.length : totalJobs);
-      console.log(`Fetched applied jobs:`, res.data);
+      setTotalJobs(total || fetchedJobs.length);
+      console.log(`Fetched applied jobs:`, fetchedJobs, { total });
     } catch (err) {
-      console.error('Fetch jobs error:', err.message, { status: err.response?.status });
-      setError(err.response?.data?.details || err.message || 'Failed to load applied jobs.');
+      console.error('Fetch jobs error:', {
+        message: err.message,
+        status: err.response?.status,
+        details: err.response?.data?.details,
+      });
+      setError(
+        err.response?.status === 403
+          ? 'You do not have permission to view applied jobs. Please ensure you are logged in as a job seeker.'
+          : err.response?.data?.details || err.message || 'Failed to load applied jobs.'
+      );
       if (err.response?.status === 401) {
         setTimeout(() => window.location.href = '/login', 2000);
       }
@@ -205,7 +213,7 @@ const Applied = () => {
                   <div className="flex items-start">
                     <img
                       src={job.logo || 'https://via.placeholder.com/40'}
-                      alt={`${job.company} logo`}
+                      alt={`${job.company_name} logo`}
                       className="w-10 h-10 rounded object-cover"
                       onError={(e) => (e.target.src = 'https://via.placeholder.com/40')}
                     />
@@ -213,11 +221,11 @@ const Applied = () => {
                       <h3 className="font-semibold text-gray-800 text-base sm:text-lg">{job.title}</h3>
                       <div className="text-sm text-gray-500 space-y-1 mt-1">
                         <div className="flex flex-wrap gap-2">
-                          <span>{job.company}</span>
+                          <span>{job.company_name}</span>
                           <span className="text-gray-300">|</span>
                           <span>{job.location}</span>
                           <span className="text-gray-300">|</span>
-                          <span>Applied {job.appliedDate}</span>
+                          <span>Applied {new Date(job.createdAt).toLocaleDateString()}</span>
                         </div>
                         <div>💰 {job.salary || 'Not disclosed'}</div>
                       </div>
@@ -269,7 +277,7 @@ const Applied = () => {
                     )}
                   </div>
                   <Link
-                    to={`/job/${job.jobId}`}
+                    to={`/job/${job.job_id}`}
                     className="mt-3 inline-flex items-center text-teal-600 hover:text-teal-800 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-teal-500 rounded"
                     aria-label={`View details for ${job.title}`}
                   >
@@ -280,7 +288,7 @@ const Applied = () => {
             </div>
           )}
 
-          {jobs.length > 0 && jobs.length >= page * jobsPerPage && (
+          {jobs.length > 0 && totalJobs > jobs.length && (
             <div className="mt-6 text-center">
               <button
                 onClick={() => setPage(page + 1)}
