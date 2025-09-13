@@ -1,15 +1,15 @@
-// In src/components/Application.jsx
 import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { BarLoader } from 'react-spinners';
-import { applyForJob } from '../../store/jobsSlice';
+import { applyForJob, clearApplyState } from '../../store/jobsSlice';
 import { toast } from 'react-toastify';
 
 const Application = ({ job, onClose }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const { userInfo } = useSelector((state) => state.user || {});
+  const { applying, applyError } = useSelector((state) => state.jobs || {});
   const [formData, setFormData] = useState({
     fullName: userInfo?.name || '',
     email: userInfo?.email || '',
@@ -28,7 +28,6 @@ const Application = ({ job, onClose }) => {
     portfolio: '',
   });
   const [error, setError] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -44,31 +43,40 @@ const Application = ({ job, onClose }) => {
     e.preventDefault();
     setError(null);
 
+    // Validate job ID
     if (!job?.id) {
       setError('Invalid job ID. Please select a valid job.');
-      console.error('Invalid job ID in Application:', job);
+      toast.error('Invalid job ID. Please select a valid job.');
       return;
     }
 
+    // Validate required fields
     const requiredFields = ['fullName', 'email', 'phone', 'resume'];
     const missingFields = requiredFields.filter((field) => !formData[field]);
     if (missingFields.length > 0) {
-      setError(`Please fill out required fields: ${missingFields.join(', ')}`);
+      const errorMessage = `Please fill out required fields: ${missingFields.join(', ')}`;
+      setError(errorMessage);
+      toast.error(errorMessage);
       return;
     }
 
+    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       setError('Please enter a valid email address.');
+      toast.error('Please enter a valid email address.');
       return;
     }
 
+    // Validate phone format
     const phoneRegex = /^\+?[1-9]\d{1,14}$/;
     if (!phoneRegex.test(formData.phone)) {
       setError('Please enter a valid phone number.');
+      toast.error('Please enter a valid phone number.');
       return;
     }
 
+    // Validate resume file
     if (
       formData.resume &&
       !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(
@@ -76,13 +84,16 @@ const Application = ({ job, onClose }) => {
       )
     ) {
       setError('Resume must be a .pdf, .doc, or .docx file.');
+      toast.error('Resume must be a .pdf, .doc, or .docx file.');
       return;
     }
     if (formData.resume && formData.resume.size > 5 * 1024 * 1024) {
       setError('Resume file size must be less than 5MB.');
+      toast.error('Resume file size must be less than 5MB.');
       return;
     }
 
+    // Validate cover letter file
     if (
       formData.coverLetter &&
       !['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'].includes(
@@ -90,20 +101,26 @@ const Application = ({ job, onClose }) => {
       )
     ) {
       setError('Cover letter must be a .pdf, .doc, or .docx file.');
+      toast.error('Cover letter must be a .pdf, .doc, or .docx file.');
       return;
     }
     if (formData.coverLetter && formData.coverLetter.size > 5 * 1024 * 1024) {
       setError('Cover letter file size must be less than 5MB.');
+      toast.error('Cover letter file size must be less than 5MB.');
       return;
     }
 
-    // Removed authorization check - no longer requiring login
+    // Check for authentication (re-added to align with backend)
+    if (!userInfo?.token) {
+      setError('You must be logged in to apply for a job.');
+      toast.error('Please log in to apply for a job.');
+      setTimeout(() => navigate('/login'), 2000);
+      return;
+    }
 
-    setIsSubmitting(true);
     try {
       const submissionData = {
         jobId: job.id,
-        // Removed candidate_id since no auth
         fullName: formData.fullName,
         email: formData.email,
         phone: formData.phone,
@@ -121,69 +138,69 @@ const Application = ({ job, onClose }) => {
         portfolio: formData.portfolio,
       };
 
-      console.log('Submitting application:', submissionData);
-      const response = await dispatch(applyForJob(submissionData)).unwrap();
-      console.log('Application submitted successfully:', response);
+      await dispatch(applyForJob(submissionData)).unwrap();
       toast.success('Application submitted successfully!');
+      dispatch(clearApplyState());
       onClose();
-      navigate('/applied'); // Redirect to Applied page
+      navigate('/applied');
     } catch (err) {
       const errorMessage = typeof err === 'string' ? err : err.message || 'Failed to submit application. Please try again.';
-      console.error('Application submission error:', err, {
-        message: err.message,
-        stack: err.stack,
-        response: err.response?.data,
-        status: err.response?.status,
-      });
       setError(errorMessage);
-      // Removed auth-specific redirects
+      toast.error(errorMessage);
       if (errorMessage.includes('inactive') || errorMessage.includes('already applied')) {
         setTimeout(() => navigate('/jobs'), 2000);
+      } else if (errorMessage.includes('session has expired')) {
+        setTimeout(() => navigate('/login'), 2000);
       }
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="p-4 sm:p-6">
       <form onSubmit={handleSubmit} encType="multipart/form-data">
-        {error && (
+        {(error || applyError) && (
           <div
             className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm"
             role="alert"
             aria-live="assertive"
           >
-            {error}
-            {error.includes('Invalid job ID') || error.includes('Job not found') ? (
+            {error || applyError}
+            {(error || applyError)?.includes('Invalid job ID') || (error || applyError)?.includes('Job not found') ? (
               <p className="mt-2">
                 Please ensure you are applying for a valid job.{' '}
                 <a href="/jobs" className="text-blue-600 hover:underline">
                   Browse jobs
                 </a>
               </p>
-            ) : error.includes('file') || error.includes('resume') || error.includes('coverLetter') ? (
+            ) : (error || applyError)?.includes('file') || (error || applyError)?.includes('resume') || (error || applyError)?.includes('coverLetter') ? (
               <p className="mt-2">
                 Please ensure uploaded files are valid (.pdf, .doc, .docx, max 5MB).
               </p>
-            ) : error.includes('already applied') ? (
+            ) : (error || applyError)?.includes('already applied') ? (
               <p className="mt-2">
                 You have already applied to this job.{' '}
                 <a href="/jobs" className="text-blue-600 hover:underline">
                   Browse other jobs
                 </a>
               </p>
-            ) : error.includes('inactive') ? (
+            ) : (error || applyError)?.includes('inactive') ? (
               <p className="mt-2">
                 This job is no longer accepting applications.{' '}
                 <a href="/jobs" className="text-blue-600 hover:underline">
                   Browse other jobs
                 </a>
               </p>
+            ) : (error || applyError)?.includes('logged in') || (error || applyError)?.includes('session has expired') ? (
+              <p className="mt-2">
+                Please log in to apply.{' '}
+                <a href="/login" className="text-blue-600 hover:underline">
+                  Log in
+                </a>
+              </p>
             ) : null}
           </div>
         )}
-        {isSubmitting && (
+        {applying && (
           <div className="mb-4">
             <BarLoader width="100%" color="#2563EB" />
           </div>
@@ -403,15 +420,15 @@ const Application = ({ job, onClose }) => {
             </button>
             <button
               type="submit"
-              disabled={isSubmitting}
+              disabled={applying}
               className={`px-4 py-2 rounded-md text-white ${
-                isSubmitting
+                applying
                   ? 'bg-blue-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
               }`}
               aria-label="Submit application"
             >
-              {isSubmitting ? 'Submitting...' : 'Submit Application'}
+              {applying ? 'Submitting...' : 'Submit Application'}
             </button>
           </div>
         </div>
