@@ -15,10 +15,7 @@ export const fetchJobs = createAsyncThunk(
   async ({ statusFilter = 'open', searchQuery = '', page = 1, jobsPerPage = 6, subcategory }, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+     
       const params = {
         status: statusFilter,
         query: searchQuery,
@@ -26,7 +23,7 @@ export const fetchJobs = createAsyncThunk(
         perPage: jobsPerPage,
         ...(subcategory && { subcategory }),
       };
-      const response = await axiosAuth(token).get('/jobs', { params });
+      const response = await axios.get('http://localhost:5000/api/jobs', { params });
       return {
         jobs: response.data.jobs || [],
         total: response.data.total || 0,
@@ -388,6 +385,9 @@ export const applyToJobThunk = createAsyncThunk(
     }
   }
 );
+
+
+
 
 
 

@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const axiosAuth = (token) =>
   axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseURL:  'http://localhost:5000/api',
     headers: {
       Authorization: `Bearer ${token}`,
       'Cache-Control': 'no-cache',
@@ -17,11 +17,9 @@ export const fetchCategories = createAsyncThunk(
   async (params = {}, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const res = await axiosAuth(token).get('/categories/getCategories');
+      
+     
+      const res = await axios.get('http://localhost:5000/api/categories/getCategories');
       return res.data;
     } catch (err) {
       return rejectWithValue(err.response?.data?.error || err.message || 'Error fetching categories');

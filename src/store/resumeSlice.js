@@ -5,19 +5,12 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/resum
 
 export const fetchResume = createAsyncThunk(
   "resume/fetchResume",
-  async (_, { rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        return rejectWithValue("No authentication token found");
-      }
-      const config = {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      };
-      const response = await axios.get(API_URL, config);
+      const { user } = getState();
+    
+     
+      const response = await axios.get(`http://localhost:5000/api/resume/getResume?userId=${user?.userInfo.id}`);
       return response.data;
     } catch (error) {
       const errorMessage =
@@ -31,8 +24,11 @@ export const fetchResume = createAsyncThunk(
 
 export const updateResume = createAsyncThunk(
   "resume/updateResume",
-  async (resumeData, { rejectWithValue }) => {
+  async (resumeData, { getState,rejectWithValue }) => {
+    console.log("update api",resumeData)
     try {
+      const { user } = getState();
+
       const token = localStorage.getItem("token");
       if (!token) {
         return rejectWithValue("No authentication token found");
@@ -43,7 +39,13 @@ export const updateResume = createAsyncThunk(
           Authorization: `Bearer ${token}`,
         },
       };
-      const response = await axios.put(API_URL, resumeData, config);
+  const payload = {
+  ...resumeData,
+  userId: user.userInfo.userId
+};
+
+
+      const response = await axios.put(API_URL, payload, config);
       return response.data;
     } catch (error) {
       const errorMessage =

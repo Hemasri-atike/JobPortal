@@ -9,10 +9,13 @@ import PreviewResume from "./Previewresume.jsx";
 const MyResume = () => {
   const dispatch = useDispatch();
   const { data: resumeData, loading, error } = useSelector((state) => state.resume);
+  console.log("slice data",resumeData)
   const { userInfo } = useSelector((state) => state.user);
+  console.log("user details",userInfo)
   const [isEditing, setIsEditing] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [editableData, setEditableData] = useState(null);
+  console.log("sfd",editableData)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [showSuccess, setShowSuccess] = useState(false);
@@ -31,6 +34,7 @@ const MyResume = () => {
   }, [resumeData]);
 
   const updateNestedField = (section, id, key, value) => {
+    console.log("section",section,key,value)
     setEditableData((prev) => ({
       ...prev,
       [section]: prev[section].map((item) =>
@@ -127,6 +131,7 @@ const MyResume = () => {
 
     setSaving(true);
     try {
+      console.log("edit",editableData)
       const resultAction = await dispatch(updateResume(editableData));
       if (updateResume.fulfilled.match(resultAction)) {
         setEditableData(resultAction.payload);

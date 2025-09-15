@@ -91,10 +91,11 @@ export const resumeSections = {
 
 
    experience: [
-    { key: "companyName", label: "Company Name", type: "text", required: true, maxLength: 255 },
-    { key: "jobTitle", label: "Job Title", type: "text", required: true, maxLength: 255 },
+    { key: "company_name", label: "Company Name", type: "text", required: true, maxLength: 255 },
+    { key: "role", label: "Role", type: "text", required: true, maxLength: 255 },
+    { key: "employee_id", label: "Emp Id", type: "text", required: true, maxLength: 255 },
     { key: "duration", label: "Duration", type: "text", required: true, maxLength: 255, placeholder: "e.g., Jan 2020 - Dec 2022" },
-    { key: "responsibilities", label: "Responsibilities", type: "textarea", required: true, maxLength: 1000 },
+    { key: "location", label: "Location", type: "text", required: true, maxLength: 255 },
     { key: "description", label: "Description", type: "textarea", maxLength: 1000 }, // Optional, maps to `experience`
   ],
   projects: [

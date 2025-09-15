@@ -137,7 +137,7 @@ const EmpPosting = () => {
       location,
       company_name: formData.company_name,
       salary: formData.salary ? parseFloat(formData.salary) : null,
-      status: formData.status || "Draft",
+      status: formData.status || "Active",
       tags: skills,
       category: formData.jobCategory || null,
       deadline: formData.endDate || null,

@@ -1,4 +1,7 @@
 const PreviewResume = ({ resumeData, userInfo }) => {
+  console.log("res",resumeData)
+  console.log("pers",resumeData.personalInfo)
+  console.log("exp",resumeData.experience)
   if (!resumeData || !resumeData.personalInfo?.length) {
     return (
       <div className="bg-white p-8 rounded-2xl shadow-md text-center text-gray-600">
