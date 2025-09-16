@@ -1,142 +1,136 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import axios from "axios";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
-// Fetch applicants
+const axiosAuth = (token) => {
+  const instance = axios.create({
+    baseURL: 'http://localhost:5000/api',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  instance.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+      const originalRequest = error.config;
+      if (error.response?.status === 401 && !originalRequest._retry) {
+        originalRequest._retry = true;
+        try {
+          const res = await axios.post('http://localhost:5000/api/auth/refresh', {}, { withCredentials: true });
+          const newToken = res.data.token;
+          localStorage.setItem('token', newToken);
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          return instance(originalRequest);
+        } catch (refreshError) {
+          return Promise.reject(refreshError);
+        }
+      }
+      return Promise.reject(error);
+    }
+  );
+  return instance;
+};
+
 export const fetchApplicants = createAsyncThunk(
-  "applicants/fetchApplicants",
-  async ({ statusFilter, searchQuery, page, jobsPerPage }, { rejectWithValue }) => {
+  'applicants/fetchApplicants',
+  async ({ statusFilter, searchQuery, page, jobsPerPage, jobId, candidateId }, { rejectWithValue }) => {
     try {
-      const params = { page, limit: jobsPerPage };
-      if (statusFilter !== "All") params.status = statusFilter;
-      if (searchQuery) params.search = searchQuery;
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+      const params = new URLSearchParams({
+        search: searchQuery || '',
+        status: statusFilter === 'All' ? '' : statusFilter,
+        page,
+        limit: jobsPerPage,
+      });
 
-      const res = await axios.get("http://localhost:5000/api/applicants", { params });
+      const url = jobId ? `/applications/${jobId}` : '/applications';
+      const res = await axiosAuth(token).get(`${url}?${params}`);
       return {
-        applicants: Array.isArray(res.data.applicants) ? res.data.applicants : [],
+        applicants: res.data.applicants || res.data.jobs || [],
         total: res.data.total || 0,
-        page: res.data.page || page,
-        limit: res.data.limit || jobsPerPage,
+        page,
+        jobsPerPage,
       };
     } catch (err) {
-      const errorMessage = err.response?.data?.details || err.message || "Error fetching applicants";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(err.response?.data?.details || err.message || 'Failed to fetch applications');
     }
   }
 );
 
-// Update applicant status
 export const updateApplicantStatus = createAsyncThunk(
-  "applicants/updateApplicantStatus",
-  async ({ id, status }, { rejectWithValue }) => {
+  'applicants/updateApplicantStatus',
+  async ({ id, status, interviewDate }, { rejectWithValue }) => {
     try {
-      const res = await axios.put(`http://localhost:5000/api/applicants/${id}/status`, { status });
-      return { id, status };
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token found');
+      const res = await axiosAuth(token).put(`/applications/${id}/status`, { status, interviewDate });
+      return res.data;
     } catch (err) {
-      const errorMessage = err.response?.data?.details || err.message || "Error updating status";
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(err.response?.data?.details || err.message || 'Failed to update status');
     }
   }
 );
 
-// Add note to applicant
-export const addApplicantNote = createAsyncThunk(
-  "applicants/addApplicantNote",
-  async ({ id, note }, { rejectWithValue }) => {
-    try {
-      const res = await axios.post(`http://localhost:5000/api/applicants/${id}/notes`, { note });
-      return { id, note: res.data.note || note };
-    } catch (err) {
-      const errorMessage = err.response?.data?.details || err.message || "Error adding note";
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
+const initialState = {
+  applicants: [],
+  total: 0,
+  page: 1,
+  jobsPerPage: 4,
+  statusFilter: 'All',
+  searchQuery: '',
+  status: 'idle',
+  error: null,
+};
 
 const applicantsSlice = createSlice({
-  name: "applicants",
-  initialState: {
-    applicants: [],
-    total: 0,
-    page: 1,
-    jobsPerPage: 8,
-    statusFilter: "All",
-    searchQuery: "",
-    status: "idle",
-    error: null,
-  },
+  name: 'applicants',
+  initialState,
   reducers: {
-    setSearchQuery: (state, action) => {
+    setSearchQuery(state, action) {
       state.searchQuery = action.payload;
       state.page = 1;
     },
-    setStatusFilter: (state, action) => {
+    setStatusFilter(state, action) {
       state.statusFilter = action.payload;
       state.page = 1;
     },
-    setPage: (state, action) => {
+    setPage(state, action) {
       state.page = action.payload;
     },
-    clearError: (state) => {
+    clearError(state) {
       state.error = null;
     },
   },
   extraReducers: (builder) => {
     builder
-      // Fetch Applicants
       .addCase(fetchApplicants.pending, (state) => {
-        state.status = "loading";
-        state.error = null;
+        state.status = 'loading';
       })
       .addCase(fetchApplicants.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        state.applicants = action.payload.applicants || [];
-        state.total = action.payload.total || 0;
-        state.page = action.payload.page || 1;
-        state.jobsPerPage = action.payload.limit || state.jobsPerPage;
+        state.status = 'succeeded';
+        if (action.payload.page === 1) {
+          state.applicants = action.payload.applicants;
+        } else {
+          state.applicants = [...state.applicants, ...action.payload.applicants];
+        }
+        state.total = action.payload.total;
+        state.page = action.payload.page;
+        state.jobsPerPage = action.payload.jobsPerPage;
       })
       .addCase(fetchApplicants.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload || "Failed to fetch applicants";
-        state.applicants = [];
-      })
-      // Update Applicant Status
-      .addCase(updateApplicantStatus.pending, (state) => {
-        state.status = "loading";
+        state.status = 'failed';
+        state.error = action.payload;
       })
       .addCase(updateApplicantStatus.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const { id, status } = action.payload;
-        const index = state.applicants.findIndex((applicant) => applicant.id === id);
-        if (index !== -1) {
-          state.applicants[index].status = status;
+        state.status = 'succeeded';
+        const { id, status, interviewDate } = action.payload;
+        const applicant = state.applicants.find((app) => app.id === id);
+        if (applicant) {
+          applicant.status = status;
+          applicant.interviewDate = interviewDate;
         }
-        toast.success(config.messages.success.statusUpdate);
       })
       .addCase(updateApplicantStatus.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload || "Failed to update status";
-        toast.error(config.messages.error.statusUpdate(action.payload || "Failed to update status"));
-      })
-      // Add Applicant Note
-      .addCase(addApplicantNote.pending, (state) => {
-        state.status = "loading";
-      })
-      .addCase(addApplicantNote.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const { id, note } = action.payload;
-        const index = state.applicants.findIndex((applicant) => applicant.id === id);
-        if (index !== -1) {
-          if (!state.applicants[index].notes) {
-            state.applicants[index].notes = [];
-          }
-          state.applicants[index].notes.push(note);
-        }
-        toast.success(config.messages.success.noteAdded);
-      })
-      .addCase(addApplicantNote.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload || "Failed to add note";
-        toast.error(config.messages.error.noteFailed(action.payload || "Failed to add note"));
+        state.status = 'failed';
+        state.error = action.payload;
       });
   },
 });

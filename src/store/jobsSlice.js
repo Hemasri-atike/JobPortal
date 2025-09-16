@@ -4,7 +4,7 @@ import axios from 'axios';
 // Axios instance with interceptors
 const axiosAuth = (token) =>
   axios.create({
-    baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+    baseURL: 'http://localhost:5000/api',
     headers: { Authorization: `Bearer ${token}` },
     timeout: 10000,
   });
@@ -244,27 +244,34 @@ export const toggleJobStatus = createAsyncThunk(
   }
 );
 
-// Fetch all applicants for employer's jobs
+
+
+
 export const fetchApplicants = createAsyncThunk(
-  'jobs/fetchApplicants',
-  async (_, { getState, rejectWithValue }) => {
+  "jobs/fetchApplicants",
+  async (_, { rejectWithValue }) => {
     try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      const response = await axiosAuth(token).get('/applications');
+      // 🔹 No token check (public access for jobseekers + employers)
+      const response = await axios.get("http://localhost:5000/api/applicants");
+
       return response.data || [];
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch applicants';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.message ||
+        "Failed to fetch applicants";
+
+      // If no applicants found, return empty array
       if (error.response?.status === 404) {
         return [];
       }
+
       return rejectWithValue(errorMessage);
     }
   }
 );
+
 
 // Fetch analytics
 export const fetchAnalytics = createAsyncThunk(
@@ -388,8 +395,23 @@ export const applyToJobThunk = createAsyncThunk(
 
 
 
-
-
+export const updateApplicantStatus = createAsyncThunk(
+  'jobs/updateApplicantStatus',
+  async ({ applicationId, status, interviewDate }, { getState, rejectWithValue }) => {
+    try {
+      const { user: { userInfo, userType } } = getState();
+      const token = userInfo?.token || localStorage.getItem('token');
+      if (!token || userType !== 'employer') {
+        throw new Error('Authentication required or unauthorized access');
+      }
+      const response = await axiosAuth(token).put(`/applications/${applicationId}/status`, { status, interviewDate });
+      return { applicationId, status: response.data.status, interviewDate: response.data.interviewDate };
+    } catch (error) {
+      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to update applicant status';
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
 
 const jobsSlice = createSlice({
   name: 'jobs',
@@ -753,7 +775,40 @@ const jobsSlice = createSlice({
   .addCase(applyToJobThunk.rejected, (state, action) => {
     state.applying = false;
     state.applyError = action.payload;
+  })
+  
+  
+  .addCase(updateApplicantStatus.pending, (state) => {
+  state.updateStatusStatus = 'loading';
+  state.updateStatusError = null;
+  state.updateStatusSuccess = false;
+})
+.addCase(updateApplicantStatus.fulfilled, (state, action) => {
+  state.updateStatusStatus = 'succeeded';
+  state.updateStatusSuccess = true;
+  // Update status in applicants.all
+  if (state.applicants.all) {
+    const index = state.applicants.all.findIndex((app) => app.id === action.payload.applicationId);
+    if (index !== -1) {
+      state.applicants.all[index].status = action.payload.status;
+      state.applicants.all[index].interviewDate = action.payload.interviewDate;
+    }
+  }
+  // Update status in applicants[jobId]
+  Object.keys(state.applicants).forEach((jobId) => {
+    if (jobId !== 'all') {
+      const index = state.applicants[jobId].findIndex((app) => app.id === action.payload.applicationId);
+      if (index !== -1) {
+        state.applicants[jobId][index].status = action.payload.status;
+        state.applicants[jobId][index].interviewDate = action.payload.interviewDate;
+      }
+    }
   });
+})
+.addCase(updateApplicantStatus.rejected, (state, action) => {
+  state.updateStatusStatus = 'failed';
+  state.updateStatusError = action.payload;
+});
   },
 });
 
