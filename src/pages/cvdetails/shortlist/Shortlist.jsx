@@ -13,7 +13,7 @@ import {
 } from "../../../store/jobsSlice.js";
 
 // Import the default image from the assets folder
-import placeholderLogo from "../../../../public/images/img.png"; // Adjust path based on your project structure
+import placeholderLogo from "../../../images/img.png"; // Adjust path based on your project structure
 
 const Shortlist = () => {
   const dispatch = useDispatch();
