@@ -26,7 +26,7 @@ import Joblisting from './components/common/Joblisting';
 import Messages from './components/candidate/Messages';
 import Application from './components/job/Application';
 import Admindashboard from './pages/dashboard/Admindashboard';
-import JobApply from './components/job/JobApply';
+
 import Subcategories from './pages/jobcategory/Subcategories';
 import PreviewResume from './pages/cvdetails/resumes/Previewresume';
 import CmpProfile from './components/Employee/CmpProfile';
@@ -65,7 +65,7 @@ const App = () => {
           {/* candidate */}
           <Route path='/caddetails' element={<CadidateDetails />} />
           <Route path='/cadmessages' element={<Messages />} />
-          <Route path='/jobapply' element={<JobApply />} />
+          {/* <Route path='/jobapply' element={<JobApply />} /> */}
           <Route path='/previewresume' element={<PreviewResume />} />
 
 

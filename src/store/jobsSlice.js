@@ -245,8 +245,6 @@ export const toggleJobStatus = createAsyncThunk(
 );
 
 
-
-
 export const fetchApplicants = createAsyncThunk(
   "jobs/fetchApplicants",
   async (_, { rejectWithValue }) => {
@@ -392,8 +390,6 @@ export const applyToJobThunk = createAsyncThunk(
     }
   }
 );
-
-
 
 export const updateApplicantStatus = createAsyncThunk(
   'jobs/updateApplicantStatus',

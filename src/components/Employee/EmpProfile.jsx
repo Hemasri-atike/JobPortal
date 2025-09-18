@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import Sidebar from "../../pages/cvdetails/layout/Sidebar.jsx";
@@ -6,7 +6,6 @@ import Header from "../../pages/navbar/Header.jsx";
 import {
   updateField,
   setResume,
-  resetProfile,
   setAllFields,
   fetchEmployee,
   saveEmployee,
@@ -20,9 +19,25 @@ import {
   addEmployeeCertification,
   removeEmployeeCertification,
 } from "../../store/empprofileSlice.js";
-import { logoutUser } from "../../store/userSlice.js";
-// Import states with cities data
-import statesWithCities from "../../components/common/Statesncities.jsx";  
+import statesWithCities from "../../components/common/Statesncities.jsx";
+import {
+  PlusIcon,
+  TrashIcon,
+  XMarkIcon,
+  CheckIcon,
+  UserCircleIcon,
+  ArrowLeftIcon,
+  ArrowRightIcon,
+} from "@heroicons/react/24/outline";
+
+// Utility function for debouncing
+const debounce = (func, wait) => {
+  let timeout;
+  return (...args) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
 
 const EmpProfile = () => {
   const dispatch = useDispatch();
@@ -54,15 +69,23 @@ const EmpProfile = () => {
   const [showExpForm, setShowExpForm] = useState(false);
   const [showCertForm, setShowCertForm] = useState(false);
   const [employeeId, setEmployeeId] = useState(null);
-  // Add state for filtered cities based on selected state
   const [filteredCities, setFilteredCities] = useState([]);
+  const [currentStep, setCurrentStep] = useState(0);
 
-  // Extract states array from the imported object
+  const steps = [
+    { name: "Personal Details", key: "personal" },
+    { name: "Skills", key: "skills" },
+    { name: "Education", key: "education" },
+    { name: "Experience", key: "experience" },
+    { name: "Certifications", key: "certifications" },
+    { name: "Resume", key: "resume" },
+  ];
+
   const states = Object.keys(statesWithCities);
 
-  // Initialize form with userInfo and fetch employee data
   useEffect(() => {
     if (!userInfo || !localStorage.getItem("token")) {
+      console.error("No user info or token found, redirecting to login");
       navigate("/login");
       return;
     }
@@ -70,7 +93,6 @@ const EmpProfile = () => {
     const storedEmployeeId = localStorage.getItem("employeeId");
     setEmployeeId(storedEmployeeId);
 
-    // Pre-fill with userInfo
     dispatch(
       setAllFields({
         fullName: userInfo.name || "",
@@ -87,75 +109,142 @@ const EmpProfile = () => {
       })
     );
 
-    // Fetch employee data if employeeId exists
     if (storedEmployeeId) {
-      dispatch(fetchEmployee(storedEmployeeId));
+      dispatch(fetchEmployee(storedEmployeeId)).catch((err) => {
+        console.error("Failed to fetch employee:", err);
+      });
     }
-  }, [dispatch, navigate, userInfo, userType]);
 
-  // Handle state change to filter cities
-  const handleStateChange = (e) => {
-    const selectedState = e.target.value;
-    setEduInput({ ...eduInput, state: selectedState, city: "" });  // Reset city when state changes
-    setFilteredCities(statesWithCities[selectedState] || []);
-  };
+    // Log and handle Redux state errors
+    if (error) {
+      console.error("Redux state error:", { error, employee, userInfo });
+    }
+  }, [dispatch, navigate, userInfo, userType, error]);
 
-  // Profile Completion Score
-  const calculateCompletionScore = () => {
-    let score = 0;
-    if (employee.fullName) score += 20;
-    if (employee.email) score += 20;
-    if (employee.phone) score += 20;
-    if (employee.skills?.length > 0) score += 20;
-    if (employee.education?.length > 0 || employee.experience?.length > 0) score += 20;
-    return score;
-  };
+  const handleStateChange = useCallback(
+    (e) => {
+      const selectedState = e.target.value;
+      setEduInput((prev) => ({ ...prev, state: selectedState, city: "" }));
+      setFilteredCities(statesWithCities[selectedState] || []);
+    },
+    []
+  );
 
-  // Validation
   const validateForm = () => {
     const newErrors = {};
+    console.log("Validating form with employee data:", employee);
     if (!employee.fullName) newErrors.fullName = "Full name is required";
     if (!employee.email || !/\S+@\S+\.\S+/.test(employee.email))
       newErrors.email = "Valid email is required";
     if (!employee.phone || !/^\+?\d{10,15}$/.test(employee.phone))
-      newErrors.phone = "Valid phone number is required";
+      newErrors.phone = "Valid phone number is required (10-15 digits)";
     if (!employee.location) newErrors.location = "Location is required";
+    if (employee.gender && !["Male", "Female", "Other"].includes(employee.gender))
+      newErrors.gender = "Please select a valid gender (Male, Female, or Other)";
+
+    if (Object.keys(newErrors).length > 0) {
+      console.error("Form validation errors:", newErrors);
+    } else {
+      console.log("Form validation passed");
+    }
+
     return newErrors;
   };
 
   const validateEducation = () => {
     const { state, city, university, college, duration } = eduInput;
-    return state && city && university && college && duration;
+    const isValid = state && city && university && college && duration;
+    if (!isValid) {
+      console.error("Education validation failed:", { state, city, university, college, duration });
+    }
+    return isValid;
   };
 
   const validateExperience = () => {
     const { company_name, role, duration } = expForm;
-    return company_name && role && duration;
+    const isValid = company_name && role && duration;
+    if (!isValid) {
+      console.error("Experience validation failed:", { company_name, role, duration });
+    }
+    return isValid;
   };
 
   const validateCertification = () => {
-    return certInput.trim().length > 0;
+    const isValid = certInput.trim().length > 0 && certOrg.trim().length > 0;
+    if (!isValid) {
+      console.error("Certification validation failed:", { certInput, certOrg });
+    }
+    return isValid;
   };
 
-  // Handlers
-  const handleChange = (e) => {
-    dispatch(updateField({ field: e.target.name, value: e.target.value }));
-    setFormErrors({ ...formErrors, [e.target.name]: "" });
+  const isStepValid = (stepIndex) => {
+    if (stepIndex === 0) {
+      const errors = validateForm();
+      return Object.keys(errors).length === 0;
+    }
+    if (stepIndex === 1 && employee.skills.length === 0) {
+      console.error("Skills step invalid: No skills added");
+      return false;
+    }
+    if (stepIndex === 2 && employee.education.length === 0) {
+      console.error("Education step invalid: No education entries added");
+      return false;
+    }
+    return true;
   };
 
-  const handleEduChange = (e) => {
-    if (e.target.name === "state") {
-      handleStateChange(e);
+  const handleNextStep = () => {
+    if (isStepValid(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
+      setFormErrors({});
     } else {
-      setEduInput({ ...eduInput, [e.target.name]: e.target.value });
+      if (currentStep === 0) {
+        const errors = validateForm();
+        setFormErrors(errors);
+        console.error("Personal Details step validation failed:", errors);
+        alert("Please fill all required fields in Personal Details");
+      } else if (currentStep === 1) {
+        alert("Please add at least one skill");
+      } else if (currentStep === 2) {
+        alert("Please add at least one education entry");
+      }
     }
   };
 
-  const handleExpChange = (e) =>
-    setExpForm({ ...expForm, [e.target.name]: e.target.value });
+  const handlePrevStep = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 0));
+    setFormErrors({});
+  };
+
+  const handleChange = useCallback(
+    debounce((e) => {
+      dispatch(updateField({ field: e.target.name, value: e.target.value }));
+      setFormErrors((prev) => ({ ...prev, [e.target.name]: "" }));
+    }, 300),
+    [dispatch]
+  );
+
+  const handleEduChange = useCallback(
+    debounce((e) => {
+      if (e.target.name === "state") {
+        handleStateChange(e);
+      } else {
+        setEduInput((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+      }
+    }, 300),
+    [handleStateChange]
+  );
+
+  const handleExpChange = useCallback(
+    debounce((e) => {
+      setExpForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    }, 300),
+    []
+  );
 
   const handleAddSkill = async () => {
     if (!skillInput.trim()) {
+      console.error("Skill input is empty");
       alert("Please enter a skill");
       return;
     }
@@ -167,7 +256,8 @@ const EmpProfile = () => {
       }
       setSkillInput("");
     } catch (error) {
-      alert(error || "Failed to add skill");
+      console.error("Error adding skill:", error);
+      alert(error.message || "Failed to add skill");
     }
   };
 
@@ -191,10 +281,11 @@ const EmpProfile = () => {
         field_of_study: "",
         duration: "",
       });
-      setFilteredCities([]);  // Reset filtered cities
+      setFilteredCities([]);
       setShowEduForm(false);
     } catch (error) {
-      alert(error || "Failed to add education");
+      console.error("Error adding education:", error);
+      alert(error.message || "Failed to add education");
     }
   };
 
@@ -218,28 +309,27 @@ const EmpProfile = () => {
       });
       setShowExpForm(false);
     } catch (error) {
-      alert(error || "Failed to add experience");
+      console.error("Error adding experience:", error);
+      alert(error.message || "Failed to add experience");
     }
   };
 
   const handleAddCertification = async () => {
     if (!validateCertification()) {
-      alert("Please enter a certification");
+      alert("Please enter a certification name and organization");
       return;
     }
     try {
+      const certData = {
+        cert_name: certInput,
+        organization: certOrg,
+        issue_date: certIssueDate || null,
+      };
       if (employeeId) {
-        await dispatch(
-          addEmployeeCertification({
-            employeeId,
-            cert_name: certInput,
-            organization: certOrg,
-            issue_date: certIssueDate,
-          })
-        ).unwrap();
+        await dispatch(addEmployeeCertification({ employeeId, ...certData })).unwrap();
       } else {
         dispatch(
-          updateField({ field: "certifications", value: [...employee.certifications, certInput] })
+          updateField({ field: "certifications", value: [...employee.certifications, certData] })
         );
       }
       setCertInput("");
@@ -247,7 +337,8 @@ const EmpProfile = () => {
       setCertIssueDate("");
       setShowCertForm(false);
     } catch (error) {
-      alert(error || "Failed to add certification");
+      console.error("Error adding certification:", error);
+      alert(error.message || "Failed to add certification");
     }
   };
 
@@ -261,7 +352,8 @@ const EmpProfile = () => {
         dispatch(updateField({ field: "skills", value: newSkills }));
       }
     } catch (error) {
-      alert(error || "Failed to remove skill");
+      console.error("Error removing skill:", error);
+      alert(error.message || "Failed to remove skill");
     }
   };
 
@@ -275,7 +367,8 @@ const EmpProfile = () => {
         dispatch(updateField({ field: "education", value: newEducation }));
       }
     } catch (error) {
-      alert(error || "Failed to remove education");
+      console.error("Error removing education:", error);
+      alert(error.message || "Failed to remove education");
     }
   };
 
@@ -289,34 +382,41 @@ const EmpProfile = () => {
         dispatch(updateField({ field: "experience", value: newExperience }));
       }
     } catch (error) {
-      alert(error || "Failed to remove experience");
+      console.error("Error removing experience:", error);
+      alert(error.message || "Failed to remove experience");
     }
   };
 
   const handleRemoveCertification = async (index) => {
     try {
       if (employeeId) {
-        const cert_name = employee.certifications[index];
-        await dispatch(removeEmployeeCertification({ employeeId, cert_name })).unwrap();
+        const cert = employee.certifications[index];
+        await dispatch(removeEmployeeCertification({ employeeId, cert_name: cert.cert_name || cert })).unwrap();
       } else {
         const newCertifications = employee.certifications.filter((_, i) => i !== index);
         dispatch(updateField({ field: "certifications", value: newCertifications }));
       }
     } catch (error) {
-      alert(error || "Failed to remove certification");
+      console.error("Error removing certification:", error);
+      alert(error.message || "Failed to remove certification");
     }
   };
 
   const handleResumeUpload = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
+    if (!file) {
+      console.warn("No file selected for resume upload");
+      alert("Please select a file to upload");
+      return;
+    }
     if (
-      !file ||
       ![
         "application/pdf",
         "application/msword",
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
       ].includes(file.type)
     ) {
+      console.error("Invalid file type for resume upload:", file.type);
       alert("Please upload a valid PDF or Word document");
       return;
     }
@@ -326,8 +426,10 @@ const EmpProfile = () => {
       } else {
         dispatch(setResume({ name: file.name }));
       }
+      console.log("Resume uploaded successfully:", file.name);
     } catch (error) {
-      alert(error || "Failed to upload resume");
+      console.error("Error uploading resume:", error);
+      alert(error.message || "Failed to upload resume");
     }
   };
 
@@ -335,657 +437,757 @@ const EmpProfile = () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormErrors(errors);
+      console.error("Profile save validation errors:", errors);
       alert("Please fix the errors in the form");
+      setCurrentStep(0);
       return;
     }
     try {
+      const genderMap = {
+        Male: "M",
+        Female: "F",
+        Other: "O",
+      };
       const profileData = {
         fullName: employee.fullName,
         email: employee.email,
         phone: employee.phone,
-        gender: employee.gender,
-        dob: employee.dob,
+        gender: employee.gender ? genderMap[employee.gender] : null,
+        dob: employee.dob || null,
         location: employee.location,
         resume: employee.resume ? employee.resume.name : null,
-        skills: employee.skills,
-        education: employee.education,
-        experience: employee.experience,
-        certifications: employee.certifications,
+        skills: employee.skills || [],
+        education: employee.education || [],
+        experience: employee.experience || [],
+        certifications: employee.certifications || [],
         userId: userInfo.id,
       };
+      console.log("Saving profile with data:", profileData);
       const result = await dispatch(saveEmployee(profileData)).unwrap();
       setEmployeeId(result.employeeId);
       localStorage.setItem("employeeId", result.employeeId);
       localStorage.setItem("employeeProfile", JSON.stringify({ employeeId: result.employeeId, ...profileData }));
+      await dispatch(fetchEmployee(result.employeeId)).unwrap();
       alert("Profile saved successfully!");
     } catch (error) {
-      alert(error || "Failed to save profile");
+      console.error("Error saving profile:", error);
+      alert(error.message || "Failed to save profile. Please check your inputs and try again.");
     }
   };
 
-  const handleLogout = () => {
-    dispatch(logoutUser());
-    dispatch(resetProfile());
-    localStorage.removeItem("employeeId");
-    localStorage.removeItem("employeeProfile");
-    navigate("/login");
-  };
-
-  // JSX
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-gray-100 font-sans">
       <Header />
       <div className="flex">
         {/* Sidebar */}
-        <aside className="w-64 bg-white shadow-lg hidden md:block">
-          <Sidebar role="employer"/>
+        <aside className="w-64 bg-white shadow-2xl hidden md:block fixed h-full z-10">
+          <Sidebar role="employer" />
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-4 md:p-8 max-w-6xl mx-auto">
+        <main className="flex-1 p-4 sm:p-6 md:p-8 max-w-7xl mx-auto md:ml-64">
+          {/* Error Message */}
           {error && (
-            <div className="mb-4 p-4 bg-red-100 text-red-800 rounded-lg">
-              {error === "Employee not found or unauthorized"
-                ? "No employee profile found. Please save your profile to create one."
-                : error === "Authorization token required" || error === "Token expired, please log in again"
-                ? "Your session has expired. Please log in again."
-                : error}
+            <div className="mb-6 p-4 bg-red-100 text-red-800 rounded-xl flex items-center gap-3 animate-slide-in">
+              <XMarkIcon className="w-6 h-6" />
+              <span>
+                {error === "Employee not found or unauthorized"
+                  ? "No employee profile found. Please save your profile to create one."
+                  : error === "Authorization token required" || error === "Token expired, please log in again"
+                  ? "Your session has expired. Please log in again."
+                  : `Error: ${error}`}
+              </span>
             </div>
           )}
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-3xl font-bold text-gray-900">Your Profile</h2>
-            <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium text-gray-700">Profile Completion: {calculateCompletionScore()}%</p>
-                <div className="w-32 bg-gray-200 rounded-full h-2.5 mt-1">
+
+          {/* Header */}
+          <div className="mb-8">
+            <h2 className="text-3xl sm:text-4xl font-extrabold text-gray-900">Your Profile</h2>
+          </div>
+
+          {/* Stepper */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between">
+              {steps.map((step, index) => (
+                <div key={step.key} className="flex-1 flex items-center">
                   <div
-                    className="bg-blue-600 h-2.5 rounded-full transition-all"
-                    style={{ width: `${calculateCompletionScore()}%` }}
-                  ></div>
+                    className={`w-10 h-10 rounded-full flex items-center justify-center text-white font-semibold ${
+                      index <= currentStep
+                        ? "bg-gradient-to-r from-indigo-500 to-purple-600"
+                        : "bg-gray-300"
+                    }`}
+                  >
+                    {index < currentStep ? (
+                      <CheckIcon className="w-6 h-6" />
+                    ) : (
+                      index + 1
+                    )}
+                  </div>
+                  <div className="ml-2 flex-1">
+                    <p
+                      className={`text-sm font-medium ${
+                        index <= currentStep ? "text-gray-900" : "text-gray-500"
+                      }`}
+                    >
+                      {step.name}
+                    </p>
+                    {index < steps.length - 1 && (
+                      <div
+                        className={`h-1 mt-2 ${
+                          index < currentStep ? "bg-indigo-500" : "bg-gray-300"
+                        }`}
+                      ></div>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <button
-                onClick={handleLogout}
-                className="text-red-600 hover:text-red-800 text-sm font-medium"
-              >
-                Logout
-              </button>
+              ))}
             </div>
           </div>
 
-          <div className="bg-white shadow-lg rounded-xl p-6 mb-8">
+          {/* Profile Form Card */}
+          <div className="bg-white shadow-2xl rounded-2xl p-6 sm:p-8 mb-8 transition-all duration-300">
             {/* Personal Details */}
-            <section className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Personal Details</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  {
-                    label: "Full Name",
-                    name: "fullName",
-                    type: "text",
-                    placeholder: "Enter your full name",
-                    required: true,
-                  },
-                  {
-                    label: "Email",
-                    name: "email",
-                    type: "email",
-                    placeholder: "Enter your email",
-                    required: true,
-                    // disabled: true,
-                  },
-                  {
-                    label: "Phone",
-                    name: "phone",
-                    type: "tel",
-                    placeholder: "Enter your phone number",
-                    required: true,
-                  },
-                  {
-                    label: "Date of Birth",
-                    name: "dob",
-                    type: "date",
-                    required: false,
-                  },
-                  {
-                    label: "Location",
-                    name: "location",
-                    type: "text",
-                    placeholder: "Enter your city or region",
-                    required: true,
-                  },
-                ].map((field) => (
-                  <div key={field.name}>
-                    <label className="block text-sm font-medium text-gray-700">
-                      {field.label} {field.required && <span className="text-red-500">*</span>}
-                    </label>
-                    <input
-                      type={field.type}
-                      name={field.name}
-                      value={employee[field.name] || ""}
+            {currentStep === 0 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Personal Details</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  {[
+                    {
+                      label: "Full Name",
+                      name: "fullName",
+                      type: "text",
+                      placeholder: "Enter your full name",
+                      required: true,
+                      disabled: true,
+                    },
+                    {
+                      label: "Email",
+                      name: "email",
+                      type: "email",
+                      placeholder: "Enter your email",
+                      required: true,
+                      disabled: true,
+                    },
+                    {
+                      label: "Phone",
+                      name: "phone",
+                      type: "tel",
+                      placeholder: "Enter your phone number",
+                      required: true,
+                      disabled: false,
+                    },
+                    {
+                      label: "Date of Birth",
+                      name: "dob",
+                      type: "date",
+                      required: false,
+                      disabled: false,
+                    },
+                    {
+                      label: "Location",
+                      name: "location",
+                      type: "text",
+                      placeholder: "Enter your city or region",
+                      required: true,
+                      disabled: false,
+                    },
+                  ].map((field) => (
+                    <div key={field.name} className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                      </label>
+                      <input
+                        type={field.type}
+                        name={field.name}
+                        value={employee[field.name] || ""}
+                        onChange={handleChange}
+                        placeholder={field.placeholder}
+                        className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
+                          field.disabled
+                            ? "bg-gray-100 cursor-not-allowed text-gray-500"
+                            : formErrors[field.name]
+                            ? "border-red-500"
+                            : "border-gray-200 hover:border-gray-300"
+                        } focus:border-indigo-500 bg-white`}
+                        aria-invalid={formErrors[field.name] ? "true" : "false"}
+                        aria-describedby={`${field.name}-error`}
+                        required={field.required}
+                        disabled={loading || field.disabled}
+                      />
+                      {formErrors[field.name] && (
+                        <p className="mt-1 text-xs text-red-600">{formErrors[field.name]}</p>
+                      )}
+                    </div>
+                  ))}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Gender</label>
+                    <select
+                      name="gender"
+                      value={employee.gender || ""}
                       onChange={handleChange}
-                      placeholder={field.placeholder}
-                      className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all ${
-                        formErrors[field.name] ? "border-red-500" : "border-gray-300"
-                      } ${field.disabled ? "bg-gray-100 cursor-not-allowed" : ""}`}
-                      aria-invalid={formErrors[field.name] ? "true" : "false"}
-                      aria-describedby={`${field.name}-error`}
-                      required={field.required}
-                      disabled={loading || field.disabled}
-                    />
-                    {formErrors[field.name] && (
-                      <p id={`${field.name}-error`} className="text-red-500 text-xs mt-1">
-                        {formErrors[field.name]}
+                      className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-gray-300"
+                      disabled={loading}
+                    >
+                      <option value="">Select gender</option>
+                      <option value="Male">Male</option>
+                      <option value="Female">Female</option>
+                      <option value="Other">Other</option>
+                    </select>
+                    {formErrors.gender && (
+                      <p className="mt-1 text-xs text-red-600">{formErrors.gender}</p>
+                    )}
+                  </div>
+                  {userInfo.company_name && (
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Company Name</label>
+                      <input
+                        type="text"
+                        value={userInfo.company_name || "No company info"}
+                        className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500 border border-gray-200"
+                        disabled
+                      />
+                    </div>
+                  )}
+                  {userInfo.position && (
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Position</label>
+                      <input
+                        type="text"
+                        value={userInfo.position || ""}
+                        className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500 border border-gray-200"
+                        disabled
+                      />
+                    </div>
+                  )}
+                  {userInfo.about && (
+                    <div className="col-span-1 sm:col-span-2 relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">About</label>
+                      <textarea
+                        value={userInfo.about || ""}
+                        className="w-full p-3 rounded-lg bg-gray-100 cursor-not-allowed text-gray-500 border border-gray-200"
+                        disabled
+                      />
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
+
+            {/* Skills */}
+            {currentStep === 1 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Skills</h3>
+                <div className="flex flex-col sm:flex-row gap-3 mb-4">
+                  <input
+                    type="text"
+                    value={skillInput}
+                    onChange={(e) => setSkillInput(e.target.value)}
+                    className="flex-1 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                    placeholder="Enter a skill (e.g., JavaScript, Python)"
+                    onKeyPress={(e) => e.key === "Enter" && handleAddSkill()}
+                    disabled={loading}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddSkill}
+                    className="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 flex items-center gap-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                    disabled={loading}
+                  >
+                    <PlusIcon className="w-5 h-5" /> Add
+                  </button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {employee.skills?.map((skill, index) => (
+                    <span
+                      key={index}
+                      className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 hover:bg-indigo-200 transition-all duration-200"
+                    >
+                      {skill}
+                      <button
+                        onClick={() => handleRemoveSkill(index)}
+                        className="text-red-500 hover:text-red-700"
+                        aria-label={`Remove ${skill}`}
+                        disabled={loading}
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Education */}
+            {currentStep === 2 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Education</h3>
+                <div className="flex justify-end mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowEduForm(!showEduForm)}
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-semibold flex items-center gap-2 transition-colors duration-200"
+                    disabled={loading}
+                  >
+                    {showEduForm ? (
+                      <>
+                        <XMarkIcon className="w-5 h-5" /> Cancel
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="w-5 h-5" /> Add Education
+                      </>
+                    )}
+                  </button>
+                </div>
+                {showEduForm && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
+                    {[
+                      { name: "college", placeholder: "College Name", required: true },
+                      { name: "university", placeholder: "University", required: true },
+                      { name: "duration", placeholder: "Duration (e.g., 2018-2022)", required: true },
+                      { name: "degree", placeholder: "Degree (e.g., B.Sc.)", required: false },
+                      { name: "field_of_study", placeholder: "Field of Study", required: false },
+                    ].map((field) => (
+                      <div key={field.name} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {field.placeholder} {field.required && <span className="text-red-500">*</span>}
+                        </label>
+                        <input
+                          type="text"
+                          name={field.name}
+                          value={eduInput[field.name]}
+                          onChange={handleEduChange}
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          disabled={loading}
+                        />
+                      </div>
+                    ))}
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        State <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="state"
+                        value={eduInput.state}
+                        onChange={handleEduChange}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        required
+                        disabled={loading}
+                      >
+                        <option value="">Select State</option>
+                        {states.map((state) => (
+                          <option key={state} value={state}>
+                            {state}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        City <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        name="city"
+                        value={eduInput.city}
+                        onChange={handleEduChange}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        required
+                        disabled={loading || !eduInput.state}
+                      >
+                        <option value="">Select City</option>
+                        {filteredCities.map((city) => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="col-span-1 sm:col-span-2">
+                      <button
+                        type="button"
+                        onClick={handleAddEducation}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 flex items-center justify-center gap-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        disabled={loading}
+                      >
+                        <PlusIcon className="w-5 h-5" /> Save Education
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {employee.education?.map((edu, index) => (
+                    <div
+                      key={edu.id || index}
+                      className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center hover:shadow-md transition-all duration-200"
+                    >
+                      <div>
+                        <p className="font-semibold text-gray-800">{edu.college}, {edu.university}</p>
+                        <p className="text-sm text-gray-600">{edu.city}, {edu.state} • {edu.duration}</p>
+                        {edu.degree && (
+                          <p className="text-sm text-gray-600">{edu.degree} in {edu.field_of_study}</p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveEducation(index)}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                        aria-label={`Remove ${edu.college}`}
+                        disabled={loading}
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Experience */}
+            {currentStep === 3 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Experience</h3>
+                <div className="flex justify-end mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowExpForm(!showExpForm)}
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-semibold flex items-center gap-2 transition-colors duration-200"
+                    disabled={loading}
+                  >
+                    {showExpForm ? (
+                      <>
+                        <XMarkIcon className="w-5 h-5" /> Cancel
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="w-5 h-5" /> Add Experience
+                      </>
+                    )}
+                  </button>
+                </div>
+                {showExpForm && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
+                    {[
+                      { name: "company_name", placeholder: "Company Name", required: true },
+                      { name: "role", placeholder: "Role", required: true },
+                      { name: "duration", placeholder: "Duration (e.g., Jan 2020 - Dec 2022)", required: true },
+                      { name: "location", placeholder: "Location", required: false },
+                      { name: "description", placeholder: "Description", required: false },
+                    ].map((field) => (
+                      <div key={field.name} className="relative">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          {field.placeholder} {field.required && <span className="text-red-500">*</span>}
+                        </label>
+                        <input
+                          type="text"
+                          name={field.name}
+                          value={expForm[field.name]}
+                          onChange={handleExpChange}
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                          placeholder={field.placeholder}
+                          required={field.required}
+                          disabled={loading}
+                        />
+                      </div>
+                    ))}
+                    <div className="col-span-1 sm:col-span-2">
+                      <button
+                        type="button"
+                        onClick={handleAddExperience}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 flex items-center justify-center gap-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        disabled={loading}
+                      >
+                        <PlusIcon className="w-5 h-5" /> Save Experience
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="space-y-3">
+                  {employee.experience?.map((exp, index) => (
+                    <div
+                      key={exp.id || index}
+                      className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center hover:shadow-md transition-all duration-200"
+                    >
+                      <div>
+                        <p className="font-semibold text-gray-800">{exp.role} at {exp.company_name}</p>
+                        <p className="text-sm text-gray-600">{exp.duration}</p>
+                        {exp.location && <p className="text-sm text-gray-600">{exp.location}</p>}
+                        {exp.description && <p className="text-sm text-gray-600">{exp.description}</p>}
+                      </div>
+                      <button
+                        onClick={() => handleRemoveExperience(index)}
+                        className="text-red-500 hover:text-red-700 transition-colors duration-200"
+                        aria-label={`Remove ${exp.role} at ${exp.company_name}`}
+                        disabled={loading}
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Certifications */}
+            {currentStep === 4 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Certifications</h3>
+                <div className="flex justify-end mb-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowCertForm(!showCertForm)}
+                    className="text-indigo-600 hover:text-indigo-800 text-sm font-semibold flex items-center gap-2 transition-colors duration-200"
+                    disabled={loading}
+                  >
+                    {showCertForm ? (
+                      <>
+                        <XMarkIcon className="w-5 h-5" /> Cancel
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="w-5 h-5" /> Add Certification
+                      </>
+                    )}
+                  </button>
+                </div>
+                {showCertForm && (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Certification Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={certInput}
+                        onChange={(e) => setCertInput(e.target.value)}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        placeholder="Certification Name (e.g., AWS Certified Developer)"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Issuing Organization <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={certOrg}
+                        onChange={(e) => setCertOrg(e.target.value)}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        placeholder="Issuing Organization (e.g., AWS)"
+                        required
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Issue Date</label>
+                      <input
+                        type="date"
+                        value={certIssueDate}
+                        onChange={(e) => setCertIssueDate(e.target.value)}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        placeholder="Issue Date"
+                        disabled={loading}
+                      />
+                    </div>
+                    <div className="col-span-1 sm:col-span-2">
+                      <button
+                        type="button"
+                        onClick={handleAddCertification}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:from-indigo-600 hover:to-purple-700 flex items-center justify-center gap-2 transition-all duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                        disabled={loading}
+                      >
+                        <PlusIcon className="w-5 h-5" /> Save Certification
+                      </button>
+                    </div>
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {employee.certifications?.map((cert, index) => (
+                    <span
+                      key={index}
+                      className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm flex items-center gap-2 hover:bg-indigo-200 transition-all duration-200"
+                    >
+                      {cert.cert_name || cert} {cert.organization && `(${cert.organization})`}
+                      <button
+                        onClick={() => handleRemoveCertification(index)}
+                        className="text-red-500 hover:text-red-700"
+                        aria-label={`Remove ${cert.cert_name || cert}`}
+                        disabled={loading}
+                      >
+                        <XMarkIcon className="w-4 h-4" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {/* Resume */}
+            {currentStep === 5 && (
+              <section>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4">Resume</h3>
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx"
+                  onChange={handleResumeUpload}
+                  className="w-full p-3 rounded-lg border border-gray-200 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-indigo-100 file:text-indigo-800 file:hover:bg-indigo-200 file:transition-all file:duration-200"
+                  disabled={loading}
+                />
+                {employee.resume && (
+                  <p className="mt-2 text-sm text-green-600 flex items-center gap-2">
+                    <CheckIcon className="w-5 h-5" /> Uploaded: {employee.resume.name}
+                  </p>
+                )}
+              </section>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="flex justify-between mt-6">
+              <button
+                onClick={handlePrevStep}
+                disabled={currentStep === 0 || loading}
+                className={`px-6 py-3 rounded-lg text-white font-semibold flex items-center gap-2 transition-all duration-200 ${
+                  currentStep === 0 || loading
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gray-600 hover:bg-gray-700"
+                }`}
+              >
+                <ArrowLeftIcon className="w-5 h-5" /> Back
+              </button>
+              {currentStep < steps.length - 1 ? (
+                <button
+                  onClick={handleNextStep}
+                  disabled={loading}
+                  className={`px-6 py-3 rounded-lg text-white font-semibold flex items-center gap-2 transition-all duration-200 ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                  }`}
+                >
+                  Next <ArrowRightIcon className="w-5 h-5" />
+                </button>
+              ) : (
+                <button
+                  onClick={handleSaveProfile}
+                  disabled={loading}
+                  className={`px-6 py-3 rounded-lg text-white font-semibold flex items-center gap-2 transition-all duration-200 ${
+                    loading
+                      ? "bg-gray-400 cursor-not-allowed"
+                      : "bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700"
+                  }`}
+                >
+                  {loading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+                    </svg>
+                  ) : (
+                    <>
+                      <CheckIcon className="w-5 h-5" /> Save Profile
+                    </>
+                  )}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Profile Preview Card */}
+          {employeeId && (
+            <div className="bg-white shadow-2xl rounded-2xl p-6 sm:p-8">
+              <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Profile Preview</h3>
+              <div className="flex flex-col sm:flex-row gap-6 sm:gap-8">
+                <div className="flex-shrink-0">
+                  <UserCircleIcon className="w-24 h-24 sm:w-32 sm:h-32 text-gray-400" />
+                </div>
+                <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-6 text-sm">
+                  <div className="space-y-4">
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Name:</strong>{" "}
+                      <span className="text-gray-600">{employee.fullName || "Not provided"}</span>
+                    </p>
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Email:</strong>{" "}
+                      <span className="text-gray-600">{employee.email || "Not provided"}</span>
+                    </p>
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Phone:</strong>{" "}
+                      <span className="text-gray-600">{employee.phone || "Not provided"}</span>
+                    </p>
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Location:</strong>{" "}
+                      <span className="text-gray-600">{employee.location || userInfo.location || "Not provided"}</span>
+                    </p>
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Gender:</strong>{" "}
+                      <span className="text-gray-600">{employee.gender || "Not provided"}</span>
+                    </p>
+                    {userInfo.company_name && (
+                      <p>
+                        <strong className="text-gray-800 font-semibold">Company:</strong>{" "}
+                        <span className="text-gray-600">{userInfo.company_name || "Not provided"}</span>
+                      </p>
+                    )}
+                    {userInfo.position && (
+                      <p>
+                        <strong className="text-gray-800 font-semibold">Position:</strong>{" "}
+                        <span className="text-gray-600">{userInfo.position || "Not provided"}</span>
+                      </p>
+                    )}
+                    {userInfo.about && (
+                      <p>
+                        <strong className="text-gray-800 font-semibold">About:</strong>{" "}
+                        <span className="text-gray-600">{userInfo.about || "Not provided"}</span>
                       </p>
                     )}
                   </div>
-                ))}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Gender</label>
-                  <select
-                    name="gender"
-                    value={employee.gender || ""}
-                    onChange={handleChange}
-                    className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all border-gray-300"
-                    disabled={loading}
-                  >
-                    <option value="">Select gender</option>
-                    <option value="Male">Male</option>
-                    <option value="Female">Female</option>
-                    <option value="Other">Other</option>
-                  </select>
-                </div>
-                {userInfo.company_name && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Company Name</label>
-                    <input
-                      type="text"
-                      value={userInfo.company_name || "no company info"}
-                      className="w-full p-3 border rounded-lg bg-gray-100 cursor-not-allowed"
-                      disabled
-                    />
-                  </div>
-                )}
-                {userInfo.position && (
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Position</label>
-                    <input
-                      type="text"
-                      value={userInfo.position || ""}
-                      className="w-full p-3 border rounded-lg bg-gray-100 cursor-not-allowed"
-                      disabled
-                    />
-                  </div>
-                )}
-                {userInfo.about && (
-                  <div className="col-span-1 sm:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700">About</label>
-                    <textarea
-                      value={userInfo.about || ""}
-                      className="w-full p-3 border rounded-lg bg-gray-100 cursor-not-allowed"
-                      disabled
-                    />
-                  </div>
-                )}
-              </div>
-            </section>
-
-            {/* Skills */}
-            <section className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Skills</h3>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={skillInput}
-                  onChange={(e) => setSkillInput(e.target.value)}
-                  className="flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                  placeholder="Enter a skill (e.g., JavaScript, Python)"
-                  onKeyPress={(e) => e.key === "Enter" && handleAddSkill()}
-                  disabled={loading}
-                />
-                <button
-                  type="button"
-                  onClick={handleAddSkill}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all"
-                  disabled={loading}
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                  </svg>
-                  Add
-                </button>
-              </div>
-              <div className="flex flex-wrap gap-2 mt-4">
-                {employee.skills?.map((skill, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                  >
-                    {skill}
-                    <button
-                      onClick={() => handleRemoveSkill(index)}
-                      className="text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${skill}`}
-                      disabled={loading}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            {/* Education */}
-            <section className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Education</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowEduForm(!showEduForm)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  disabled={loading}
-                >
-                  {showEduForm ? "Cancel" : "Add Education"}
-                </button>
-              </div>
-              {showEduForm && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {[
-                    { name: "college", placeholder: "College Name", required: true },
-                    { name: "university", placeholder: "University", required: true },
-                    { name: "duration", placeholder: "Duration (e.g., 2018-2022)", required: true },
-                    { name: "degree", placeholder: "Degree (e.g., B.Sc.)", required: false },
-                    { name: "field_of_study", placeholder: "Field of Study", required: false },
-                  ].map((field) => (
-                    <div key={field.name}>
-                      <input
-                        type="text"
-                        name={field.name}
-                        value={eduInput[field.name]}
-                        onChange={handleEduChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        disabled={loading}
-                      />
-                    </div>
-                  ))}
-                  {/* State and City as dropdowns */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">State <span className="text-red-500">*</span></label>
-                    <select
-                      name="state"
-                      value={eduInput.state}
-                      onChange={handleEduChange}
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                      required
-                      disabled={loading}
-                    >
-                      <option value="">Select State</option>
-                      {states.map((state) => (
-                        <option key={state} value={state}>
-                          {state}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">City <span className="text-red-500">*</span></label>
-                    <select
-                      name="city"
-                      value={eduInput.city}
-                      onChange={handleEduChange}
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                      required
-                      disabled={loading || !eduInput.state}
-                    >
-                      <option value="">Select City (after selecting state)</option>
-                      {filteredCities.map((city) => (
-                        <option key={city} value={city}>
-                          {city}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <button
-                      type="button"
-                      onClick={handleAddEducation}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all"
-                      disabled={loading}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                      Save Education
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-3">
-                {employee.education?.map((edu, index) => (
-                  <div
-                    key={edu.id || index}
-                    className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center"
-                  >
+                  <div className="space-y-4">
+                    <p>
+                      <strong className="text-gray-800 font-semibold">Skills:</strong>{" "}
+                      <span className="text-gray-600">
+                        {employee.skills?.length > 0 ? employee.skills.join(", ") : "None added"}
+                      </span>
+                    </p>
                     <div>
-                      <p className="font-medium text-gray-800">
-                        {edu.college}, {edu.university}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {edu.city}, {edu.state} • {edu.duration}
-                      </p>
-                      {edu.degree && (
-                        <p className="text-sm text-gray-600">
-                          {edu.degree} in {edu.field_of_study}
-                        </p>
+                      <strong className="text-gray-800 font-semibold">Education:</strong>
+                      {employee.education?.length > 0 ? (
+                        employee.education.map((edu, i) => (
+                          <p key={edu.id || i} className="text-gray-600 mt-1">
+                            {edu.college}, {edu.university} ({edu.city}, {edu.state}) - {edu.duration}
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-gray-600 mt-1">None added</p>
                       )}
                     </div>
-                    <button
-                      onClick={() => handleRemoveEducation(index)}
-                      className="text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${edu.college}`}
-                      disabled={loading}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Experience */}
-            <section className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Experience</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowExpForm(!showExpForm)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  disabled={loading}
-                >
-                  {showExpForm ? "Cancel" : "Add Experience"}
-                </button>
-              </div>
-              {showExpForm && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  {[
-                    { name: "company_name", placeholder: "Company Name", required: true },
-                    { name: "role", placeholder: "Role", required: true },
-                    { name: "duration", placeholder: "Duration (e.g., Jan 2020 - Dec 2022)", required: true },
-                    { name: "location", placeholder: "Location", required: false },
-                    { name: "description", placeholder: "Description", required: false },
-                  ].map((field) => (
-                    <div key={field.name}>
-                      <input
-                        type="text"
-                        name={field.name}
-                        value={expForm[field.name]}
-                        onChange={handleExpChange}
-                        className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                        placeholder={field.placeholder}
-                        required={field.required}
-                        disabled={loading}
-                      />
-                    </div>
-                  ))}
-                  <div className="col-span-1 sm:col-span-2">
-                    <button
-                      type="button"
-                      onClick={handleAddExperience}
-                      className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 flex items-center gap-2 transition-all"
-                      disabled={loading}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                      Save Experience
-                    </button>
-                  </div>
-                </div>
-              )}
-              <div className="space-y-3">
-                {employee.experience?.map((exp, index) => (
-                  <div
-                    key={exp.id || index}
-                    className="p-4 border rounded-lg bg-gray-50 flex justify-between items-center"
-                  >
                     <div>
-                      <p className="font-medium text-gray-800">
-                        {exp.role} at {exp.company_name}
-                      </p>
-                      <p className="text-sm text-gray-600">{exp.duration}</p>
-                      {exp.location && <p className="text-sm text-gray-600">{exp.location}</p>}
-                      {exp.description && <p className="text-sm text-gray-600">{exp.description}</p>}
+                      <strong className="text-gray-800 font-semibold">Experience:</strong>
+                      {employee.experience?.length > 0 ? (
+                        employee.experience.map((exp, i) => (
+                          <p key={exp.id || i} className="text-gray-600 mt-1">
+                            {exp.role} at {exp.company_name} ({exp.duration})
+                          </p>
+                        ))
+                      ) : (
+                        <p className="text-gray-600 mt-1">None added</p>
+                      )}
                     </div>
-                    <button
-                      onClick={() => handleRemoveExperience(index)}
-                      className="text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${exp.role} at ${exp.company_name}`}
-                      disabled={loading}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                        />
-                      </svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            {/* Certifications */}
-            <section className="mb-8">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-semibold text-gray-800">Certifications</h3>
-                <button
-                  type="button"
-                  onClick={() => setShowCertForm(!showCertForm)}
-                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
-                  disabled={loading}
-                >
-                  {showCertForm ? "Cancel" : "Add Certification"}
-                </button>
-              </div>
-              {showCertForm && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div>
-                    <input
-                      type="text"
-                      value={certInput}
-                      onChange={(e) => setCertInput(e.target.value)}
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                      placeholder="Certification Name (e.g., AWS Certified Developer)"
-                      required
-                      disabled={loading}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="text"
-                      value={certOrg}
-                      onChange={(e) => setCertOrg(e.target.value)}
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                      placeholder="Issuing Organization (e.g., AWS)"
-                      disabled={loading}
-                    />
-                  </div>
-                  <div>
-                    <input
-                      type="date"
-                      value={certIssueDate}
-                      onChange={(e) => setCertIssueDate(e.target.value)}
-                      className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 border-gray-300"
-                      placeholder="Issue Date"
-                      disabled={loading}
-                    />
-                  </div>
-                  <div className="col-span-1 sm:col-span-2">
-                    <button
-                      type="button"
-                      onClick={handleAddCertification}
-                      className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 transition-all"
-                      disabled={loading}
-                    >
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
-                      </svg>
-                      Save Certification
-                    </button>
+                    <div>
+                      <strong className="text-gray-800 font-semibold">Certifications:</strong>{" "}
+                      <span className="text-gray-600">
+                        {employee.certifications?.length > 0
+                          ? employee.certifications
+                              .map((cert) => cert.cert_name || cert)
+                              .join(", ")
+                          : "None added"}
+                      </span>
+                    </div>
                   </div>
                 </div>
-              )}
-              <div className="flex flex-wrap gap-2 mt-4">
-                {employee.certifications?.map((cert, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2"
-                  >
-                    {cert}
-                    <button
-                      onClick={() => handleRemoveCertification(index)}
-                      className="text-red-500 hover:text-red-700"
-                      aria-label={`Remove ${cert}`}
-                      disabled={loading}
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                      </svg>
-                    </button>
-                  </span>
-                ))}
-              </div>
-            </section>
-
-            {/* Resume */}
-            <section className="mb-8">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4">Resume</h3>
-              <input
-                type="file"
-                accept=".pdf,.doc,.docx"
-                onChange={handleResumeUpload}
-                className="w-full p-3 border rounded-lg file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-gray-200 file:text-gray-800 hover:file:bg-gray-300"
-                disabled={loading}
-              />
-              {employee.resume && (
-                <p className="mt-2 text-sm text-green-600 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Uploaded: {employee.resume.name}
-                </p>
-              )}
-            </section>
-
-            {/* Save Button */}
-            <button
-              onClick={handleSaveProfile}
-              disabled={loading}
-              className={`w-full sm:w-auto px-6 py-3 rounded-lg text-white font-medium flex items-center justify-center gap-2 transition-all ${
-                loading ? "bg-gray-400 cursor-not-allowed" : "bg-purple-600 hover:bg-purple-700"
-              }`}
-            >
-              {loading ? (
-                <svg className="animate-spin h-5 w-5 text-white" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
-                </svg>
-              ) : (
-                <>
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                  </svg>
-                  Save Profile
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Profile Preview */}
-          <div className="bg-white shadow-lg rounded-xl p-6">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">Profile Preview</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-              <div>
-                <p className="mb-2">
-                  <strong>Name:</strong> {employee.fullName || "Not provided"}
-                </p>
-                <p className="mb-2">
-                  <strong>Email:</strong> {employee.email || "Not provided"}
-                </p>
-                <p className="mb-2">
-                  <strong>Phone:</strong> {employee.phone || "Not provided"}
-                </p>
-                <p className="mb-2">
-                  <strong>Location:</strong> {employee.location || userInfo.location || "Not provided"}
-                </p>
-                <p className="mb-2">
-                  <strong>Gender:</strong> {employee.gender || "Not provided"}
-                </p>
-                {userInfo.company_name && (
-                  <p className="mb-2">
-                    <strong>Company:</strong> {userInfo.company_name || "Not provided"}
-                  </p>
-                )}
-                {userInfo.position && (
-                  <p className="mb-2">
-                    <strong>Position:</strong> {userInfo.position || "Not provided"}
-                  </p>
-                )}
-                {userInfo.about && (
-                  <p className="mb-2">
-                    <strong>About:</strong> {userInfo.about || "Not provided"}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="mb-2">
-                  <strong>Skills:</strong>{" "}
-                  {employee.skills?.length > 0 ? employee.skills.join(", ") : "None added"}
-                </p>
-                <div className="mb-2">
-                  <strong>Education:</strong>
-                  {employee.education?.length > 0 ? (
-                    employee.education.map((edu, i) => (
-                      <p key={edu.id || i} className="text-gray-600">
-                        {edu.college}, {edu.university} ({edu.city}, {edu.state}) - {edu.duration}
-                      </p>
-                    ))
-                  ) : (
-                    <p className="text-gray-600">None added</p>
-                  )}
-                </div>
-                <div className="mb-2">
-                  <strong>Experience:</strong>
-                  {employee.experience?.length > 0 ? (
-                    employee.experience.map((exp, i) => (
-                      <p key={exp.id || i} className="text-gray-600">
-                        {exp.role} at {exp.company_name} ({exp.duration})
-                      </p>
-                    ))
-                  ) : (
-                    <p className="text-gray-600">None added</p>
-                  )}
-                </div>
-                <p>
-                  <strong>Certifications:</strong>{" "}
-                  {employee.certifications?.length > 0 ? employee.certifications.join(", ") : "None added"}
-                </p>
               </div>
             </div>
-          </div>
+          )}
         </main>
       </div>
     </div>

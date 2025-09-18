@@ -240,29 +240,7 @@ const CandidateDetails = ({ candidateId }) => {
               {candidateSuccess}
             </div>
           )}
-          {/* {(candidateError || profileError) && (
-            <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg mb-6 sm:mb-10 animate-slide-down flex justify-between items-center">
-              {candidateError === "Candidate not found" ? (
-                <p>Please fill out your candidate details to proceed.</p>
-              ) : (
-                candidateError || profileError
-              )}
-              <button
-                onClick={() => {
-                  dispatch(clearCandidateMessages());
-                  dispatch(clearProfileMessages());
-                  if (candidateError?.includes("ECONNRESET")) {
-                    setRetryCount(retryCount + 1);
-                  }
-                }}
-                className="text-red-800 hover:text-red-900 font-medium focus:outline-none focus:underline"
-                aria-label="Dismiss error"
-              >
-                Dismiss
-              </button>
-            </div>
-          )} */}
-
+        
           {/* Form */}
           <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
             {/* Progress Steps */}

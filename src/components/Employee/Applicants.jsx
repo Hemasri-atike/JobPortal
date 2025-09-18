@@ -1,13 +1,21 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link, useParams } from 'react-router-dom'; // Add useParams
+import { Link, useParams } from 'react-router-dom';
 import { ChevronRight, Search, Filter, Download } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Header from '../../pages/navbar/Header.jsx';
 import Sidebar from '../../pages/cvdetails/layout/Sidebar.jsx';
-import { setSearchQuery, setStatusFilter, setPage, fetchApplicants, updateApplicantStatus } from '../../store/jobsSlice.js';
+import {
+  setSearchQuery,
+  setStatusFilter,
+  setPage,
+  fetchApplicants,
+  updateApplicantStatus,
+  clearApplicantsState,
+} from '../../store/jobsSlice.js';
 
+// Debounce utility to delay search input
 const debounce = (func, delay) => {
   let timeoutId;
   return (...args) => {
@@ -21,13 +29,17 @@ const Applicants = () => {
   const dispatch = useDispatch();
   const employerId = useSelector((state) => state.user.userInfo?.id);
   const userRole = useSelector((state) => state.user.userInfo?.role);
-  const { applicants, total, page, jobsPerPage, statusFilter, searchQuery, jobsStatus: status, jobsError: error } = useSelector((state) => state.jobs); // Update state path
+  const { applicants, total, page, jobsPerPage, statusFilter, searchQuery, jobsStatus, jobsError } =
+    useSelector((state) => state.jobs);
   const [isLoading, setIsLoading] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [showInterviewModal, setShowInterviewModal] = useState(null);
   const [interviewDate, setInterviewDate] = useState('');
 
+  const jobApplicants = applicants[jobId] || []; // Safely access applicants for jobId
+
+  // Debounced search handler
   const debouncedSearch = useCallback(
     debounce((value) => {
       dispatch(setSearchQuery(value));
@@ -35,6 +47,7 @@ const Applicants = () => {
     [dispatch]
   );
 
+  // Fetch applicants data
   const fetchApplicantsData = useCallback(
     (reset = false) => {
       if (!employerId || userRole !== 'employer') {
@@ -47,11 +60,13 @@ const Applicants = () => {
       }
       setIsLoading(true);
       dispatch(fetchApplicants({ jobId, statusFilter, searchQuery, page: reset ? 1 : page, jobsPerPage }))
+        .unwrap()
         .finally(() => setIsLoading(false));
     },
     [dispatch, employerId, userRole, jobId, statusFilter, searchQuery, page, jobsPerPage]
   );
 
+  // Download resume handler
   const handleDownloadResume = async (applicantId, applicantName) => {
     try {
       const token = localStorage.getItem('token');
@@ -60,11 +75,13 @@ const Applicants = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error(`Failed to download resume: ${res.statusText}`);
+      const contentType = res.headers.get('Content-Type');
+      const extension = contentType.includes('pdf') ? 'pdf' : 'file';
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `${applicantName.replace(/\s+/g, '_')}_resume.pdf`);
+      link.setAttribute('download', `${applicantName.replace(/\s+/g, '_')}_resume.${extension}`);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -75,6 +92,7 @@ const Applicants = () => {
     }
   };
 
+  // Update applicant status handler
   const handleStatusUpdate = async (applicantId, newStatus) => {
     try {
       if (newStatus === 'Interview Scheduled') {
@@ -89,12 +107,17 @@ const Applicants = () => {
     }
   };
 
+  // Schedule interview handler
   const handleScheduleInterview = async (applicantId) => {
     if (!interviewDate) {
       toast.error('Please select an interview date and time.');
       return;
     }
     const selectedDate = new Date(interviewDate);
+    if (isNaN(selectedDate.getTime())) {
+      toast.error('Invalid date format.');
+      return;
+    }
     if (selectedDate < new Date()) {
       toast.error('Interview date cannot be in the past.');
       return;
@@ -112,10 +135,12 @@ const Applicants = () => {
     }
   };
 
+  // Fetch applicants on mount or filter/search change
   useEffect(() => {
     fetchApplicantsData(true);
   }, [fetchApplicantsData, statusFilter, searchQuery]);
 
+  // Fetch additional applicants on page change
   useEffect(() => {
     if (page > 1) fetchApplicantsData();
   }, [fetchApplicantsData, page]);
@@ -157,11 +182,11 @@ const Applicants = () => {
             </button>
           </div>
 
-          {error && (
+          {jobsError && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6 animate-fade-in">
-              {error}
+              {jobsError}
               <button
-                onClick={() => dispatch(clearApplicantsState())} // Use clearApplicantsState
+                onClick={() => dispatch(clearApplicantsState())}
                 className="ml-4 text-red-700 hover:text-red-900 font-medium focus:outline-none focus:underline"
                 aria-label="Dismiss error"
               >
@@ -184,14 +209,14 @@ const Applicants = () => {
                   value={searchQuery}
                   onChange={(e) => debouncedSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors shadow-sm text-sm"
-                  aria-label="Search applicants"
+                  aria-label="Search applicants by name or position"
                 />
               </div>
               <select
                 value={statusFilter}
                 onChange={(e) => dispatch(setStatusFilter(e.target.value))}
                 className="w-full sm:w-44 p-2.5 border border-gray-200 rounded-md focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-colors shadow-sm text-sm"
-                aria-label="Filter by application status"
+                aria-label="Filter applicants by application status"
               >
                 <option value="All">All Statuses</option>
                 <option value="Applied">Applied</option>
@@ -203,7 +228,7 @@ const Applicants = () => {
             </div>
           </div>
 
-          {status === 'loading' && (!applicants[jobId] || applicants[jobId].length === 0) ? (
+          {isLoading && jobApplicants.length === 0 ? (
             <div className="space-y-4">
               {[...Array(jobsPerPage)].map((_, i) => (
                 <div key={i} className="bg-white p-5 rounded-md shadow-sm border animate-pulse">
@@ -217,23 +242,26 @@ const Applicants = () => {
                 </div>
               ))}
             </div>
-          ) : (!applicants[jobId] || applicants[jobId].length === 0) ? (
+          ) : jobApplicants.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-md border border-gray-100 shadow-sm">
               <p className="text-gray-600 text-base mb-4">No applicants match your filters.</p>
-              <Link
-                to="/job/post"
+              <button
+                onClick={() => {
+                  dispatch(setSearchQuery(''));
+                  dispatch(setStatusFilter('All'));
+                }}
                 className="inline-flex items-center px-4 py-2 bg-teal-600 text-white rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors text-sm"
-                aria-label="Post a new job"
+                aria-label="Reset filters"
               >
-                Post a Job <ChevronRight size={16} className="ml-1" />
-              </Link>
+                Reset Filters
+              </button>
             </div>
           ) : (
             <div className="space-y-4">
               <p className="text-sm text-gray-600">
-                Showing {applicants[jobId].length} of {total} applicants
+                Showing {jobApplicants.length} of {total} applicants
               </p>
-              {applicants[jobId].map((applicant) => (
+              {jobApplicants.map((applicant) => (
                 <div
                   key={applicant.id}
                   className="bg-white rounded-md shadow-sm p-5 border border-gray-100 hover:border-teal-200 transition-all duration-300"
@@ -243,7 +271,9 @@ const Applicants = () => {
                       {applicant.name?.charAt(0).toUpperCase() || 'N/A'}
                     </div>
                     <div className="ml-4 flex-1">
-                      <h3 className="font-semibold text-gray-800 text-base sm:text-lg">{applicant.name || 'Unknown'}</h3>
+                      <h3 className="font-semibold text-gray-800 text-base sm:text-lg">
+                        {applicant.name || 'Unknown'}
+                      </h3>
                       <div className="text-sm text-gray-500 space-y-1 mt-1">
                         <div className="flex flex-wrap gap-2">
                           <span>{applicant.email || 'N/A'}</span>
@@ -300,7 +330,7 @@ const Applicants = () => {
                       value={applicant.status || 'Applied'}
                       onChange={(e) => handleStatusUpdate(applicant.id, e.target.value)}
                       className="p-1.5 border border-gray-200 rounded-md text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                      aria-label={`Update status for ${applicant.name || 'applicant'}`}
+                      aria-label={`Update application status for ${applicant.name || 'applicant'}`}
                     >
                       <option value="Applied">Applied</option>
                       <option value="Under Review">Under Review</option>
@@ -366,17 +396,17 @@ const Applicants = () => {
             </div>
           )}
 
-          {applicants[jobId]?.length > 0 && total > applicants[jobId].length && (
+          {jobApplicants.length > 0 && total > jobApplicants.length && (
             <div className="mt-6 text-center">
               <button
                 onClick={() => dispatch(setPage(page + 1))}
-                disabled={status === 'loading'}
+                disabled={isLoading || jobApplicants.length >= total}
                 className={`inline-flex items-center px-5 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors ${
-                  status === 'loading' ? 'opacity-50 cursor-not-allowed' : ''
+                  isLoading || jobApplicants.length >= total ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 aria-label="Load more applicants"
               >
-                {status === 'loading' ? (
+                {isLoading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
                     Loading...
