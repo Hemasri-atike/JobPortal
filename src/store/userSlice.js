@@ -1,10 +1,11 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
+import axios from 'axios';
 
 // Helper to safely read from localStorage
 const getStoredUserInfo = () => {
   try {
-    const stored = localStorage.getItem("userInfo");
-    return stored && stored !== "undefined" ? JSON.parse(stored) : null;
+    const stored = localStorage.getItem('userInfo');
+    return stored && stored !== 'undefined' ? JSON.parse(stored) : null;
   } catch {
     return null;
   }
@@ -12,10 +13,10 @@ const getStoredUserInfo = () => {
 
 const getStoredUserType = () => {
   try {
-    const storedType = localStorage.getItem("userType");
+    const storedType = localStorage.getItem('userType');
     if (storedType) return storedType;
-    const storedUser = localStorage.getItem("userInfo");
-    return storedUser && storedUser !== "undefined"
+    const storedUser = localStorage.getItem('userInfo');
+    return storedUser && storedUser !== 'undefined'
       ? JSON.parse(storedUser)?.role
       : null;
   } catch {
@@ -23,27 +24,52 @@ const getStoredUserType = () => {
   }
 };
 
+// Fetch User Info
+export const fetchUserInfo = createAsyncThunk(
+  'user/fetchUserInfo',
+  async (_, { rejectWithValue }) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No token found');
+      }
+      const response = await axios.get('http://localhost:5000/api/auth/me', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('[userSlice.js] fetchUserInfo Success:', response.data);
+      // Save user info and type to localStorage
+      localStorage.setItem('userInfo', JSON.stringify({ ...response.data.user, token }));
+      localStorage.setItem('userType', response.data.user.role);
+      return { ...response.data.user, token };
+    } catch (error) {
+      console.error('[userSlice.js] fetchUserInfo Error:', error.response?.data || error.message);
+      return rejectWithValue(error.response?.data?.error || error.message);
+    }
+  }
+);
+
 // Register User
 export const registerUser = createAsyncThunk(
-  "user/registerUser",
+  'user/registerUser',
   async (userData, { rejectWithValue }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/users/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const response = await fetch('http://localhost:5000/api/users/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Registration failed");
+      if (!response.ok) throw new Error(data.error || 'Registration failed');
 
       // Save token and user
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userInfo", JSON.stringify({ ...data.user, token: data.token }));
-      localStorage.setItem("userType", data.user.role);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify({ ...data.user, token: data.token }));
+      localStorage.setItem('userType', data.user.role);
 
       return { ...data.user, token: data.token };
     } catch (error) {
+      console.error('[userSlice.js] registerUser Error:', error.message);
       return rejectWithValue(error.message);
     }
   }
@@ -51,25 +77,26 @@ export const registerUser = createAsyncThunk(
 
 // Login User (mobile + password + loginType)
 export const loginUser = createAsyncThunk(
-  "user/loginUser",
+  'user/loginUser',
   async ({ mobile, password, loginType }, { rejectWithValue }) => {
     try {
-      const response = await fetch("http://localhost:5000/api/users/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mobile, password, loginType }), // Include loginType
+      const response = await fetch('http://localhost:5000/api/users/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile, password, loginType }),
       });
 
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Login failed");
+      if (!response.ok) throw new Error(data.error || 'Login failed');
 
       // Save token and user
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("userInfo", JSON.stringify({ ...data.user, token: data.token }));
-      localStorage.setItem("userType", data.user.role);
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('userInfo', JSON.stringify({ ...data.user, token: data.token }));
+      localStorage.setItem('userType', data.user.role);
 
       return { ...data.user, token: data.token };
     } catch (error) {
+      console.error('[userSlice.js] loginUser Error:', error.message);
       return rejectWithValue(error.message);
     }
   }
@@ -81,24 +108,43 @@ const initialState = {
   userType: getStoredUserType(),
   isLoading: false,
   error: null,
+  status: 'idle', // Added status for fetchUserInfo
 };
 
 // Slice
 const userSlice = createSlice({
-  name: "user",
+  name: 'user',
   initialState,
   reducers: {
     logoutUser: (state) => {
       state.userInfo = null;
       state.userType = null;
       state.error = null;
-      localStorage.removeItem("token");
-      localStorage.removeItem("userInfo");
-      localStorage.removeItem("userType");
+      state.status = 'idle';
+      localStorage.removeItem('token');
+      localStorage.removeItem('userInfo');
+      localStorage.removeItem('userType');
     },
   },
   extraReducers: (builder) => {
     builder
+      // fetchUserInfo
+      .addCase(fetchUserInfo.pending, (state) => {
+        state.status = 'loading';
+        state.error = null;
+      })
+      .addCase(fetchUserInfo.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.userInfo = action.payload;
+        state.userType = action.payload.role;
+        state.error = null;
+      })
+      .addCase(fetchUserInfo.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
+        state.userInfo = null;
+        state.userType = null;
+      })
       // Register
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
@@ -108,10 +154,13 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.userInfo = action.payload;
         state.userType = action.payload.role;
+        state.status = 'succeeded';
+        state.error = null;
       })
       .addCase(registerUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+        state.status = 'failed';
       })
       // Login
       .addCase(loginUser.pending, (state) => {
@@ -122,10 +171,13 @@ const userSlice = createSlice({
         state.isLoading = false;
         state.userInfo = action.payload;
         state.userType = action.payload.role;
+        state.status = 'succeeded';
+        state.error = null;
       })
       .addCase(loginUser.rejected, (state, action) => {
         state.isLoading = false;
         state.error = action.payload;
+        state.status = 'failed';
       });
   },
 });

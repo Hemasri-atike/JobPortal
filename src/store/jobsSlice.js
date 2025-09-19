@@ -145,24 +145,24 @@ export const addJob = createAsyncThunk(
   }
 );
 
-// Update job
-export const updateJob = createAsyncThunk(
-  'jobs/updateJob',
-  async ({ id, jobData }, { rejectWithValue, getState }) => {
-    try {
-      const { user: { userInfo } } = getState();
-      const token = userInfo?.token || localStorage.getItem('token');
-      if (!token || !userInfo) {
-        throw new Error('Authentication required');
-      }
-      const res = await axiosAuth(token).put(`/jobs/${id}`, { ...jobData, user_id: userInfo.id });
-      return { id, ...res.data, createdAt: res.data.created_at || res.data.createdAt || new Date().toISOString() };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update job';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
+// // Update job
+// export const updateJob = createAsyncThunk(
+//   'jobs/updateJob',
+//   async ({ id, jobData }, { rejectWithValue, getState }) => {
+//     try {
+//       const { user: { userInfo } } = getState();
+//       const token = userInfo?.token || localStorage.getItem('token');
+//       if (!token || !userInfo) {
+//         throw new Error('Authentication required');
+//       }
+//       const res = await axiosAuth(token).put(`/jobs/${id}`, { ...jobData, user_id: userInfo.id });
+//       return { id, ...res.data, createdAt: res.data.created_at || res.data.createdAt || new Date().toISOString() };
+//     } catch (err) {
+//       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to update job';
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
 
 // Delete job
 export const deleteJob = createAsyncThunk(
@@ -243,15 +243,76 @@ export const toggleJobStatus = createAsyncThunk(
     }
   }
 );
+export const createJob = createAsyncThunk('jobs/createJob', async (jobData, { rejectWithValue }) => {
+  try {
+    const response = await axios.post('/api/jobs', jobData, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(error.response?.data?.error || 'Failed to create job');
+  }
+});
+export const updateJob = createAsyncThunk('jobs/updateJob', async ({ id, ...jobData }, { rejectWithValue }) => {
+  try {
+    const response = await axios.put(`/api/jobs/${id}`, jobData, {
+      headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('updateJob error:', {
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message,
+    });
+    return rejectWithValue({
+      status: error.response?.status,
+      data: error.response?.data,
+      message: error.message || 'Failed to update job',
+    });
+  }
+});
+
+
+// export const fetchApplicants = createAsyncThunk(
+//   "jobs/fetchApplicants",
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       // 🔹 No token check (public access for jobseekers + employers)
+//       const response = await axios.get("http://localhost:5000/api/applicants");
+
+//       return response.data || [];
+//     } catch (error) {
+//       const errorMessage =
+//         error.response?.data?.error ||
+//         error.response?.data?.message ||
+//         error.message ||
+//         "Failed to fetch applicants";
+
+//       // If no applicants found, return empty array
+//       if (error.response?.status === 404) {
+//         return [];
+//       }
+
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
+
 
 
 export const fetchApplicants = createAsyncThunk(
   "jobs/fetchApplicants",
-  async (_, { rejectWithValue }) => {
+  // Pass jobId as arg so we can fetch per job
+  async (jobId, { rejectWithValue }) => {
     try {
-      // 🔹 No token check (public access for jobseekers + employers)
-      const response = await axios.get("http://localhost:5000/api/applicants");
-
+      const token = localStorage.getItem("token"); // or from state
+      const response = await axios.get(
+        `http://localhost:5000/api/jobs/${jobId}/applicants`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       return response.data || [];
     } catch (error) {
       const errorMessage =
@@ -260,15 +321,14 @@ export const fetchApplicants = createAsyncThunk(
         error.message ||
         "Failed to fetch applicants";
 
-      // If no applicants found, return empty array
       if (error.response?.status === 404) {
         return [];
       }
-
       return rejectWithValue(errorMessage);
     }
   }
 );
+
 
 
 // Fetch analytics
@@ -828,3 +888,5 @@ export const {
 } = jobsSlice.actions;
 
 export default jobsSlice.reducer;
+
+

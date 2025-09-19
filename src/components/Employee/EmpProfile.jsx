@@ -30,15 +30,6 @@ import {
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 
-// Utility function for debouncing
-const debounce = (func, wait) => {
-  let timeout;
-  return (...args) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => func(...args), wait);
-  };
-};
-
 const EmpProfile = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
@@ -64,7 +55,6 @@ const EmpProfile = () => {
     location: "",
     description: "",
   });
-  const [formErrors, setFormErrors] = useState({});
   const [showEduForm, setShowEduForm] = useState(false);
   const [showExpForm, setShowExpForm] = useState(false);
   const [showCertForm, setShowCertForm] = useState(false);
@@ -84,6 +74,7 @@ const EmpProfile = () => {
   const states = Object.keys(statesWithCities);
 
   useEffect(() => {
+    console.log("useEffect: userInfo:", userInfo, "token:", localStorage.getItem("token"), "loading:", loading);
     if (!userInfo || !localStorage.getItem("token")) {
       console.error("No user info or token found, redirecting to login");
       navigate("/login");
@@ -115,130 +106,50 @@ const EmpProfile = () => {
       });
     }
 
-    // Log and handle Redux state errors
     if (error) {
       console.error("Redux state error:", { error, employee, userInfo });
     }
   }, [dispatch, navigate, userInfo, userType, error]);
 
-  const handleStateChange = useCallback(
-    (e) => {
-      const selectedState = e.target.value;
-      setEduInput((prev) => ({ ...prev, state: selectedState, city: "" }));
-      setFilteredCities(statesWithCities[selectedState] || []);
-    },
-    []
-  );
-
-  const validateForm = () => {
-    const newErrors = {};
-    console.log("Validating form with employee data:", employee);
-    if (!employee.fullName) newErrors.fullName = "Full name is required";
-    if (!employee.email || !/\S+@\S+\.\S+/.test(employee.email))
-      newErrors.email = "Valid email is required";
-    if (!employee.phone || !/^\+?\d{10,15}$/.test(employee.phone))
-      newErrors.phone = "Valid phone number is required (10-15 digits)";
-    if (!employee.location) newErrors.location = "Location is required";
-    if (employee.gender && !["Male", "Female", "Other"].includes(employee.gender))
-      newErrors.gender = "Please select a valid gender (Male, Female, or Other)";
-
-    if (Object.keys(newErrors).length > 0) {
-      console.error("Form validation errors:", newErrors);
-    } else {
-      console.log("Form validation passed");
-    }
-
-    return newErrors;
-  };
-
-  const validateEducation = () => {
-    const { state, city, university, college, duration } = eduInput;
-    const isValid = state && city && university && college && duration;
-    if (!isValid) {
-      console.error("Education validation failed:", { state, city, university, college, duration });
-    }
-    return isValid;
-  };
-
-  const validateExperience = () => {
-    const { company_name, role, duration } = expForm;
-    const isValid = company_name && role && duration;
-    if (!isValid) {
-      console.error("Experience validation failed:", { company_name, role, duration });
-    }
-    return isValid;
-  };
-
-  const validateCertification = () => {
-    const isValid = certInput.trim().length > 0 && certOrg.trim().length > 0;
-    if (!isValid) {
-      console.error("Certification validation failed:", { certInput, certOrg });
-    }
-    return isValid;
-  };
-
-  const isStepValid = (stepIndex) => {
-    if (stepIndex === 0) {
-      const errors = validateForm();
-      return Object.keys(errors).length === 0;
-    }
-    if (stepIndex === 1 && employee.skills.length === 0) {
-      console.error("Skills step invalid: No skills added");
-      return false;
-    }
-    if (stepIndex === 2 && employee.education.length === 0) {
-      console.error("Education step invalid: No education entries added");
-      return false;
-    }
-    return true;
-  };
+  const handleStateChange = useCallback((e) => {
+    const selectedState = e.target.value;
+    setEduInput((prev) => ({ ...prev, state: selectedState, city: "" }));
+    setFilteredCities(statesWithCities[selectedState] || []);
+  }, []);
 
   const handleNextStep = () => {
-    if (isStepValid(currentStep)) {
-      setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
-      setFormErrors({});
-    } else {
-      if (currentStep === 0) {
-        const errors = validateForm();
-        setFormErrors(errors);
-        console.error("Personal Details step validation failed:", errors);
-        alert("Please fill all required fields in Personal Details");
-      } else if (currentStep === 1) {
-        alert("Please add at least one skill");
-      } else if (currentStep === 2) {
-        alert("Please add at least one education entry");
-      }
-    }
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length - 1));
   };
 
   const handlePrevStep = () => {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
-    setFormErrors({});
   };
 
   const handleChange = useCallback(
-    debounce((e) => {
+    (e) => {
+      console.log("handleChange:", e.target.name, e.target.value);
       dispatch(updateField({ field: e.target.name, value: e.target.value }));
-      setFormErrors((prev) => ({ ...prev, [e.target.name]: "" }));
-    }, 300),
+    },
     [dispatch]
   );
 
   const handleEduChange = useCallback(
-    debounce((e) => {
+    (e) => {
+      console.log("handleEduChange:", e.target.name, e.target.value);
       if (e.target.name === "state") {
         handleStateChange(e);
       } else {
         setEduInput((prev) => ({ ...prev, [e.target.name]: e.target.value }));
       }
-    }, 300),
+    },
     [handleStateChange]
   );
 
   const handleExpChange = useCallback(
-    debounce((e) => {
+    (e) => {
+      console.log("handleExpChange:", e.target.name, e.target.value);
       setExpForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-    }, 300),
+    },
     []
   );
 
@@ -262,10 +173,6 @@ const EmpProfile = () => {
   };
 
   const handleAddEducation = async () => {
-    if (!validateEducation()) {
-      alert("Please fill all required education fields");
-      return;
-    }
     try {
       if (employeeId) {
         await dispatch(addEmployeeEducation({ employeeId, education: eduInput })).unwrap();
@@ -290,10 +197,6 @@ const EmpProfile = () => {
   };
 
   const handleAddExperience = async () => {
-    if (!validateExperience()) {
-      alert("Please fill required experience fields (company, role, duration)");
-      return;
-    }
     try {
       if (employeeId) {
         await dispatch(addEmployeeExperience({ employeeId, experience: expForm })).unwrap();
@@ -315,10 +218,6 @@ const EmpProfile = () => {
   };
 
   const handleAddCertification = async () => {
-    if (!validateCertification()) {
-      alert("Please enter a certification name and organization");
-      return;
-    }
     try {
       const certData = {
         cert_name: certInput,
@@ -434,19 +333,11 @@ const EmpProfile = () => {
   };
 
   const handleSaveProfile = async () => {
-    const errors = validateForm();
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      console.error("Profile save validation errors:", errors);
-      alert("Please fix the errors in the form");
-      setCurrentStep(0);
-      return;
-    }
     try {
       const genderMap = {
-        Male: "M",
-        Female: "F",
-        Other: "O",
+        Male: "Male",
+        Female: "Female",
+        Other: "Others",
       };
       const profileData = {
         fullName: employee.fullName,
@@ -557,66 +448,42 @@ const EmpProfile = () => {
                       name: "fullName",
                       type: "text",
                       placeholder: "Enter your full name",
-                      required: true,
-                      disabled: true,
                     },
                     {
                       label: "Email",
                       name: "email",
                       type: "email",
                       placeholder: "Enter your email",
-                      required: true,
-                      disabled: true,
                     },
                     {
                       label: "Phone",
                       name: "phone",
                       type: "tel",
                       placeholder: "Enter your phone number",
-                      required: true,
-                      disabled: false,
                     },
                     {
                       label: "Date of Birth",
                       name: "dob",
                       type: "date",
-                      required: false,
-                      disabled: false,
                     },
                     {
                       label: "Location",
                       name: "location",
                       type: "text",
                       placeholder: "Enter your city or region",
-                      required: true,
-                      disabled: false,
                     },
                   ].map((field) => (
                     <div key={field.name} className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        {field.label} {field.required && <span className="text-red-500">*</span>}
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">{field.label}</label>
                       <input
                         type={field.type}
                         name={field.name}
                         value={employee[field.name] || ""}
                         onChange={handleChange}
                         placeholder={field.placeholder}
-                        className={`w-full p-3 rounded-lg border focus:ring-2 focus:ring-indigo-500 transition-all duration-200 ${
-                          field.disabled
-                            ? "bg-gray-100 cursor-not-allowed text-gray-500"
-                            : formErrors[field.name]
-                            ? "border-red-500"
-                            : "border-gray-200 hover:border-gray-300"
-                        } focus:border-indigo-500 bg-white`}
-                        aria-invalid={formErrors[field.name] ? "true" : "false"}
-                        aria-describedby={`${field.name}-error`}
-                        required={field.required}
-                        disabled={loading || field.disabled}
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 focus:border-indigo-500 bg-white transition-all duration-200"
+                        disabled={loading}
                       />
-                      {formErrors[field.name] && (
-                        <p className="mt-1 text-xs text-red-600">{formErrors[field.name]}</p>
-                      )}
                     </div>
                   ))}
                   <div className="relative">
@@ -625,7 +492,7 @@ const EmpProfile = () => {
                       name="gender"
                       value={employee.gender || ""}
                       onChange={handleChange}
-                      className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white hover:border-gray-300"
+                      className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                       disabled={loading}
                     >
                       <option value="">Select gender</option>
@@ -633,9 +500,6 @@ const EmpProfile = () => {
                       <option value="Female">Female</option>
                       <option value="Other">Other</option>
                     </select>
-                    {formErrors.gender && (
-                      <p className="mt-1 text-xs text-red-600">{formErrors.gender}</p>
-                    )}
                   </div>
                   {userInfo.company_name && (
                     <div className="relative">
@@ -682,7 +546,7 @@ const EmpProfile = () => {
                     type="text"
                     value={skillInput}
                     onChange={(e) => setSkillInput(e.target.value)}
-                    className="flex-1 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                    className="flex-1 p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                     placeholder="Enter a skill (e.g., JavaScript, Python)"
                     onKeyPress={(e) => e.key === "Enter" && handleAddSkill()}
                     disabled={loading}
@@ -742,38 +606,32 @@ const EmpProfile = () => {
                 {showEduForm && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
                     {[
-                      { name: "college", placeholder: "College Name", required: true },
-                      { name: "university", placeholder: "University", required: true },
-                      { name: "duration", placeholder: "Duration (e.g., 2018-2022)", required: true },
-                      { name: "degree", placeholder: "Degree (e.g., B.Sc.)", required: false },
-                      { name: "field_of_study", placeholder: "Field of Study", required: false },
+                      { name: "college", placeholder: "College Name" },
+                      { name: "university", placeholder: "University" },
+                      { name: "duration", placeholder: "Duration (e.g., 2018-2022)" },
+                      { name: "degree", placeholder: "Degree (e.g., B.Sc.)" },
+                      { name: "field_of_study", placeholder: "Field of Study" },
                     ].map((field) => (
                       <div key={field.name} className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {field.placeholder} {field.required && <span className="text-red-500">*</span>}
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{field.placeholder}</label>
                         <input
                           type="text"
                           name={field.name}
                           value={eduInput[field.name]}
                           onChange={handleEduChange}
-                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                           placeholder={field.placeholder}
-                          required={field.required}
                           disabled={loading}
                         />
                       </div>
                     ))}
                     <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        State <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">State</label>
                       <select
                         name="state"
                         value={eduInput.state}
                         onChange={handleEduChange}
-                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
-                        required
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                         disabled={loading}
                       >
                         <option value="">Select State</option>
@@ -785,15 +643,12 @@ const EmpProfile = () => {
                       </select>
                     </div>
                     <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        City <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">City</label>
                       <select
                         name="city"
                         value={eduInput.city}
                         onChange={handleEduChange}
-                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
-                        required
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                         disabled={loading || !eduInput.state}
                       >
                         <option value="">Select City</option>
@@ -868,24 +723,21 @@ const EmpProfile = () => {
                 {showExpForm && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
                     {[
-                      { name: "company_name", placeholder: "Company Name", required: true },
-                      { name: "role", placeholder: "Role", required: true },
-                      { name: "duration", placeholder: "Duration (e.g., Jan 2020 - Dec 2022)", required: true },
-                      { name: "location", placeholder: "Location", required: false },
-                      { name: "description", placeholder: "Description", required: false },
+                      { name: "company_name", placeholder: "Company Name" },
+                      { name: "role", placeholder: "Role" },
+                      { name: "duration", placeholder: "Duration (e.g., Jan 2020 - Dec 2022)" },
+                      { name: "location", placeholder: "Location" },
+                      { name: "description", placeholder: "Description" },
                     ].map((field) => (
                       <div key={field.name} className="relative">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          {field.placeholder} {field.required && <span className="text-red-500">*</span>}
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">{field.placeholder}</label>
                         <input
                           type="text"
                           name={field.name}
                           value={expForm[field.name]}
                           onChange={handleExpChange}
-                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                          className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                           placeholder={field.placeholder}
-                          required={field.required}
                           disabled={loading}
                         />
                       </div>
@@ -953,30 +805,24 @@ const EmpProfile = () => {
                 {showCertForm && (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-4 p-4 bg-gray-50 rounded-xl">
                     <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Certification Name <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Certification Name</label>
                       <input
                         type="text"
                         value={certInput}
                         onChange={(e) => setCertInput(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                         placeholder="Certification Name (e.g., AWS Certified Developer)"
-                        required
                         disabled={loading}
                       />
                     </div>
                     <div className="relative">
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Issuing Organization <span className="text-red-500">*</span>
-                      </label>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Issuing Organization</label>
                       <input
                         type="text"
                         value={certOrg}
                         onChange={(e) => setCertOrg(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                         placeholder="Issuing Organization (e.g., AWS)"
-                        required
                         disabled={loading}
                       />
                     </div>
@@ -986,7 +832,7 @@ const EmpProfile = () => {
                         type="date"
                         value={certIssueDate}
                         onChange={(e) => setCertIssueDate(e.target.value)}
-                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 transition-all duration-200 bg-white"
+                        className="w-full p-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 hover:border-gray-300 bg-white transition-all duration-200"
                         placeholder="Issue Date"
                         disabled={loading}
                       />

@@ -227,7 +227,7 @@ const Applied = () => {
                           <span className="text-gray-300">|</span>
                           <span>Applied {new Date(job.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <div>💰 {job.salary || 'Not disclosed'}</div>
+                        <div> {job.salary || 'Not disclosed'}</div>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {job.tags && job.tags.length > 0 ? (
