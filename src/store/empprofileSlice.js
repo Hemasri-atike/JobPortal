@@ -76,26 +76,159 @@ export const fetchEmployee = createAsyncThunk(
     }
   }
 );
+// export const saveEmployee = createAsyncThunk(
+//   'employee/saveEmployee',
+//   async (data, { getState, rejectWithValue }) => {
+//     let id;
+//     try {
+//       const { user: { userInfo, userType } } = getState();
+//       if (!userInfo) throw new Error('No user information found');
+//       if (userType !== 'job_seeker' && userType !== 'employer') throw new Error('Unauthorized access');
 
-// Save employee profile
-export const saveEmployee = createAsyncThunk(
-  'employee/saveEmployee',
-  async (data, { getState, rejectWithValue }) => {
-    try {
-      const { user: { userInfo } } = getState();
-      if (!userInfo) throw new Error('No user information found');
-      const res = await axiosInstance.post(`/employees`, data);
-      return {
-        employeeId: res.data.employeeId,
-        ...data,
-      };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.message || 'Failed to save employee profile';
-      console.error('Save employee error:', err.response?.data || err.message);
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
+//       id = data.employeeId || userInfo.id;
+//       console.log('Saving employee with ID:', id, 'Data:', data, 'UserInfo:', userInfo, 'UserType:', userType);
+
+//       if (!id || isNaN(Number(id))) throw new Error(`Invalid employee ID: ${id}`);
+
+//       let res;
+//       try {
+//         console.log('Updating employee with PUT request to:', `/employees/${id}`);
+//         res = await axiosInstance.put(`/employees/${id}`, data);
+//         console.log('Update response:', res.data);
+//         return { employeeId: id, ...res.data };
+//       } catch (err) {
+//         if (err.response?.status === 404) {
+//           console.log('Employee not found, creating new employee with POST request');
+//           try {
+//             res = await axiosInstance.post('/employees', { ...data, employeeId: id, userId: userInfo.id });
+//             console.log('Create response:', res.data);
+//             return { employeeId: id, ...res.data };
+//           } catch (postErr) {
+//             if (postErr.response?.status === 400 && postErr.response?.data?.error.includes('Email already exists')) {
+//               console.error('Email conflict detected:', data.email);
+//               // Attempt to update the existing employee with the same email
+//               try {
+//                 res = await axiosInstance.put(`/employees/email/${data.email}`, data);
+//                 console.log('Update response for existing employee:', res.data);
+//                 return { employeeId: res.data.employeeId, ...res.data };
+//               } catch (updateErr) {
+//                 throw new Error('Email already exists. Please use a different email or contact support.');
+//               }
+//             }
+//             throw postErr;
+//           }
+//         }
+//         throw err;
+//       }
+//     } catch (err) {
+//       const errorMessage =
+//         err.response?.status === 401 ? 'Your session has expired. Please log in again.' :
+//         err.response?.status === 403 ? 'You do not have permission to update this profile.' :
+//         err.response?.status === 404 ? `Employee not found for ID: ${id || 'unknown'}` :
+//         err.response?.data?.error || err.message || 'Failed to save employee profile';
+//       console.error('Save employee error:', {
+//         message: err.message,
+//         response: err.response?.data,
+//         status: err.response?.status,
+//         id: id || 'undefined',
+//         data,
+//       });
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
+
+// export const saveEmployee = createAsyncThunk(
+//   'employee/saveEmployee',
+//   async (data, { getState, rejectWithValue }) => {
+//     let id; // Declare id outside try block
+//     try {
+//       const { user: { userInfo, userType } } = getState();
+//       if (!userInfo) throw new Error('No user information found');
+//       if (userType !== 'job_seeker' && userType !== 'employer') throw new Error('Unauthorized access');
+
+//       id = data.employeeId || userInfo.id; // Assign id here
+//       console.log('Saving employee with ID:', id, 'Data:', data, 'UserInfo:', userInfo, 'UserType:', userType);
+
+//       if (!id || isNaN(Number(id))) throw new Error(`Invalid employee ID: ${id}`);
+
+//       let res;
+//       try {
+//         console.log('Updating employee with PUT request to:', `/employees/${id}`);
+//         res = await axiosInstance.put(`/employees/${id}`, data);
+//         console.log('Update response:', res.data);
+//         return { employeeId: id, ...res.data };
+//       } catch (err) {
+//         if (err.response?.status === 404) {
+//           console.log('Employee not found, creating new employee with POST request');
+//           res = await axiosInstance.post('/employees', { ...data, employeeId: id });
+//           console.log('Create response:', res.data);
+//           return { employeeId: id, ...res.data };
+//         }
+//         throw err; // Rethrow other errors
+//       }
+//     } catch (err) {
+//       const errorMessage =
+//         err.response?.status === 401 ? 'Your session has expired. Please log in again.' :
+//         err.response?.status === 403 ? 'You do not have permission to update this profile.' :
+//         err.response?.status === 404 ? `Employee not found for ID: ${id || 'unknown'}` :
+//         err.response?.data?.error || err.message || 'Failed to save employee profile';
+//       console.error('Save employee error:', {
+//         message: err.message,
+//         response: err.response?.data,
+//         status: err.response?.status,
+//         id: id || 'undefined',
+//         data,
+//       });
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
+
+
+// export const saveEmployee = createAsyncThunk(
+//   'employee/saveEmployee',
+//   async (data, { getState, rejectWithValue }) => {
+//     try {
+//       const { user: { userInfo, userType } } = getState();
+//       if (!userInfo) throw new Error('No user information found');
+//       if (userType !== 'job_seeker' && userType !== 'employer') throw new Error('Unauthorized access');
+
+//       const id = data.employeeId || userInfo.id;
+//       console.log('Saving employee with ID:', id, 'Data:', data, 'UserInfo:', userInfo, 'UserType:', userType);
+
+//       if (!id || isNaN(Number(id))) throw new Error(`Invalid employee ID: ${id}`);
+
+//       let res;
+//       if (id) {
+//         console.log('Updating employee with PUT request to:', `/employees/${id}`);
+//         res = await axiosInstance.put(`/employees/${id}`, data);
+//         console.log('Update response:', res.data);
+//         return { employeeId: id, ...res.data };
+//       } else {
+//         console.log('Creating new employee with POST request');
+//         res = await axiosInstance.post('/employees', data);
+//         console.log('Create response:', res.data);
+//         return { employeeId: res.data.employeeId, ...data };
+//       }
+//     } catch (err) {
+//       const errorMessage =
+//         err.response?.status === 401 ? 'Your session has expired. Please log in again.' :
+//         err.response?.status === 403 ? 'You do not have permission to update this profile.' :
+//         err.response?.status === 404 ? `Employee not found for ID: ${id}` :
+//         err.response?.data?.error || err.message || 'Failed to save employee profile';
+//       console.error('Save employee error:', {
+//         message: err.message,
+//         response: err.response?.data,
+//         status: err.response?.status,
+//         id,
+//         data,
+//       });
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
+
 
 // Upload resume
 export const uploadResume = createAsyncThunk(
@@ -364,6 +497,45 @@ const empprofileSlice = createSlice({
       });
   },
 });
+
+
+
+// Thunk to Save Employee
+export const saveEmployee = createAsyncThunk(
+  "employee/saveEmployee",
+  async (employeeData, { rejectWithValue }) => {
+    try {
+      const { id, ...data } = employeeData;
+      let response;
+
+      // Check if employee ID exists
+      if (id) {
+        console.log(`Updating employee with PUT request to: /employees/${id}`);
+        response = await axios.put(`/employees/${id}`, data);
+      } else {
+        console.log("Creating new employee with POST request");
+        // Pre-check email uniqueness
+        const emailCheck = await axios.get(`/employees/check-email?email=${data.email}`);
+        if (emailCheck.data.exists) {
+          throw new Error("Email already exists. Please use a different email or contact support.");
+        }
+        response = await axios.post("/employees", data);
+      }
+
+      return response.data;
+    } catch (error) {
+      console.log("Save employee error:", error.response?.data || error.message);
+      return rejectWithValue({
+        message: error.response?.data?.message || error.message,
+        status: error.response?.status,
+      });
+    }
+  }
+);
+
+
+
+
 
 export const { updateField, setResume, resetProfile, setAllFields } = empprofileSlice.actions;
 export default empprofileSlice.reducer;
