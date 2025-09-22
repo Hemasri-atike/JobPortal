@@ -26,7 +26,11 @@ export const employeeSidebarItems = [
   { icon: FaHome, label: "Dashboard", path: "/empdashboard" },
   { icon: FaBriefcase, label: "Job Listings", path: "/joblistings" },
   { icon: FaPlusCircle, label: "Post a Job", path: "/empposting" },
-  { icon: FaUsers, label: "Applicants", path: "/applicants" },
+  { icon: FaUsers, label: "Applicants", path: "/jobs/:jobId/applicants" },
+
+
+
+
   { icon: FaBuilding, label: "Company Profile", path: "/cmpprofile" },
   { icon: FaUser, label: "My Profile", path: "/empprofile" },
 ];
