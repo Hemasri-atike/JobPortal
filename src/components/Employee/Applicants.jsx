@@ -7,38 +7,41 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 
 const Applicants = () => {
-  const { jobId } = useParams();
+  const params = useParams();
+  const jobId = params?.jobId; // optional chaining to prevent crash
   const dispatch = useDispatch();
 
-  const applicants = useSelector((state) => state.jobs.applicants[jobId] || []);
-  const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
-  const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
+  const applicants = useSelector(
+    (state) => (state.jobs.applicants && state.jobs.applicants[jobId]) || []
+  );
+  const applicantsStatus = useSelector(
+    (state) => state.jobs.applicantsStatus || "idle"
+  );
+  const applicantsError = useSelector(
+    (state) => state.jobs.applicantsError || null
+  );
 
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table"); // 'table' or 'card'
 
-  // 🔍 Debug whenever Redux state changes
-  console.log("🗂️ [Applicants.jsx] Current Redux Data:", {
-    jobId,
-    applicants,
-    applicantsStatus,
-    applicantsError,
-  });
+  // If jobId is missing, render a warning
+  if (!jobId) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-600 text-lg">
+          Job ID is missing in the URL. Please go back and select a job.
+        </p>
+      </div>
+    );
+  }
 
   useEffect(() => {
-    console.log("🔍 [useEffect] jobId from URL:", jobId);
-    console.log("🔍 [useEffect] applicantsStatus:", applicantsStatus);
-
     if (jobId && applicantsStatus === "idle") {
-      console.log("🚀 Dispatching fetchApplicantsByJob with jobId:", jobId);
-
       dispatch(fetchApplicantsByJob({ jobId }))
         .unwrap()
-        .then((res) => {
-          console.log("✅ [Thunk Success] Applicants fetched:", res);
-        })
+        .then((res) => console.log("✅ Applicants fetched:", res))
         .catch((err) => {
-          console.error("❌ [Thunk Error] Failed to fetch applicants:", err);
+          console.error("❌ Failed to fetch applicants:", err);
           toast.error("Failed to load applicants");
         });
     }
@@ -49,21 +52,14 @@ const Applicants = () => {
       applicant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       applicant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       applicant.skills?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (!match) {
-      console.log("⚠️ [Filter] Applicant filtered out:", applicant);
-    }
-
     return match;
   });
 
   if (applicantsStatus === "loading") {
-    console.log("⏳ [Render] Loading applicants...");
     return <p className="text-gray-600 text-lg">Loading applicants...</p>;
   }
 
   if (applicantsStatus === "failed") {
-    console.error("❌ [Render] Applicants fetch failed:", applicantsError);
     return <p className="text-red-600 text-lg">Error: {applicantsError}</p>;
   }
 
@@ -81,20 +77,14 @@ const Applicants = () => {
               type="text"
               placeholder="Search by name, email, or skills..."
               value={searchTerm}
-              onChange={(e) => {
-                console.log("✏️ [Search] New searchTerm:", e.target.value);
-                setSearchTerm(e.target.value);
-              }}
+              onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm pl-10"
             />
             <FaSearch className="absolute left-3 top-3.5 text-gray-400" />
           </div>
           <div className="flex gap-2">
             <button
-              onClick={() => {
-                console.log("🔄 [View] Switching to table view");
-                setViewMode("table");
-              }}
+              onClick={() => setViewMode("table")}
               className={`p-2 rounded-lg ${
                 viewMode === "table"
                   ? "bg-indigo-600 text-white"
@@ -104,10 +94,7 @@ const Applicants = () => {
               <FaList />
             </button>
             <button
-              onClick={() => {
-                console.log("🔄 [View] Switching to card view");
-                setViewMode("card");
-              }}
+              onClick={() => setViewMode("card")}
               className={`p-2 rounded-lg ${
                 viewMode === "card"
                   ? "bg-indigo-600 text-white"
@@ -135,10 +122,7 @@ const Applicants = () => {
             </thead>
             <tbody>
               {filteredApplicants.map((applicant, index) => (
-                <tr
-                  key={applicant.id}
-                  className="border-t border-gray-200 hover:bg-gray-50"
-                >
+                <tr key={applicant.id} className="border-t border-gray-200 hover:bg-gray-50">
                   <td className="px-4 py-2">{index + 1}</td>
                   <td className="px-4 py-2">{applicant.name || "N/A"}</td>
                   <td className="px-4 py-2">{applicant.email || "N/A"}</td>
