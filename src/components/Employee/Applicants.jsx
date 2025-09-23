@@ -7,34 +7,19 @@ import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 
 const Applicants = () => {
-  const params = useParams();
-  const jobId = params?.jobId; // optional chaining to prevent crash
+  const { jobId } = useParams();
   const dispatch = useDispatch();
 
   const applicants = useSelector(
     (state) => (state.jobs.applicants && state.jobs.applicants[jobId]) || []
   );
-  const applicantsStatus = useSelector(
-    (state) => state.jobs.applicantsStatus || "idle"
-  );
-  const applicantsError = useSelector(
-    (state) => state.jobs.applicantsError || null
-  );
+  const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
+  const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("table"); 
+  const [viewMode, setViewMode] = useState("table");
 
-  // If jobId is missing, render a warning
-  if (!jobId) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 text-lg">
-          Job ID is missing in the URL. Please go back and select a job.
-        </p>
-      </div>
-    );
-  }
-
+  // Fetch applicants when jobId changes
   useEffect(() => {
     if (jobId && applicantsStatus === "idle") {
       dispatch(fetchApplicantsByJob({ jobId }))
@@ -47,28 +32,28 @@ const Applicants = () => {
     }
   }, [dispatch, jobId, applicantsStatus]);
 
+  // Filter applicants based on search term
   const filteredApplicants = applicants.filter((applicant) => {
     const match =
-      applicant.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      applicant.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       applicant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      applicant.skills?.toLowerCase().includes(searchTerm.toLowerCase());
+      applicant.skills?.join(",").toLowerCase().includes(searchTerm.toLowerCase());
     return match;
   });
 
-  if (applicantsStatus === "loading") {
-    return <p className="text-gray-600 text-lg">Loading applicants...</p>;
-  }
-
-  if (applicantsStatus === "failed") {
-    return <p className="text-red-600 text-lg">Error: {applicantsError}</p>;
-  }
+  if (applicantsStatus === "loading") return <p className="text-gray-600 text-lg">Loading applicants...</p>;
+  if (applicantsStatus === "failed") return <p className="text-red-600 text-lg">Error: {applicantsError}</p>;
+  if (!jobId)
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-red-600 text-lg">Job ID is missing in the URL. Please go back and select a job.</p>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">
-          Applicants for Job #{jobId}
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">Applicants for Job #{jobId}</h1>
 
         {/* Search + View Toggle */}
         <div className="flex justify-between items-center mb-6">
@@ -85,21 +70,13 @@ const Applicants = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 rounded-lg ${
-                viewMode === "table"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              className={`p-2 rounded-lg ${viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
             >
               <FaList />
             </button>
             <button
               onClick={() => setViewMode("card")}
-              className={`p-2 rounded-lg ${
-                viewMode === "card"
-                  ? "bg-indigo-600 text-white"
-                  : "bg-gray-200 text-gray-700"
-              }`}
+              className={`p-2 rounded-lg ${viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
             >
               <FaTh />
             </button>
@@ -124,12 +101,12 @@ const Applicants = () => {
               {filteredApplicants.map((applicant, index) => (
                 <tr key={applicant.id} className="border-t border-gray-200 hover:bg-gray-50">
                   <td className="px-4 py-2">{index + 1}</td>
-                  <td className="px-4 py-2">{applicant.name || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.fullName || "N/A"}</td>
                   <td className="px-4 py-2">{applicant.email || "N/A"}</td>
                   <td className="px-4 py-2">
-                    {applicant.resume_url ? (
+                    {applicant.resume ? (
                       <a
-                        href={`http://localhost:5000/${applicant.resume_url}`}
+                        href={`http://localhost:5000/${applicant.resume}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-indigo-600 hover:underline"
@@ -141,9 +118,7 @@ const Applicants = () => {
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    {applicant.applied_at
-                      ? new Date(applicant.applied_at).toLocaleDateString()
-                      : "N/A"}
+                    {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
                   </td>
                 </tr>
               ))}
@@ -152,21 +127,18 @@ const Applicants = () => {
         ) : (
           <div className="grid gap-6">
             {filteredApplicants.map((applicant) => (
-              <div
-                key={applicant.id}
-                className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow"
-              >
-                <p><strong>Name:</strong> {applicant.name || "N/A"}</p>
+              <div key={applicant.id} className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
                 <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
                 <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
                 <p><strong>Location:</strong> {applicant.location || "N/A"}</p>
                 <p><strong>Experience:</strong> {applicant.experience || "N/A"}</p>
-                <p><strong>Skills:</strong> {applicant.skills || "N/A"}</p>
+                <p><strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}</p>
                 <p>
                   <strong>Resume:</strong>{" "}
-                  {applicant.resume_url ? (
+                  {applicant.resume ? (
                     <a
-                      href={`http://localhost:5000/${applicant.resume_url}`}
+                      href={`http://localhost:5000/${applicant.resume}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-indigo-600 hover:underline"
@@ -179,9 +151,7 @@ const Applicants = () => {
                 </p>
                 <p>
                   <strong>Applied On:</strong>{" "}
-                  {applicant.applied_at
-                    ? new Date(applicant.applied_at).toLocaleDateString()
-                    : "N/A"}
+                  {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
                 </p>
               </div>
             ))}

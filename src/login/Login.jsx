@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "../store/userSlice";
-import { toast, ToastContainer } from "react-toastify"; // Import ToastContainer
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 const Login = () => {

@@ -73,7 +73,7 @@ const Header = () => {
   const goToProfile = () => {
     if (!userInfo) return;
     const role = userInfo.role?.toLowerCase();
-    const route = role === "job_seeker" ? "/cadprofile" : role === "employer" ? "/empprofile" : "/profile";
+    const route = role === "job_seeker" ? "/cadprofile" : role === "employer" ? "/cmpprofile" : "/profile";
     navigate(route);
     setIsMenuOpen(false);
   };

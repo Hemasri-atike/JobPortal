@@ -32,5 +32,5 @@ export const employeeSidebarItems = [
 
 
   { icon: FaBuilding, label: "Company Profile", path: "/cmpprofile" },
-  { icon: FaUser, label: "My Profile", path: "/empprofile" },
+  // { icon: FaUser, label: "My Profile", path: "/empprofile" },
 ];

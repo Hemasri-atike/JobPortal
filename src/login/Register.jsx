@@ -72,7 +72,7 @@ const Register = () => {
     const resultAction = await dispatch(registerUser(payload));
 
     if (registerUser.fulfilled.match(resultAction)) {
-      navigate(userType === "candidate" ? "/cadprofile" : "/empprofile");
+      navigate(userType === "candidate" ? "/cadprofile" : "cmpprofile");
     } else {
       setLocalError(resultAction.payload || "Registration failed");
     }

@@ -229,44 +229,45 @@ export const fetchApplicantsByJob = createAsyncThunk(
   "jobs/fetchApplicantsByJob",
   async ({ jobId }, { rejectWithValue }) => {
     try {
-      const token = localStorage.getItem("token"); // ✅ get token
+      const token = localStorage.getItem("token");
       if (!token) throw new Error("Authorization token required");
 
       const url = `http://localhost:5000/api/jobs/${jobId}/applicants`;
       const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }, // ✅ include token
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       const applicants = (response.data || []).map((app) => ({
         id: app.id,
-        jobId: app.job_id,
+        jobId: app.job_id,             // ✅ from DB
         candidateId: app.candidate_id,
-        fullName: app.name,
+        fullName: app.fullName,
         email: app.email,
         phone: app.phone,
         location: app.location,
         experience: app.experience,
-        jobTitle: app.position,
+        jobTitle: app.jobTitle,
         company: app.company,
         qualification: app.qualification,
         specialization: app.specialization,
         university: app.university,
         skills: app.skills?.split(",") || [],
-        resume: app.resume_url,
-        coverLetter: app.cover_letter_url,
+        resume: app.resume,
+        coverLetter: app.coverLetter,
         linkedIn: app.linkedIn,
         portfolio: app.portfolio,
         status: app.status,
-        createdAt: app.applied_at,
+        createdAt: app.createdAt,
       }));
 
-      return { jobId: String(jobId), applicants };
+      return { jobId: String(jobId), applicants }; // ✅ fixed
     } catch (err) {
       console.error("❌ [Thunk Error] Failed to fetch applicants:", err);
       return rejectWithValue(err.response?.data?.error || err.message);
     }
   }
 );
+
 
 
 
