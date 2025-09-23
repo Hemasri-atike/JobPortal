@@ -1,7 +1,6 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
-// Helper to safely read from localStorage
 const getStoredUserInfo = () => {
   try {
     const stored = localStorage.getItem('userInfo');
@@ -24,7 +23,6 @@ const getStoredUserType = () => {
   }
 };
 
-// Fetch User Info
 export const fetchUserInfo = createAsyncThunk(
   'user/fetchUserInfo',
   async (_, { rejectWithValue }) => {
@@ -33,14 +31,21 @@ export const fetchUserInfo = createAsyncThunk(
       if (!token) {
         throw new Error('No token found');
       }
-      const response = await axios.get('http://localhost:5000/api/auth/me', {
+      const response = await axios.get('http://localhost:5000/api/users/profile', {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('[userSlice.js] fetchUserInfo Success:', response.data);
-      // Save user info and type to localStorage
-      localStorage.setItem('userInfo', JSON.stringify({ ...response.data.user, token }));
+      localStorage.setItem('userInfo', JSON.stringify({
+        ...response.data.user,
+        token,
+        employeeProfile: response.data.employeeProfile,
+      }));
       localStorage.setItem('userType', response.data.user.role);
-      return { ...response.data.user, token };
+      return {
+        ...response.data.user,
+        token,
+        employeeProfile: response.data.employeeProfile,
+      };
     } catch (error) {
       console.error('[userSlice.js] fetchUserInfo Error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.error || error.message);
@@ -48,7 +53,6 @@ export const fetchUserInfo = createAsyncThunk(
   }
 );
 
-// Register User
 export const registerUser = createAsyncThunk(
   'user/registerUser',
   async (userData, { rejectWithValue }) => {
@@ -62,12 +66,15 @@ export const registerUser = createAsyncThunk(
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Registration failed');
 
-      // Save token and user
       localStorage.setItem('token', data.token);
-      localStorage.setItem('userInfo', JSON.stringify({ ...data.user, token: data.token }));
+      localStorage.setItem('userInfo', JSON.stringify({
+        ...data.user,
+        token: data.token,
+        employeeId: data.employeeId,
+      }));
       localStorage.setItem('userType', data.user.role);
 
-      return { ...data.user, token: data.token };
+      return { ...data.user, token: data.token, employeeId: data.employeeId };
     } catch (error) {
       console.error('[userSlice.js] registerUser Error:', error.message);
       return rejectWithValue(error.message);
@@ -75,7 +82,6 @@ export const registerUser = createAsyncThunk(
   }
 );
 
-// Login User (mobile + password + loginType)
 export const loginUser = createAsyncThunk(
   'user/loginUser',
   async ({ mobile, password, loginType }, { rejectWithValue }) => {
@@ -89,9 +95,11 @@ export const loginUser = createAsyncThunk(
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Login failed');
 
-      // Save token and user
       localStorage.setItem('token', data.token);
-      localStorage.setItem('userInfo', JSON.stringify({ ...data.user, token: data.token }));
+      localStorage.setItem('userInfo', JSON.stringify({
+        ...data.user,
+        token: data.token,
+      }));
       localStorage.setItem('userType', data.user.role);
 
       return { ...data.user, token: data.token };
@@ -102,16 +110,14 @@ export const loginUser = createAsyncThunk(
   }
 );
 
-// Initial state
 const initialState = {
   userInfo: getStoredUserInfo(),
   userType: getStoredUserType(),
   isLoading: false,
   error: null,
-  status: 'idle', // Added status for fetchUserInfo
+  status: 'idle',
 };
 
-// Slice
 const userSlice = createSlice({
   name: 'user',
   initialState,
@@ -128,7 +134,6 @@ const userSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // fetchUserInfo
       .addCase(fetchUserInfo.pending, (state) => {
         state.status = 'loading';
         state.error = null;
@@ -145,7 +150,6 @@ const userSlice = createSlice({
         state.userInfo = null;
         state.userType = null;
       })
-      // Register
       .addCase(registerUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;
@@ -162,7 +166,6 @@ const userSlice = createSlice({
         state.error = action.payload;
         state.status = 'failed';
       })
-      // Login
       .addCase(loginUser.pending, (state) => {
         state.isLoading = true;
         state.error = null;

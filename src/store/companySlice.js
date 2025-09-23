@@ -3,7 +3,6 @@ import axios from "axios";
 
 const API_URL = "http://localhost:5000/api/companies";
 
-// Fetch profile
 export const fetchCompanyProfile = createAsyncThunk(
   "company/fetchProfile",
   async (_, { rejectWithValue }) => {
@@ -12,16 +11,22 @@ export const fetchCompanyProfile = createAsyncThunk(
       if (!token) {
         return rejectWithValue("No authentication token found");
       }
-      const res = await axios.get(API_URL, {
+      console.log("Fetching profile with token:", token);
+      const res = await axios.get(`${API_URL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log("Profile response:", res.data);
       return res.data;
     } catch (err) {
+      console.error("Profile fetch error:", err.response?.data);
       if (err.response?.status === 404) {
         return rejectWithValue(null); // No profile exists
       }
       if (err.response?.status === 401) {
-        return rejectWithValue("Unauthorized access. Please log in again.");
+        return rejectWithValue("Invalid or expired token");
+      }
+      if (err.response?.status === 403) {
+        return rejectWithValue("Only employers can access company profiles");
       }
       return rejectWithValue(
         err.response?.data?.error || "Failed to fetch company profile"
@@ -30,43 +35,60 @@ export const fetchCompanyProfile = createAsyncThunk(
   }
 );
 
-// Save profile (create/update)
+
 export const saveCompanyProfile = createAsyncThunk(
   "company/saveProfile",
-  async (formData, { rejectWithValue }) => {
+  async ({ formData, documentTypes }, { rejectWithValue }) => {
     try {
       const token = localStorage.getItem("token");
       if (!token) {
+        console.error("No token found in localStorage");
         return rejectWithValue("No authentication token found");
       }
-      const res = await axios.post(API_URL, formData, {
+      const submissionData = new FormData();
+      Object.keys(formData).forEach((key) => {
+        if (key === "socialLinks") {
+          submissionData.append(key, JSON.stringify(formData[key]));
+        } else if (formData[key] && key !== "documents" && key !== "logo") {
+          submissionData.append(key, formData[key]);
+        }
+      });
+      if (formData.logo) {
+        submissionData.append("logo", formData.logo);
+      }
+      formData.documents?.forEach((doc, index) => {
+        if (doc) {
+          submissionData.append("documents", doc);
+        }
+      });
+      // Ensure documentTypes is always a valid array
+      const validDocumentTypes = Array.isArray(documentTypes) ? documentTypes : [];
+      console.log("Raw documentTypes:", documentTypes);
+      console.log("Processed documentTypes:", validDocumentTypes);
+      submissionData.append("documentTypes", JSON.stringify(validDocumentTypes));
+
+      console.log("Submitting FormData:", Object.fromEntries(submissionData));
+      console.log("Authorization header:", `Bearer ${token}`);
+
+      const res = await axios.post(API_URL, submissionData, {
         headers: {
           "Content-Type": "multipart/form-data",
           Authorization: `Bearer ${token}`,
         },
       });
-      // Fetch updated profile to ensure state consistency
-      const profileRes = await axios.get(API_URL, {
+      const profileRes = await axios.get(`${API_URL}/profile`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       return { ...res.data, profile: profileRes.data };
     } catch (err) {
-      if (err.response?.status === 400) {
-        return rejectWithValue(
-          err.response?.data?.error || "Invalid data provided"
-        );
-      }
-      if (err.response?.status === 401) {
-        return rejectWithValue("Unauthorized access. Please log in again.");
-      }
+      console.error("Save profile error:", err.response?.data);
       return rejectWithValue(
-        err.response?.data?.error ||
-          err.response?.data?.details ||
-          "Failed to save company profile"
+        err.response?.data?.error || "Failed to save company profile"
       );
     }
   }
 );
+
 
 const companySlice = createSlice({
   name: "company",
@@ -92,7 +114,6 @@ const companySlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      // Fetch
       .addCase(fetchCompanyProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
@@ -105,7 +126,6 @@ const companySlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      // Save
       .addCase(saveCompanyProfile.pending, (state) => {
         state.loading = true;
         state.error = null;
