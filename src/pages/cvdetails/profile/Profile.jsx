@@ -52,30 +52,6 @@ const Profile = () => {
     );
   }
 
-  // // Error state
-  // if (error) {
-  //   return (
-  //     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
-  //       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-  //       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-12">
-  //         <div className="bg-red-50 border-l-4 border-red-600 text-red-800 p-4 rounded-lg animate-slide-down">
-  //           {error}
-  //           <button
-  //             onClick={() => {
-  //               dispatch(clearProfileMessages());
-  //               dispatch(clearCandidateMessages());
-  //             }}
-  //             className="ml-4 text-red-800 hover:text-red-900 font-medium focus:outline-none focus:underline"
-  //             aria-label="Dismiss error"
-  //           >
-  //             Dismiss
-  //           </button>
-  //         </div>
-  //       </div>
-  //     </div>
-  //   );
-  // }
-
   // No profile or candidate data
   if (!profile && !candidate) {
     return (
