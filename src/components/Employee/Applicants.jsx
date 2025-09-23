@@ -22,7 +22,7 @@ const Applicants = () => {
   );
 
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState("table"); // 'table' or 'card'
+  const [viewMode, setViewMode] = useState("table"); 
 
   // If jobId is missing, render a warning
   if (!jobId) {
@@ -39,9 +39,9 @@ const Applicants = () => {
     if (jobId && applicantsStatus === "idle") {
       dispatch(fetchApplicantsByJob({ jobId }))
         .unwrap()
-        .then((res) => console.log("✅ Applicants fetched:", res))
+        .then((res) => console.log(" Applicants fetched:", res))
         .catch((err) => {
-          console.error("❌ Failed to fetch applicants:", err);
+          console.error(" Failed to fetch applicants:", err);
           toast.error("Failed to load applicants");
         });
     }
