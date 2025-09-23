@@ -35,6 +35,7 @@ import Application from './components/job/Application';
 
 // Protected Route Component
 import ProtectedRoute from "./login/ProtectedRoute";
+import ForgotPassword from './login/Forotpassword';
 
 const App = () => {
   return (
@@ -51,6 +52,8 @@ const App = () => {
         <Route path="/category" element={<Category />} />
         <Route path="/categories/:id" element={<Subcategories />} />
         <Route path="/unauthorized" element={<Unauthorized />} />
+         <Route path="/forgot-password" element={<ForgotPassword />} />
+        
 
         {/* Protected Routes */}
         {/* General Authenticated Routes */}

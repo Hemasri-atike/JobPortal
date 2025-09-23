@@ -131,6 +131,22 @@ const Login = () => {
               Sign up
             </Link>
           </div>
+
+
+
+ 
+
+{/* Forgot Password */}
+<div className="flex justify-end mt-2">
+  <Link
+    to="/forgot-password"
+    className="text-sm text-blue-600 hover:text-purple-500 font-medium transition-colors"
+    aria-label="Forgot your password?"
+  >
+    Forgot Password?
+  </Link>
+</div>
+
         </form>
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
