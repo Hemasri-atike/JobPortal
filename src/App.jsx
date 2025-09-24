@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 
-// Pages
 import Home from './pages/home/Home';
 import Header from './pages/navbar/Header';
 import Category from './pages/jobcategory/Category';
@@ -19,13 +18,11 @@ import CvUpload from './pages/cvdetails/cv/CvUpload';
 import PreviewResume from './pages/cvdetails/resumes/Previewresume';
 import Unauthorized from './login/Unauthorized';
 
-// Employee Components
 import EmpDashboard from './components/Employee/EmpDashboard';
 import EmpPosting from './components/Employee/EmpPosting';
 import CmpProfile from './components/Employee/CmpProfile';
 import Applicants from './components/Employee/Applicants';
 
-// Job / Candidate Components
 import JobSearch from './components/job/JobSearch';
 import CadidateDetails from './components/candidate/CadidateDetails';
 import Messages from './components/candidate/Messages';
@@ -33,7 +30,6 @@ import Company from './components/companies/Company';
 import Joblisting from './components/common/Joblisting';
 import Application from './components/job/Application';
 
-// Protected Route Component
 import ProtectedRoute from "./login/ProtectedRoute";
 import ForgotPassword from './login/ForgotPassword';
 
@@ -42,7 +38,7 @@ const App = () => {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Home />} />
+        <Route path="/home" element={<Home />} />
         <Route path="/nav" element={<Header />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />

@@ -62,10 +62,18 @@ const Header = () => {
   }, [isLoginPopupOpen]);
 
   if (status === "loading") {
-    return <p className="text-center py-8 text-gray-600 text-lg">Loading header...</p>;
+    return (
+      <p className="text-center py-8 text-gray-600 text-lg">
+        Loading header...
+      </p>
+    );
   }
   if (status === "failed") {
-    return <p className="text-center py-8 text-red-600 text-lg">{error || "Failed to load header"}</p>;
+    return (
+      <p className="text-center py-8 text-red-600 text-lg">
+        {error || "Failed to load header"}
+      </p>
+    );
   }
 
   const { logo } = data || {};
@@ -73,7 +81,12 @@ const Header = () => {
   const goToProfile = () => {
     if (!userInfo) return;
     const role = userInfo.role?.toLowerCase();
-    const route = role === "job_seeker" ? "/cadprofile" : role === "employer" ? "/cmpprofile" : "/profile";
+    const route =
+      role === "job_seeker"
+        ? "/cadprofile"
+        : role === "employer"
+        ? "/cmpprofile"
+        : "/profile";
     navigate(route);
     setIsMenuOpen(false);
   };
@@ -104,7 +117,9 @@ const Header = () => {
             <div className="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold">
               <span>{logo?.text?.charAt(0) || "H"}</span>
             </div>
-            <span className="text-2xl font-bold text-gray-900">{logo?.text || "Hire"}</span>
+            <span className="text-2xl font-bold text-gray-900">
+              {logo?.text || "Hire"}
+            </span>
           </Link>
 
           {/* Desktop Menu */}
@@ -139,7 +154,8 @@ const Header = () => {
                   className="px-5 py-2.5 rounded-lg text-gray-900 hover:text-purple-500 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
                   onClick={() => {
                     dispatch(logoutUser());
-                    navigate("/");
+                    setIsMenuOpen(false);
+                    setTimeout(() => navigate("/home"), 50); // redirect safely after logout
                   }}
                   aria-label="Log out"
                 >
@@ -165,7 +181,11 @@ const Header = () => {
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             >
-              <Menu className={`w-6 h-6 text-gray-900 transition-transform duration-300 ${isMenuOpen ? "rotate-90" : ""}`} />
+              <Menu
+                className={`w-6 h-6 text-gray-900 transition-transform duration-300 ${
+                  isMenuOpen ? "rotate-90" : ""
+                }`}
+              />
             </button>
           </div>
         </nav>
@@ -199,8 +219,8 @@ const Header = () => {
                     className="text-left px-6 py-3 rounded-lg text-gray-900 hover:text-purple-500 text-base font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
                     onClick={() => {
                       dispatch(logoutUser());
-                      navigate("/");
                       setIsMenuOpen(false);
+                      setTimeout(() => navigate("/home"), 50); // redirect safely after logout
                     }}
                     aria-label="Log out"
                   >
@@ -213,7 +233,6 @@ const Header = () => {
         )}
       </div>
 
-      {/* Login Popup */}
       {isLoginPopupOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
           <div
@@ -232,7 +251,6 @@ const Header = () => {
         </div>
       )}
 
-      {/* Tailwind Animation Classes */}
       <style jsx>{`
         .animate-fade-in {
           animation: fadeIn 0.5s ease-in-out;
@@ -241,12 +259,24 @@ const Header = () => {
           animation: slideDown 0.3s ease-in-out;
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
       `}</style>
     </header>

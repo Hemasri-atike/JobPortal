@@ -14,7 +14,6 @@ const Dashboard = () => {
   const { profile, profileCompletion, notifications, jobs, isLoading, error } =
     useSelector((s) => s.dashboard);
 
-  // Kick to login if not authenticated or not a job seeker
   useEffect(() => {
     if (!userInfo || userInfo.role !== "job_seeker") {
       navigate(`/login?username=${userInfo?.username || "user"}`, {
@@ -26,13 +25,11 @@ const Dashboard = () => {
     }
   }, [userInfo, navigate]);
 
-  // Fetch candidate dashboard
   useEffect(() => {
     if (!userInfo || userInfo.role !== "job_seeker") return;
     dispatch(fetchCandidateDashboard());
   }, [dispatch, userInfo]);
 
-  // Loading state
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white relative overflow-hidden">
@@ -44,7 +41,6 @@ const Dashboard = () => {
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="min-h-screen bg-white relative overflow-hidden">
@@ -76,15 +72,11 @@ const Dashboard = () => {
         ></div>
       </div>
 
-      {/* Header */}
       <Header />
 
-      {/* Main Content with Sidebar and Dashboard Content */}
       <div className="relative z-10 flex flex-col lg:flex-row">
-        {/* Sidebar */}
         <Sidebar className="w-full lg:w-64" />
 
-        {/* Dashboard Content */}
         <main className="flex-1 p-4 sm:p-6">
           <h4
             className="text-3xl font-bold text-gray-900 mb-4"
@@ -101,7 +93,6 @@ const Dashboard = () => {
             Ready to jump back in?
           </p>
 
-          {/* Profile Completion Meter */}
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm mb-6 animate-fade-in">
             <h5 className="text-lg font-semibold text-gray-800 mb-2">
               Profile Completion
@@ -126,7 +117,6 @@ const Dashboard = () => {
             </p>
           </div>
 
-          {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Link
               to="/applied"
@@ -170,7 +160,6 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          {/* Profile Views Chart Placeholder */}
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm mb-6 animate-fade-in">
             <div className="flex items-center justify-between mb-4">
               <h5 className="text-lg font-semibold text-gray-800">
@@ -197,7 +186,6 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Notifications */}
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm mb-6 animate-fade-in">
             <h5 className="text-lg font-semibold text-gray-800 mb-4">
               Notifications
@@ -229,7 +217,6 @@ const Dashboard = () => {
             </Link>
           </div>
 
-          {/* Jobs Applied Recently */}
           <div className="bg-white/90 backdrop-blur-sm p-6 rounded-lg shadow-sm animate-fade-in">
             <h5 className="text-lg font-semibold text-gray-800 mb-4">
               Jobs Applied Recently
