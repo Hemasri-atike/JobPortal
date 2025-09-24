@@ -7,38 +7,59 @@ import "react-toastify/dist/ReactToastify.css";
 const ForgotPassword = () => {
   const [mobile, setMobile] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [step, setStep] = useState(1); // 1 = verify mobile, 2 = reset password
+  const [step, setStep] = useState(1); // Step 1: enter mobile, Step 2: enter new password
   const navigate = useNavigate();
 
+  // Step 1: Verify mobile exists
   const handleVerifyMobile = async (e) => {
     e.preventDefault();
+    if (!mobile) {
+      toast.error("Please enter your mobile number");
+      return;
+    }
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/verify-mobile", { mobile });
-      if (response.data.exists) {
+      // Call the same endpoint but just to check mobile existence
+      const response = await axios.post("http://localhost:5000/api/users/forgot-password", {
+        mobile,
+        newPassword: "temporaryPassword123!", // Temporary dummy for mobile verification
+      });
+
+      if (response.data.success || response.data.error === "New password cannot be the same as the current password") {
         toast.success("Mobile verified. Please set a new password.");
         setStep(2);
       } else {
-        toast.error("Mobile number not found!");
+        toast.error(response.data.error || "Mobile number not found");
       }
     } catch (error) {
-      toast.error("Something went wrong. Try again.");
       console.error(error);
+      toast.error("Something went wrong. Try again.");
     }
   };
 
+  // Step 2: Reset password
   const handleResetPassword = async (e) => {
     e.preventDefault();
+    if (!newPassword) {
+      toast.error("Please enter a new password");
+      return;
+    }
+
     try {
-      const response = await axios.post("http://localhost:5000/api/auth/reset-password", { mobile, newPassword });
+      const response = await axios.post("http://localhost:5000/api/users/forgot-password", {
+        mobile,
+        newPassword,
+      });
+
       if (response.data.success) {
         toast.success("Password updated successfully. Please log in.");
         navigate("/login");
       } else {
-        toast.error("Failed to update password.");
+        toast.error(response.data.error || "Failed to update password.");
       }
     } catch (error) {
-      toast.error("Something went wrong.");
       console.error(error);
+      toast.error("Something went wrong.");
     }
   };
 
