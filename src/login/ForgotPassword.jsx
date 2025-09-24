@@ -7,10 +7,10 @@ import "react-toastify/dist/ReactToastify.css";
 const ForgotPassword = () => {
   const [mobile, setMobile] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [step, setStep] = useState(1); // Step 1: enter mobile, Step 2: enter new password
+  const [confirmPassword, setConfirmPassword] = useState(""); // added confirm password
+  const [step, setStep] = useState(1); 
   const navigate = useNavigate();
 
-  // Step 1: Verify mobile exists
   const handleVerifyMobile = async (e) => {
     e.preventDefault();
     if (!mobile) {
@@ -19,10 +19,9 @@ const ForgotPassword = () => {
     }
 
     try {
-      // Call the same endpoint but just to check mobile existence
       const response = await axios.post("http://localhost:5000/api/users/forgot-password", {
         mobile,
-        newPassword: "temporaryPassword123!", // Temporary dummy for mobile verification
+        newPassword: "temporaryPassword123!", 
       });
 
       if (response.data.success || response.data.error === "New password cannot be the same as the current password") {
@@ -40,8 +39,14 @@ const ForgotPassword = () => {
   // Step 2: Reset password
   const handleResetPassword = async (e) => {
     e.preventDefault();
-    if (!newPassword) {
-      toast.error("Please enter a new password");
+
+    if (!newPassword || !confirmPassword) {
+      toast.error("Please enter the new password twice");
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      toast.error("Passwords do not match");
       return;
     }
 
@@ -96,6 +101,14 @@ const ForgotPassword = () => {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Enter new password"
+              className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-600"
+              required
+            />
+            <input
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              placeholder="Confirm new password"
               className="w-full border border-gray-300 rounded-lg px-4 py-3 focus:ring-2 focus:ring-green-600"
               required
             />
