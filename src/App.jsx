@@ -35,7 +35,7 @@ import Application from './components/job/Application';
 
 // Protected Route Component
 import ProtectedRoute from "./login/ProtectedRoute";
-import ForgotPassword from './login/Forotpassword';
+import ForgotPassword from './login/ForgotPassword';
 
 const App = () => {
   return (

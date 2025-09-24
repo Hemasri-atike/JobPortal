@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { createJob, updateJob, fetchCategories } from '../../store/jobsSlice.js';
+import { createJob, updateJob } from '../../store/jobsSlice.js';
+import { fetchCategories } from '../../store/categoriesSlice.js';
+
 
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -12,7 +14,11 @@ const EmpPosting = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const job = state?.job;
-  const { categories, categoriesStatus, jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
+  
+
+  const { categories, status: categoriesStatus, error: categoriesError } = useSelector((state) => state.categories || {});
+const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
+
   const { userInfo, userType } = useSelector((state) => state.user || {});
   const [formData, setFormData] = useState({
     title: '',
@@ -25,7 +31,7 @@ const EmpPosting = () => {
     experience: '',
     deadline: '',
     tags: [],
-    status: 'Draft',
+    status: 'Active',
     contactPerson: '',
     role: '',
     startDate: '',
@@ -55,7 +61,7 @@ const EmpPosting = () => {
         experience: job.experience || '',
         deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
         tags: job.tags || [],
-        status: job.status || 'Draft',
+        status: job.status || 'Active',
         contactPerson: job.contactPerson || '',
         role: job.role || '',
         startDate: job.startDate ? new Date(job.startDate).toISOString().split('T')[0] : '',
@@ -99,7 +105,7 @@ const EmpPosting = () => {
         await dispatch(createJob({ ...formData, userId: userInfo.id })).unwrap();
         toast.success('Job created successfully.', { position: 'top-right', autoClose: 3000 });
       }
-      navigate('/joblisting');
+      navigate('/joblistings');
     } catch (err) {
       console.error('Submit error:', err);
       toast.error(err?.message || `Failed to ${id ? 'update' : 'create'} job.`, { position: 'top-right', autoClose: 3000 });
@@ -172,7 +178,11 @@ const EmpPosting = () => {
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
-                    <option key={category} value={category}>{category}</option>
+                    // <option key={category} value={category}>{category}</option>
+                    <option key={category.name} value={category.name}>
+  {category.name}
+</option>
+
                   ))}
                 </select>
               </div>
