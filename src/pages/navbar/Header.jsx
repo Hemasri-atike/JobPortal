@@ -155,7 +155,7 @@ const Header = () => {
                   onClick={() => {
                     dispatch(logoutUser());
                     setIsMenuOpen(false);
-                    setTimeout(() => navigate("/home"), 50); // redirect safely after logout
+                    setTimeout(() => navigate("/"), 50); // redirect safely after logout
                   }}
                   aria-label="Log out"
                 >
@@ -220,7 +220,7 @@ const Header = () => {
                     onClick={() => {
                       dispatch(logoutUser());
                       setIsMenuOpen(false);
-                      setTimeout(() => navigate("/home"), 50); // redirect safely after logout
+                      setTimeout(() => navigate("/"), 50); // redirect safely after logout
                     }}
                     aria-label="Log out"
                   >

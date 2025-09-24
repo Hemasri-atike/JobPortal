@@ -7,10 +7,11 @@ import "react-toastify/dist/ReactToastify.css";
 const ForgotPassword = () => {
   const [mobile, setMobile] = useState("");
   const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState(""); // added confirm password
-  const [step, setStep] = useState(1); 
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [step, setStep] = useState(1);
   const navigate = useNavigate();
 
+  // Step 1: Verify mobile exists
   const handleVerifyMobile = async (e) => {
     e.preventDefault();
     if (!mobile) {
@@ -19,20 +20,40 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/users/forgot-password", {
-        mobile,
-        newPassword: "temporaryPassword123!", 
-      });
+      // Call the backend to check if mobile exists
+      const response = await axios.post(
+        "http://localhost:5000/api/users/forgot-password",
+        {
+          mobile,
+        }
+      );
 
-      if (response.data.success || response.data.error === "New password cannot be the same as the current password") {
+      // Backend will respond with 400 if newPassword missing, so we handle it
+      if (
+        response.data.error ===
+          "New password cannot be the same as the current password" ||
+        response.data.success
+      ) {
+        // This means mobile exists
         toast.success("Mobile verified. Please set a new password.");
         setStep(2);
       } else {
         toast.error(response.data.error || "Mobile number not found");
       }
     } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong. Try again.");
+      // If 400 because newPassword missing, treat it as mobile exists
+      if (
+        error.response?.status === 400 &&
+        error.response?.data?.error.includes("new password")
+      ) {
+        toast.success("Mobile verified. Please set a new password.");
+        setStep(2);
+      } else if (error.response?.status === 404) {
+        toast.error("Mobile number not found");
+      } else {
+        console.error(error);
+        toast.error("Something went wrong. Try again.");
+      }
     }
   };
 
@@ -51,20 +72,28 @@ const ForgotPassword = () => {
     }
 
     try {
-      const response = await axios.post("http://localhost:5000/api/users/forgot-password", {
-        mobile,
-        newPassword,
-      });
+      const response = await axios.post(
+        "http://localhost:5000/api/users/forgot-password",
+        {
+          mobile,
+          newPassword,
+        }
+      );
 
       if (response.data.success) {
         toast.success("Password updated successfully. Please log in.");
-        navigate("/login");
+
+        if (response.data.role === "employer") {
+          navigate("/login?type=employer");
+        } else {
+          navigate("/login");
+        }
       } else {
         toast.error(response.data.error || "Failed to update password.");
       }
     } catch (error) {
       console.error(error);
-      toast.error("Something went wrong.");
+      toast.error(error.response?.data?.error || "Something went wrong.");
     }
   };
 
