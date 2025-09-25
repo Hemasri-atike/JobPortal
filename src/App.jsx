@@ -69,7 +69,9 @@ const App = () => {
           <Route path="/empposting" element={<EmpPosting />} />
           <Route path="/empposting/:id" element={<EmpPosting />} />
           <Route path="/cmpprofile" element={<CmpProfile />} />
-          <Route path="/applicants" element={<Applicants />} />
+          {/* <Route path="/applicants" element={<Applicants />} /> */}
+
+          <Route path="/jobs/:jobId/applicants" element={<Applicants />} />
         
         </Route>
 

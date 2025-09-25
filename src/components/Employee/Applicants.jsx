@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchApplicantsByJob } from "../../store/jobsSlice";
+import { fetchAllApplicants, fetchApplicantsByJob } from "../../store/jobsSlice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
@@ -9,9 +9,11 @@ import { FaSearch, FaList, FaTh } from "react-icons/fa";
 const Applicants = () => {
   const { jobId } = useParams();
   const dispatch = useDispatch();
+  const navigate = useNavigate();
 
-  const applicants = useSelector(
-    (state) => (state.jobs.applicants && state.jobs.applicants[jobId]) || []
+  const { userInfo, userType } = useSelector((state) => state.user || {});
+  const applicants = useSelector((state) =>
+    jobId ? state.jobs.applicants?.[jobId] || [] : state.jobs.applicants?.all || []
   );
   const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
   const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
@@ -19,48 +21,89 @@ const Applicants = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table");
 
-  // Fetch applicants when jobId changes
   useEffect(() => {
-    if (jobId && applicantsStatus === "idle") {
-      dispatch(fetchApplicantsByJob({ jobId }))
+    if (!userInfo?.token || userType !== "employer") {
+      toast.error("Please log in as an employer to view applicants", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (applicantsStatus === "idle") {
+      const fetchAction = jobId
+        ? fetchApplicantsByJob({ jobId })
+        : fetchAllApplicants({ userId: userInfo.id });
+
+      dispatch(fetchAction)
         .unwrap()
-        .then((res) => console.log(" Applicants fetched:", res))
+        .then((res) => {
+          console.log(`${jobId ? "Job Applicants" : "All Applicants"} fetched:`, res);
+        })
         .catch((err) => {
-          console.error(" Failed to fetch applicants:", err);
-          toast.error("Failed to load applicants");
+          console.error(`Failed to fetch ${jobId ? "job" : "all"} applicants:`, err);
+          const errorMessage = err.includes("404")
+            ? `No ${jobId ? "applicants found for job #" + jobId : "applicants found for your jobs"}`
+            : `Failed to load applicants: ${err}`;
+          toast.error(errorMessage, {
+            position: "top-right",
+            autoClose: 3000,
+          });
         });
     }
-  }, [dispatch, jobId, applicantsStatus]);
+  }, [dispatch, jobId, applicantsStatus, userInfo, userType, navigate]);
 
-  // Filter applicants based on search term
-  const filteredApplicants = applicants.filter((applicant) => {
-    const match =
-      applicant.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      applicant.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      applicant.skills?.join(",").toLowerCase().includes(searchTerm.toLowerCase());
-    return match;
-  });
+  const filteredApplicants = applicants.filter((applicant) =>
+    [
+      applicant.fullName,
+      applicant.email,
+      applicant.skills?.join(","),
+      applicant.jobTitle,
+      applicant.company,
+      applicant.qualification,
+      applicant.specialization,
+      applicant.university,
+    ].some((field) => field?.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
 
-  if (applicantsStatus === "loading") return <p className="text-gray-600 text-lg">Loading applicants...</p>;
-  if (applicantsStatus === "failed") return <p className="text-red-600 text-lg">Error: {applicantsError}</p>;
-  if (!jobId)
+  if (!userInfo?.token || userType !== "employer") {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <p className="text-red-600 text-lg">Job ID is missing in the URL. Please go back and select a job.</p>
+        <p className="text-red-600 text-lg">
+          Access denied: Only employers can view applicants.
+        </p>
       </div>
     );
+  }
+
+  if (applicantsStatus === "loading") {
+    return <p className="text-gray-600 text-lg">Loading applicants...</p>;
+  }
+
+  if (applicantsStatus === "failed") {
+    return (
+      <p className="text-red-600 text-lg">
+        {applicantsError.includes("404")
+          ? `No ${jobId ? "applicants found for job #" + jobId : "applicants found for your jobs"}`
+          : `Error: ${applicantsError}`}
+      </p>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-12">
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-900 mb-6">Applicants for Job #{jobId}</h1>
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-3xl font-bold text-gray-900 mb-6">
+          {jobId ? `Applicants for Job #${jobId}` : "All Applicants"}
+        </h1>
 
         {/* Search + View Toggle */}
         <div className="flex justify-between items-center mb-6">
           <div className="relative w-full max-w-md">
             <input
               type="text"
-              placeholder="Search by name, email, or skills..."
+              placeholder="Search by name, email, skills, etc."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 shadow-sm pl-10"
@@ -70,13 +113,19 @@ const Applicants = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 rounded-lg ${viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
+              aria-label="Switch to table view"
+              className={`p-2 rounded-lg ${
+                viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              }`}
             >
               <FaList />
             </button>
             <button
               onClick={() => setViewMode("card")}
-              className={`p-2 rounded-lg ${viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
+              aria-label="Switch to card view"
+              className={`p-2 rounded-lg ${
+                viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
+              }`}
             >
               <FaTh />
             </button>
@@ -85,15 +134,31 @@ const Applicants = () => {
 
         {/* Applicants */}
         {filteredApplicants.length === 0 ? (
-          <p className="text-gray-600 text-lg">No applicants found for this job.</p>
+          <p className="text-gray-600 text-lg">
+            No applicants found {jobId ? `for job #${jobId}` : "for your jobs"}.
+          </p>
         ) : viewMode === "table" ? (
           <table className="min-w-full border border-gray-200 shadow-sm rounded-lg overflow-hidden">
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">#</th>
+                {jobId ? null : (
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job ID</th>
+                )}
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Phone</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Location</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Experience</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job Title</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Company</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Qualification</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Specialization</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">University</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Skills</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Resume</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Cover Letter</th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">LinkedIn</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Applied On</th>
               </tr>
             </thead>
@@ -101,8 +166,20 @@ const Applicants = () => {
               {filteredApplicants.map((applicant, index) => (
                 <tr key={applicant.id} className="border-t border-gray-200 hover:bg-gray-50">
                   <td className="px-4 py-2">{index + 1}</td>
+                  {jobId ? null : (
+                    <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>
+                  )}
                   <td className="px-4 py-2">{applicant.fullName || "N/A"}</td>
                   <td className="px-4 py-2">{applicant.email || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.phone || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.location || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.experience || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.jobTitle || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.company || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.qualification || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.specialization || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.university || "N/A"}</td>
+                  <td className="px-4 py-2">{applicant.skills?.join(", ") || "N/A"}</td>
                   <td className="px-4 py-2">
                     {applicant.resume ? (
                       <a
@@ -111,29 +188,94 @@ const Applicants = () => {
                         rel="noopener noreferrer"
                         className="text-indigo-600 hover:underline"
                       >
-                        View Resume
+                        View
                       </a>
                     ) : (
                       "N/A"
                     )}
                   </td>
                   <td className="px-4 py-2">
-                    {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
+                    {applicant.coverLetter ? (
+                      <a
+                        href={`http://localhost:5000/${applicant.coverLetter}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline"
+                      >
+                        View
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {applicant.linkedIn ? (
+                      <a
+                        href={applicant.linkedIn}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:underline"
+                      >
+                        View
+                      </a>
+                    ) : (
+                      "N/A"
+                    )}
+                  </td>
+                  <td className="px-4 py-2">
+                    {applicant.createdAt
+                      ? new Date(applicant.createdAt).toLocaleDateString()
+                      : "N/A"}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <div className="grid gap-6">
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApplicants.map((applicant) => (
-              <div key={applicant.id} className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-                <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
-                <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
-                <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
-                <p><strong>Location:</strong> {applicant.location || "N/A"}</p>
-                <p><strong>Experience:</strong> {applicant.experience || "N/A"}</p>
-                <p><strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}</p>
+              <div
+                key={applicant.id}
+                className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow"
+              >
+                {jobId ? null : (
+                  <p>
+                    <strong>Job ID:</strong> {applicant.jobId || "N/A"}
+                  </p>
+                )}
+                <p>
+                  <strong>Name:</strong> {applicant.fullName || "N/A"}
+                </p>
+                <p>
+                  <strong>Email:</strong> {applicant.email || "N/A"}
+                </p>
+                <p>
+                  <strong>Phone:</strong> {applicant.phone || "N/A"}
+                </p>
+                <p>
+                  <strong>Location:</strong> {applicant.location || "N/A"}
+                </p>
+                <p>
+                  <strong>Experience:</strong> {applicant.experience || "N/A"}
+                </p>
+                <p>
+                  <strong>Job Title:</strong> {applicant.jobTitle || "N/A"}
+                </p>
+                <p>
+                  <strong>Company:</strong> {applicant.company || "N/A"}
+                </p>
+                <p>
+                  <strong>Qualification:</strong> {applicant.qualification || "N/A"}
+                </p>
+                <p>
+                  <strong>Specialization:</strong> {applicant.specialization || "N/A"}
+                </p>
+                <p>
+                  <strong>University:</strong> {applicant.university || "N/A"}
+                </p>
+                <p>
+                  <strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}
+                </p>
                 <p>
                   <strong>Resume:</strong>{" "}
                   {applicant.resume ? (
@@ -150,8 +292,40 @@ const Applicants = () => {
                   )}
                 </p>
                 <p>
+                  <strong>Cover Letter:</strong>{" "}
+                  {applicant.coverLetter ? (
+                    <a
+                      href={`http://localhost:5000/${applicant.coverLetter}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      View
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+                <p>
+                  <strong>LinkedIn:</strong>{" "}
+                  {applicant.linkedIn ? (
+                    <a
+                      href={applicant.linkedIn}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-indigo-600 hover:underline"
+                    >
+                      View
+                    </a>
+                  ) : (
+                    "N/A"
+                  )}
+                </p>
+                <p>
                   <strong>Applied On:</strong>{" "}
-                  {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
+                  {applicant.createdAt
+                    ? new Date(applicant.createdAt).toLocaleDateString()
+                    : "N/A"}
                 </p>
               </div>
             ))}
