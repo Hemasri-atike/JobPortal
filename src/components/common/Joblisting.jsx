@@ -1,4 +1,3 @@
-// src/components/JobListing.jsx
 import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, Link } from 'react-router-dom';
@@ -22,47 +21,43 @@ const JobListing = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const {
-    jobs,
-    total,
-    page,
-    jobsPerPage,
-    searchQuery,
-    statusFilter,
-    categoryFilter,
-    sortBy,
-    jobsStatus,
-    jobsError,
-    categories,
-    categoriesStatus,
-    categoriesError,
+    jobs = [],
+    total = 0,
+    page = 1,
+    jobsPerPage = 10,
+    searchQuery = '',
+    statusFilter = 'All',
+    categoryFilter = '',
+    sortBy = 'createdAt-desc',
+    jobsStatus = 'idle',
+    jobsError = null,
+    categories = [],
+    categoriesStatus = 'idle',
+    categoriesError = null,
   } = useSelector((state) => state.jobs || {});
-  console.log('jobs:', jobs);
-  const { userInfo, userType } = useSelector((state) => state.user || {});
+  const { userInfo = null, userType = null } = useSelector((state) => state.user || {});
   const [viewMode, setViewMode] = useState('grid');
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
 
-  // Authentication and role check
   useEffect(() => {
     if (!userInfo || !userType) {
-      toast.error('Please login to view your job postings.');
+      toast.error('Please login to view your job postings.', { position: 'top-right', autoClose: 3000 });
       navigate('/login');
     } else if (userType !== 'employer' && userType !== 'admin') {
-      toast.info('Redirecting to job search for job seekers.');
-      navigate('/jobsearch'); // Redirect job seekers to job search page
+      toast.info('Redirecting to job search for job seekers.', { position: 'top-right', autoClose: 3000 });
+      navigate('/jobsearch');
     }
   }, [userInfo, userType, navigate]);
 
-  // Fetch categories
   useEffect(() => {
-    if (userInfo && userType === 'employer') {
+    if (userInfo && (userType === 'employer' || userType === 'admin')) {
       dispatch(fetchCategories());
     }
   }, [dispatch, userInfo, userType]);
 
-  // Fetch jobs (employer's own jobs)
   useEffect(() => {
-    if (userInfo && userType === 'employer') {
+    if (userInfo && (userType === 'employer' || userType === 'admin')) {
       dispatch(
         fetchJobs({
           statusFilter,
@@ -72,7 +67,7 @@ const JobListing = () => {
           jobsPerPage,
           category: categoryFilter,
           sortBy,
-          userId: userInfo.id, // Filter by employer’s user ID
+          userId: userInfo.id,
         })
       );
     }
@@ -83,37 +78,41 @@ const JobListing = () => {
     try {
       await dispatch(deleteJob(id)).unwrap();
       setSelectedJobs((prev) => prev.filter((jobId) => id !== jobId));
-      toast.success('Job deleted successfully.');
+      toast.success('Job deleted successfully.', { position: 'top-right', autoClose: 3000 });
     } catch (err) {
-      toast.error(err || 'Failed to delete job.');
+      toast.error(err?.message || 'Failed to delete job.', { position: 'top-right', autoClose: 3000 });
     }
   };
 
   const handleBulkDelete = async () => {
     if (!selectedJobs.length) {
-      toast.error('No jobs selected for deletion.');
+      toast.error('No jobs selected for deletion.', { position: 'top-right', autoClose: 3000 });
       return;
     }
     if (!window.confirm(`Delete ${selectedJobs.length} job(s)?`)) return;
     try {
       await dispatch(bulkDeleteJobs(selectedJobs)).unwrap();
       setSelectedJobs([]);
-      toast.success(`${selectedJobs.length} job(s) deleted successfully.`);
+      toast.success(`${selectedJobs.length} job(s) deleted successfully.`, { position: 'top-right', autoClose: 3000 });
     } catch (err) {
-      toast.error(err || 'Failed to delete jobs.');
+      toast.error(err?.message || 'Failed to delete jobs.', { position: 'top-right', autoClose: 3000 });
     }
   };
 
   const handleEdit = (job) => {
-    navigate(`/empposting/${job.id}`, { state: job });
+    console.log('Editing job:', job);
+    navigate(`/empposting/${job.id}`, { state: { job } });
   };
 
   const handleToggleStatus = async (id, currentStatus) => {
     try {
       await dispatch(toggleJobStatus({ id, currentStatus })).unwrap();
-      toast.success(`Job status updated to ${currentStatus === 'Active' ? 'Closed' : 'Active'}.`);
+      toast.success(`Job status updated to ${currentStatus === 'Active' ? 'Closed' : 'Active'}.`, {
+        position: 'top-right',
+        autoClose: 3000,
+      });
     } catch (err) {
-      toast.error(err || 'Failed to update job status.');
+      toast.error(err?.message || 'Failed to update job status.', { position: 'top-right', autoClose: 3000 });
     }
   };
 
@@ -163,7 +162,7 @@ const JobListing = () => {
   };
 
   if (userType !== 'employer' && userType !== 'admin') {
-    return null; // Prevent rendering until redirected
+    return null;
   }
 
   return (
@@ -227,8 +226,8 @@ const JobListing = () => {
               <option>No categories available</option>
             ) : (
               categories.map((category) => (
-                <option key={category} value={category}>
-                  {category}
+                <option key={category.id} value={category.id}>
+                  {category.name}
                 </option>
               ))
             )}
@@ -339,8 +338,11 @@ const JobListing = () => {
                         <span className="font-semibold">Category:</span> {job.category || 'Not specified'}
                       </p>
                       <p>
+                        <span className="font-semibold">Subcategory:</span> {job.subcategory || 'Not specified'}
+                      </p>
+                      <p>
                         <span className="font-semibold">Salary:</span>{' '}
-                        {job.salary ? `$${Number(job.salary).toLocaleString()}` : 'Not disclosed'}
+                        {job.salary || job.salary === 0 ? `₹${Number(job.salary).toLocaleString()}` : 'Not disclosed'}
                       </p>
                       <p>
                         <span className="font-semibold">Type:</span> {job.type || 'Not specified'}

@@ -2,9 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { createJob, updateJob } from '../../store/jobsSlice.js';
-import { fetchCategories } from '../../store/categoriesSlice.js';
-
-
+import { fetchCategories, fetchSubcategories } from '../../store/categoriesSlice.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
@@ -13,19 +11,25 @@ const EmpPosting = () => {
   const navigate = useNavigate();
   const { id } = useParams();
   const { state } = useLocation();
-  const job = state?.job;
-  
+  const job = state?.job || {};
 
-  const { categories, status: categoriesStatus, error: categoriesError } = useSelector((state) => state.categories || {});
-const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
+  const {
+    categories = [],
+    categoriesStatus = 'idle',
+    subcategories = [],
+    subcategoriesStatus = 'idle',
+    error: categoriesError = null,
+  } = useSelector((state) => state.categories || {});
+  const { jobsStatus = 'idle', jobsError = null } = useSelector((state) => state.jobs || {});
+  const { userInfo = null, userType = null } = useSelector((state) => state.user || {});
 
-  const { userInfo, userType } = useSelector((state) => state.user || {});
   const [formData, setFormData] = useState({
     title: '',
     company_name: '',
     location: '',
     description: '',
     category: '',
+    subcategory: '',
     salary: '',
     type: '',
     experience: '',
@@ -45,30 +49,45 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
       navigate('/login');
       return;
     }
-    dispatch(fetchCategories());
-  }, [dispatch, userInfo, userType, navigate]);
+    if (categoriesStatus === 'idle' && categories.length === 0) {
+      dispatch(fetchCategories());
+    }
+  }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
+
+  useEffect(() => {
+    if (formData.category) {
+      dispatch(fetchSubcategories(formData.category));
+    }
+  }, [dispatch, formData.category]);
 
   useEffect(() => {
     if (id && job) {
+      const categoryExists = categories.find((cat) => cat.id === job.category || cat.name === job.category);
+      const subcategoryExists = subcategories.find((sub) => sub.id === job.subcategory || sub.name === job.subcategory);
       setFormData({
         title: job.title || '',
         company_name: job.company_name || '',
         location: job.location || '',
         description: job.description || '',
-        category: job.category || '',
+        category: categoryExists ? (job.category_id || job.category || '') : '',
+        subcategory: subcategoryExists ? (job.subcategory_id || job.subcategory || '') : '',
         salary: job.salary || '',
         type: job.type || '',
         experience: job.experience || '',
-        deadline: job.deadline ? new Date(job.deadline).toISOString().split('T')[0] : '',
+        deadline: job.deadline && !isNaN(new Date(job.deadline))
+          ? new Date(job.deadline).toISOString().split('T')[0]
+          : '',
         tags: job.tags || [],
         status: job.status || 'Active',
         contactPerson: job.contactPerson || '',
         role: job.role || '',
-        startDate: job.startDate ? new Date(job.startDate).toISOString().split('T')[0] : '',
+        startDate: job.startDate && !isNaN(new Date(job.startDate))
+          ? new Date(job.startDate).toISOString().split('T')[0]
+          : '',
         vacancies: job.vacancies || '',
       });
     }
-  }, [id, job]);
+  }, [id, job, categories, subcategories]);
 
   const validateForm = () => {
     const newErrors = {};
@@ -76,14 +95,25 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
     if (!formData.company_name) newErrors.company_name = 'Company Name is required';
     if (!formData.location) newErrors.location = 'Location is required';
     if (!formData.description) newErrors.description = 'Job Description is required';
+    if (!formData.category) newErrors.category = 'Category is required';
+    if (!formData.subcategory && formData.category && subcategories.length > 0)
+      newErrors.subcategory = 'Subcategory is required';
+    if (!formData.type) newErrors.type = 'Job Type is required';
+    if (!formData.deadline) newErrors.deadline = 'Application Deadline is required';
+    if (formData.salary && formData.salary < 0) newErrors.salary = 'Salary cannot be negative';
+    if (formData.vacancies && formData.vacancies < 1) newErrors.vacancies = 'Vacancies must be at least 1';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    setErrors((prev) => ({ ...prev, [name]: '' }));
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'category' ? { subcategory: '' } : {}),
+    }));
+    setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'category' ? { subcategory: '' } : {}) }));
   };
 
   const handleTagsChange = (e) => {
@@ -107,8 +137,9 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
       }
       navigate('/joblistings');
     } catch (err) {
+      const errorMessage = err?.message || err?.error || `Failed to ${id ? 'update' : 'create'} job. Please try again.`;
       console.error('Submit error:', err);
-      toast.error(err?.message || `Failed to ${id ? 'update' : 'create'} job.`, { position: 'top-right', autoClose: 3000 });
+      toast.error(errorMessage, { position: 'top-right', autoClose: 3000 });
     }
   };
 
@@ -125,79 +156,180 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
           </div>
         )}
 
+        {categoriesStatus === 'failed' && (
+          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
+            {categoriesError || 'Failed to load categories.'}
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-8">
           <div className="space-y-6">
             <h2 className="text-lg font-semibold text-gray-800">Job Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Job Title <span className="text-red-500">*</span></label>
+                <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
+                  Job Title <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="title"
                   type="text"
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${errors.title ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                    errors.title ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="e.g., Frontend Developer"
+                  aria-invalid={!!errors.title}
+                  aria-describedby={errors.title ? 'title-error' : undefined}
+                  aria-required="true"
                 />
-                {errors.title && <p className="mt-1 text-sm text-red-500">{errors.title}</p>}
+                {errors.title && (
+                  <p id="title-error" className="mt-1 text-sm text-red-500">
+                    {errors.title}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name <span className="text-red-500">*</span></label>
+                <label htmlFor="company_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Company Name <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="company_name"
                   type="text"
                   name="company_name"
                   value={formData.company_name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${errors.company_name ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                    errors.company_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="e.g., Tech Corp"
+                  aria-invalid={!!errors.company_name}
+                  aria-describedby={errors.company_name ? 'company_name-error' : undefined}
+                  aria-required="true"
                 />
-                {errors.company_name && <p className="mt-1 text-sm text-red-500">{errors.company_name}</p>}
+                {errors.company_name && (
+                  <p id="company_name-error" className="mt-1 text-sm text-red-500">
+                    {errors.company_name}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Location <span className="text-red-500">*</span></label>
+                <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
+                  Location <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="location"
                   type="text"
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${errors.location ? 'border-red-500' : 'border-gray-300'}`}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                    errors.location ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="e.g., Mumbai, India"
+                  aria-invalid={!!errors.location}
+                  aria-describedby={errors.location ? 'location-error' : undefined}
+                  aria-required="true"
                 />
-                {errors.location && <p className="mt-1 text-sm text-red-500">{errors.location}</p>}
+                {errors.location && (
+                  <p id="location-error" className="mt-1 text-sm text-red-500">
+                    {errors.location}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="category"
                   name="category"
                   value={formData.category}
                   onChange={handleChange}
                   disabled={categoriesStatus === 'loading' || categories.length === 0}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.category ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.category}
+                  aria-describedby={errors.category ? 'category-error' : undefined}
+                  aria-required="true"
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
-                    // <option key={category} value={category}>{category}</option>
-                    <option key={category.name} value={category.name}>
-  {category.name}
-</option>
-
+                    <option key={category.id} value={category.name}>
+                      {category.name}
+                    </option>
                   ))}
                 </select>
+                {categoriesStatus === 'loading' && (
+                  <p className="mt-1 text-sm text-gray-500">Loading categories...</p>
+                )}
+                {errors.category && (
+                  <p id="category-error" className="mt-1 text-sm text-red-500">
+                    {errors.category}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-1">
+                  Subcategory <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="subcategory"
+                  name="subcategory"
+                  value={formData.subcategory}
+                  onChange={handleChange}
+                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.subcategory ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.subcategory}
+                  aria-describedby={errors.subcategory ? 'subcategory-error' : undefined}
+                  aria-required="true"
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map((sub) => (
+                    <option key={sub.id} value={sub.id}>
+                      {sub.name}
+                    </option>
+                  ))}
+                </select>
+                {subcategoriesStatus === 'loading' && (
+                  <p className="mt-1 text-sm text-gray-500">Loading subcategories...</p>
+                )}
+                {errors.subcategory && (
+                  <p id="subcategory-error" className="mt-1 text-sm text-red-500">
+                    {errors.subcategory}
+                  </p>
+                )}
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Job Description <span className="text-red-500">*</span></label>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Job Description <span className="text-red-500">*</span>
+              </label>
               <textarea
+                id="description"
                 name="description"
                 value={formData.description}
                 onChange={handleChange}
                 rows="5"
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  errors.description ? 'border-red-500' : 'border-gray-300'
+                }`}
                 placeholder="Describe the job responsibilities, requirements, and perks..."
+                aria-invalid={!!errors.description}
+                aria-describedby={errors.description ? 'description-error' : undefined}
+                aria-required="true"
               />
-              {errors.description && <p className="mt-1 text-sm text-red-500">{errors.description}</p>}
+              {errors.description && (
+                <p id="description-error" className="mt-1 text-sm text-red-500">
+                  {errors.description}
+                </p>
+              )}
             </div>
           </div>
 
@@ -205,23 +337,40 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
             <h2 className="text-lg font-semibold text-gray-800">Additional Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Salary (INR)</label>
+                <label htmlFor="salary" className="block text-sm font-medium text-gray-700 mb-1">
+                  Salary (INR)
+                </label>
                 <input
+                  id="salary"
                   type="number"
                   name="salary"
                   value={formData.salary}
                   onChange={handleChange}
+                  min="0"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., 50000"
                 />
+                {errors.salary && (
+                  <p id="salary-error" className="mt-1 text-sm text-red-500">
+                    {errors.salary}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Job Type</label>
+                <label htmlFor="type" className="block text-sm font-medium text-gray-700 mb-1">
+                  Job Type <span className="text-red-500">*</span>
+                </label>
                 <select
+                  id="type"
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                    errors.type ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.type}
+                  aria-describedby={errors.type ? 'type-error' : undefined}
+                  aria-required="true"
                 >
                   <option value="">Select type</option>
                   <option value="Full-time">Full-time</option>
@@ -229,10 +378,18 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
                   <option value="Contract">Contract</option>
                   <option value="Remote">Remote</option>
                 </select>
+                {errors.type && (
+                  <p id="type-error" className="mt-1 text-sm text-red-500">
+                    {errors.type}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Experience</label>
+                <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-1">
+                  Experience
+                </label>
                 <input
+                  id="experience"
                   type="text"
                   name="experience"
                   value={formData.experience}
@@ -244,18 +401,34 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Application Deadline</label>
+                <label htmlFor="deadline" className="block text-sm font-medium text-gray-700 mb-1">
+                  Application Deadline <span className="text-red-500">*</span>
+                </label>
                 <input
+                  id="deadline"
                   type="date"
                   name="deadline"
                   value={formData.deadline}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                    errors.deadline ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.deadline}
+                  aria-describedby={errors.deadline ? 'deadline-error' : undefined}
+                  aria-required="true"
                 />
+                {errors.deadline && (
+                  <p id="deadline-error" className="mt-1 text-sm text-red-500">
+                    {errors.deadline}
+                  </p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700 mb-1">
+                  Start Date
+                </label>
                 <input
+                  id="startDate"
                   type="date"
                   name="startDate"
                   value={formData.startDate}
@@ -264,21 +437,33 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Vacancies</label>
+                <label htmlFor="vacancies" className="block text-sm font-medium text-gray-700 mb-1">
+                  Vacancies
+                </label>
                 <input
+                  id="vacancies"
                   type="number"
                   name="vacancies"
                   value={formData.vacancies}
                   onChange={handleChange}
+                  min="1"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., 3"
                 />
+                {errors.vacancies && (
+                  <p id="vacancies-error" className="mt-1 text-sm text-red-500">
+                    {errors.vacancies}
+                  </p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Tags (comma-separated)</label>
+                <label htmlFor="tags" className="block text-sm font-medium text-gray-700 mb-1">
+                  Tags (comma-separated)
+                </label>
                 <input
+                  id="tags"
                   type="text"
                   name="tags"
                   value={formData.tags.join(', ')}
@@ -288,8 +473,11 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Person</label>
+                <label htmlFor="contactPerson" className="block text-sm font-medium text-gray-700 mb-1">
+                  Contact Person
+                </label>
                 <input
+                  id="contactPerson"
                   type="text"
                   name="contactPerson"
                   value={formData.contactPerson}
@@ -299,8 +487,11 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
+                <label htmlFor="role" className="block text-sm font-medium text-gray-700 mb-1">
+                  Role
+                </label>
                 <input
+                  id="role"
                   type="text"
                   name="role"
                   value={formData.role}
@@ -311,8 +502,11 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-1">
+                Status
+              </label>
               <select
+                id="status"
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
@@ -329,7 +523,7 @@ const { jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
           <div className="flex justify-end gap-4 mt-8">
             <button
               type="button"
-              onClick={() => navigate('/joblisting')}
+              onClick={() => navigate('/joblistings')}
               className="px-6 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-all focus:ring-2 focus:ring-gray-400 focus:outline-none"
             >
               Cancel
