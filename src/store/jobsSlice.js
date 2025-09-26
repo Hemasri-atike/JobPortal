@@ -96,7 +96,6 @@ export const fetchJobsByCategory = createAsyncThunk(
   }
 );
 
-// Fetch user applications
 export const fetchUserApplications = createAsyncThunk(
   'jobs/fetchUserApplications',
   async (candidateId, { rejectWithValue, getState }) => {
@@ -117,7 +116,6 @@ export const fetchUserApplications = createAsyncThunk(
 
 
 
-// Fetch all applicants for jobs posted by a user
 export const fetchAllApplicants = createAsyncThunk(
   'jobs/fetchAllApplicants',
   async ({ userId }, { rejectWithValue, getState }) => {
@@ -197,9 +195,22 @@ export const createJob = createAsyncThunk(
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token found');
-      const response = await axiosAuth(token).post('/jobs', jobData);
-      return response.data;
+      const headers = token ? { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' } : { 'Cache-Control': 'no-cache' };
+      const payload = {
+        ...jobData,
+        userId: user.userInfo?.id || null, // Include userId if available, else null
+      };
+
+      const response = await axios.post('http://localhost:5000/api/jobs', payload, {
+        headers,
+        timeout: 10000,
+      });
+      return {
+        ...response.data,
+        createdAt: response.data.created_at || response.data.createdAt || new Date().toISOString(),
+        applicantCount: response.data.applicantCount || 0,
+        views: response.data.views || 0,
+      };
     } catch (error) {
       console.error('Create Job Error:', error.response?.data || error.message);
       return rejectWithValue(error.response?.data?.error || error.message || 'Failed to create job');
