@@ -52,14 +52,12 @@ const EmpPosting = () => {
   const [availableSkills, setAvailableSkills] = useState([]);
   const [skillsStatus, setSkillsStatus] = useState('idle'); // Track skills fetching status
 
-  // Fetch available skills
   useEffect(() => {
     const fetchSkills = async () => {
       setSkillsStatus('loading');
       try {
         const response = await axios.get('http://localhost:5000/api/jobs/skills');
         console.log('Skills fetched:', response.data);
-        // Ensure response.data is an array
         const skills = Array.isArray(response.data) ? response.data : [];
         setAvailableSkills(skills);
         setSkillsStatus('succeeded');
@@ -80,7 +78,6 @@ const EmpPosting = () => {
     fetchSkills();
   }, []);
 
-  // Auth check
   useEffect(() => {
     if (!userInfo || !userType || (userType !== 'employer' && userType !== 'admin')) {
       toast.error('Unauthorized access.', { position: 'top-right', autoClose: 3000 });
@@ -92,7 +89,6 @@ const EmpPosting = () => {
     }
   }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
 
-  // Fetch subcategories when category changes
   useEffect(() => {
     if (formData.category_id) {
       dispatch(fetchSubcategories(formData.category_id));
@@ -101,7 +97,6 @@ const EmpPosting = () => {
     }
   }, [dispatch, formData.category_id]);
 
-  // Initialize formData for editing
   useEffect(() => {
     if (id && job && skillsStatus === 'succeeded' && availableSkills.length > 0) {
       const category = categories.find((cat) => cat.id === job.category_id);
