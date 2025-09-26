@@ -41,10 +41,10 @@ const Footer = () => {
   };
 
   return (
-    <footer className="bg-gray-900 text-gray-200">
+    <footer className="w-full bg-transparent">
       {/* CTA Section */}
       {cta && (
-        <div className="bg-blue-600 py-10 sm:py-16 text-center text-white">
+        <div className="bg-[#1E93AB] border border-[#1E93AB] shadow-lg rounded-2xl w-full max-w-[1180px] mx-auto mb-10 py-10 px-6 sm:px-12 text-center text-white">
           <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">{cta.title}</h2>
           <p className="text-sm sm:text-base mb-6">{cta.subtitle}</p>
           <Link
@@ -57,7 +57,7 @@ const Footer = () => {
       )}
 
       {/* Main Footer */}
-      <div className="py-10 sm:py-12 lg:py-16">
+      <div className="py-10 bg-gray-900 sm:py-12 lg:py-16">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 xl:gap-12">
             {/* Company Info */}

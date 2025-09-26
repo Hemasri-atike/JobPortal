@@ -93,16 +93,16 @@ const Header = () => {
 
   const AvatarName = () => (
     <div
-      className="flex items-center cursor-pointer space-x-3 px-3 py-2 rounded-lg hover:bg-pink-500/20 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600"
+      className="flex items-center cursor-pointer space-x-2 px-3 py-2 rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600"
       onClick={goToProfile}
       onKeyDown={(e) => e.key === "Enter" && goToProfile()}
       tabIndex={0}
       aria-label={`Go to ${userInfo?.name || "User"}'s profile`}
     >
-      <div className="w-10 h-10 bg-blue-600 text-white rounded-full flex items-center justify-center font-semibold">
+      <div className="w-10 h-10 bg-white text-black border border-gray-500 rounded-full flex items-center justify-center font-semibold">
         {userInfo?.name ? userInfo.name.charAt(0).toUpperCase() : "U"}
       </div>
-      <span className="text-gray-900 font-medium hover:text-purple-500 text-sm">
+      <span className="text-gray-900 h-auto border-l border-gray-500 pl-2 font-medium text-sm">
         {userInfo?.name || "User"}
       </span>
     </div>
@@ -126,14 +126,14 @@ const Header = () => {
           <div className="hidden md:flex items-center space-x-4">
             <Link
               to="/login?type=candidate"
-              className="bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors text-sm font-semibold"
+              className="bg-[#D1E9F6] shadow-md text-black border border-gray-500 px-5 py-2.5 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors text-sm font-semibold"
               aria-label="Find a job"
             >
               Find a Job
             </Link>
             <Link
               to="/login?type=employer"
-              className="bg-purple-500 text-white px-5 py-2.5 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm font-semibold"
+              className="bg-[#4A628A] shadow-md text-white border border-gray-500 px-5 py-2.5 rounded-full  focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-sm font-semibold"
               aria-label="Post a job"
             >
               Post a Job
@@ -151,7 +151,7 @@ const Header = () => {
               <>
                 <AvatarName />
                 <button
-                  className="px-5 py-2.5 rounded-lg text-gray-900 hover:text-purple-500 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+                  className="px-5 py-2.5 rounded-lg text-gray-900 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
                   onClick={() => {
                     dispatch(logoutUser());
                     setIsMenuOpen(false);

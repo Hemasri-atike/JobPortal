@@ -22,7 +22,6 @@ const JobCard = ({ job }) => {
     tags = [],
     description = 'No description available',
     salary = 'Not specified',
-    status = 'Not specified',
   } = job;
 
   const handleApply = () => {

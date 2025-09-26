@@ -8,7 +8,6 @@ const Category = () => {
   const dispatch = useDispatch();
   const { categories = [], status, error } = useSelector((state) => state.categories);
 
-  // Map of available icons from lucide-react
   const iconMap = { Code, Heart, Briefcase };
 
   useEffect(() => {
@@ -18,16 +17,17 @@ const Category = () => {
   }, [status, dispatch]);
 
   return (
-    <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
+    <section className="py-8 sm:py-12 bg-gray-50 lg:py-16">
+      <div className="w-full mx-auto max-w-[1180px]">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
-        <h3 className="text-2xl sm:text-3xl font-bold text-center text-gray-900 mb-8 sm:mb-10">
+        <h3 className="text-xl sm:text-2xl font-bold text-center text-gray-900 mb-6 sm:mb-8">
           Popular Job Categories
         </h3>
 
         {status === 'loading' && (
           <div className="text-center" aria-live="polite">
             <svg
-              className="animate-spin h-6 w-6 text-blue-600 mx-auto"
+              className="animate-spin h-5 w-5 text-blue-600 mx-auto"
               xmlns="http://www.w3.org/2000/svg"
               fill="none"
               viewBox="0 0 24 24"
@@ -52,7 +52,7 @@ const Category = () => {
 
         {status === 'failed' && (
           <p
-            className="text-center text-red-600 p-4 bg-red-50 rounded-md"
+            className="text-center text-red-600 p-3 bg-red-50 rounded-md"
             role="alert"
             aria-live="assertive"
           >
@@ -61,13 +61,13 @@ const Category = () => {
         )}
 
         {status === 'succeeded' && categories.length === 0 && (
-          <p className="text-center text-gray-600 p-4 bg-white rounded-md shadow-sm" aria-live="polite">
+          <p className="text-center text-gray-600 p-3 bg-white rounded-md shadow-sm" aria-live="polite">
             No categories available.
           </p>
         )}
 
         {status === 'succeeded' && categories.length > 0 && (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {categories.map((category, index) => {
               const categoryId = category.id || `category-${index}`;
               const categoryName = category.name || 'Unnamed Category';
@@ -77,26 +77,26 @@ const Category = () => {
               const iconColor = category.iconColor || 'text-blue-700';
 
               return (
-                <Link
+                <Link 
                   key={categoryId}
                   to={`/categories/${categoryId}`}
-                  className="p-4 sm:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="p-3 bg-white border border-gray-200 rounded-lg shadow-md hover-bg-gray-50 hover:shadow-xl transition duration-200 block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                   aria-label={`View subcategories for ${categoryName} with ${openPositions} open positions`}
                 >
-                  <div className="flex items-center space-x-4 mb-3">
+                  <div className="flex items-center space-x-3 mb-2">
                     <div
-                      className={`w-12 h-12 ${bgColor} rounded-lg flex items-center justify-center`}
+                      className={`w-10 h-10 ${bgColor} rounded-md flex items-center justify-center`}
                     >
                       <IconComponent
-                        className={`w-6 h-6 ${iconColor}`}
+                        className={`w-5 h-5 ${iconColor}`}
                         aria-hidden="true"
                       />
                     </div>
-                    <h3 className="font-semibold text-base sm:text-lg text-gray-800 line-clamp-1">
+                    <h3 className="font-semibold text-sm sm:text-base text-gray-800 line-clamp-1">
                       {categoryName}
                     </h3>
                   </div>
-                  <p className="text-gray-600 text-sm">
+                  <p className="text-gray-600 text-xs">
                     {openPositions} open position{openPositions !== 1 ? 's' : ''}
                   </p>
                 </Link>
@@ -104,6 +104,7 @@ const Category = () => {
             })}
           </div>
         )}
+      </div>
       </div>
     </section>
   );
