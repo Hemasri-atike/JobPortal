@@ -96,6 +96,96 @@ export const fetchJobsByCategory = createAsyncThunk(
   }
 );
 
+export const fetchApplicantsByUserJobs = createAsyncThunk(
+  "jobs/fetchApplicantsByUserJobs",
+  async (userId, { getState, rejectWithValue }) => {
+    try {
+      const { user } = getState();
+      const token = user.userInfo?.token || localStorage.getItem("token");
+
+      if (!token) {
+        throw new Error("No authentication token found");
+      }
+
+      const response = await axios.get(
+        `http://localhost:5000/jobs/applicants?user_id=${userId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Ensure payload is always an array
+      return response.data || [];
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+
+
+
+export const fetchAllApplicants = createAsyncThunk(
+  'jobs/fetchAllApplicants',
+  async ({ userId }, { rejectWithValue, getState }) => {
+    try {
+      const { user } = getState();
+      const token = user.userInfo?.token || localStorage.getItem('token');
+      if (!token || !user.userInfo || user.userType !== 'employer') {
+        throw new Error('Authentication required or unauthorized access');
+      }
+      if (!userId || userId !== user.userInfo.id) {
+        throw new Error('Unauthorized: Can only fetch applicants for your own jobs');
+      }
+
+      const response = await axios.get(`http://localhost:5000/api/jobs/applicants?user_id=${userId}`, {
+        headers: { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' },
+      });
+
+      const applicants = (response.data || []).map(app => ({
+        id: app.id,
+        jobId: app.job_id,
+        candidateId: app.candidate_id,
+        fullName: app.fullName || 'N/A',
+        email: app.email || 'N/A',
+        phone: app.phone || 'N/A',
+        location: app.location || 'N/A',
+        experience: app.experience || 'N/A',
+        jobTitle: app.job_title || 'N/A',
+        company: app.company || 'N/A',
+        qualification: app.qualification || 'N/A',
+        specialization: app.specialization || 'N/A',
+        university: app.university || 'N/A',
+        skills: app.skills ? (Array.isArray(app.skills) ? app.skills : app.skills.split(',').map(s => s.trim())) : [],
+        resume: app.resume_url || null,
+        coverLetter: app.cover_letter_url || null,
+        linkedIn: app.linkedIn || null,
+        portfolio: app.portfolio || null,
+        status: app.status || 'applied',
+        createdAt: app.applied_at || new Date().toISOString(),
+      }));
+
+      const groupedApplicants = applicants.reduce((acc, applicant) => {
+        const jobId = String(applicant.jobId);
+        acc[jobId] = acc[jobId] || [];
+        acc[jobId].push(applicant);
+        acc.all = acc.all || [];
+        acc.all.push(applicant);
+        return acc;
+      }, { all: [] });
+
+      return groupedApplicants;
+    } catch (err) {
+      console.error('❌ [Thunk Error] Failed to fetch all applicants:', err);
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+  }
+);
+
+
+
 export const fetchUserApplications = createAsyncThunk(
   'jobs/fetchUserApplications',
   async (candidateId, { rejectWithValue, getState }) => {
@@ -116,61 +206,61 @@ export const fetchUserApplications = createAsyncThunk(
 
 
 
-export const fetchAllApplicants = createAsyncThunk(
-  'jobs/fetchAllApplicants',
-  async ({ userId }, { rejectWithValue, getState }) => {
-    try {
-      const { user: { userInfo, userType } } = getState();
-      const token = userInfo?.token || localStorage.getItem('token');
-      if (!token || !userInfo || userType !== 'employer') {
-        throw new Error('Authentication required or unauthorized access');
-      }
-      if (!userId || userId !== userInfo.id) {
-        throw new Error('Unauthorized: Can only fetch applicants for your own jobs');
-      }
-      const response = await axiosAuth(token).get('/jobs/applicants', {
-        params: { user_id: userId },
-      });
+// export const fetchAllApplicants = createAsyncThunk(
+//   'jobs/fetchAllApplicants',
+//   async ({ userId }, { rejectWithValue, getState }) => {
+//     try {
+//       const { user: { userInfo, userType } } = getState();
+//       const token = userInfo?.token || localStorage.getItem('token');
+//       if (!token || !userInfo || userType !== 'employer') {
+//         throw new Error('Authentication required or unauthorized access');
+//       }
+//       if (!userId || userId !== userInfo.id) {
+//         throw new Error('Unauthorized: Can only fetch applicants for your own jobs');
+//       }
+//       const response = await axiosAuth(token).get('/jobs/applicants', {
+//         params: { user_id: userId },
+//       });
 
-      const applicants = (response.data || []).map((app) => ({
-        id: app.id,
-        jobId: app.job_id,
-        candidateId: app.candidate_id,
-        fullName: app.fullName || app.full_name || 'N/A',
-        email: app.email || 'N/A',
-        phone: app.phone || 'N/A',
-        location: app.location || 'N/A',
-        experience: app.experience || 'N/A',
-        jobTitle: app.jobTitle || app.job_title || 'N/A',
-        company: app.company || 'N/A',
-        qualification: app.qualification || 'N/A',
-        specialization: app.specialization || 'N/A',
-        university: app.university || 'N/A',
-        skills: app.skills ? (Array.isArray(app.skills) ? app.skills : app.skills.split(',').map(s => s.trim())) : [],
-        resume: app.resume || null,
-        coverLetter: app.coverLetter || app.cover_letter || null,
-        linkedIn: app.linkedIn || app.linkedin || null,
-        portfolio: app.portfolio || null,
-        status: app.status || 'applied',
-        createdAt: app.created_at || app.createdAt || new Date().toISOString(),
-      }));
+//       const applicants = (response.data || []).map((app) => ({
+//         id: app.id,
+//         jobId: app.job_id,
+//         candidateId: app.candidate_id,
+//         fullName: app.fullName || app.full_name || 'N/A',
+//         email: app.email || 'N/A',
+//         phone: app.phone || 'N/A',
+//         location: app.location || 'N/A',
+//         experience: app.experience || 'N/A',
+//         jobTitle: app.jobTitle || app.job_title || 'N/A',
+//         company: app.company || 'N/A',
+//         qualification: app.qualification || 'N/A',
+//         specialization: app.specialization || 'N/A',
+//         university: app.university || 'N/A',
+//         skills: app.skills ? (Array.isArray(app.skills) ? app.skills : app.skills.split(',').map(s => s.trim())) : [],
+//         resume: app.resume || null,
+//         coverLetter: app.coverLetter || app.cover_letter || null,
+//         linkedIn: app.linkedIn || app.linkedin || null,
+//         portfolio: app.portfolio || null,
+//         status: app.status || 'applied',
+//         createdAt: app.created_at || app.createdAt || new Date().toISOString(),
+//       }));
 
-      // Group applicants by jobId and include all applicants under 'all'
-      const groupedApplicants = applicants.reduce((acc, applicant) => {
-        const jobId = String(applicant.jobId);
-        acc[jobId] = acc[jobId] || [];
-        acc[jobId].push(applicant);
-        return acc;
-      }, { all: applicants });
+//       // Group applicants by jobId and include all applicants under 'all'
+//       const groupedApplicants = applicants.reduce((acc, applicant) => {
+//         const jobId = String(applicant.jobId);
+//         acc[jobId] = acc[jobId] || [];
+//         acc[jobId].push(applicant);
+//         return acc;
+//       }, { all: applicants });
 
-      return groupedApplicants;
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to fetch all applicants';
-      console.error('❌ [Thunk Error] Failed to fetch all applicants:', err);
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
+//       return groupedApplicants;
+//     } catch (err) {
+//       const errorMessage = err.response?.data?.error || err.response?.data?.message || err.message || 'Failed to fetch all applicants';
+//       console.error('❌ [Thunk Error] Failed to fetch all applicants:', err);
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
 
 // Add job
 export const addJob = createAsyncThunk(

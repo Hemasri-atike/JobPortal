@@ -1,58 +1,68 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchAllApplicants, fetchApplicantsByJob } from "../../store/jobsSlice";
+import {
+  fetchApplicantsByJob,
+  fetchApplicantsByUserJobs,
+} from "../../store/jobsSlice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 
 const Applicants = () => {
-  const { jobId } = useParams();
+  const { jobId } = useParams(); // get jobId from URL
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const { userInfo, userType } = useSelector((state) => state.user || {});
-  const applicants = useSelector((state) =>
-    jobId ? state.jobs.applicants?.[jobId] || [] : state.jobs.applicants?.all || []
+  const applicantsState = useSelector((state) => state.jobs.applicants || []);
+  const applicantsStatus = useSelector(
+    (state) => state.jobs.applicantsStatus || "idle"
   );
-  const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
-  const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
+  const applicantsError = useSelector(
+    (state) => state.jobs.applicantsError || null
+  );
 
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table");
 
+  // DEBUG logs
+  console.log("DEBUG: userInfo:", userInfo);
+  console.log("DEBUG: userType:", userType);
+  console.log("DEBUG: jobId from params:", jobId);
+  console.log("DEBUG: applicants from state:", applicantsState);
+
   useEffect(() => {
     if (!userInfo?.token || userType !== "employer") {
-      toast.error("Please log in as an employer to view applicants", {
-        position: "top-right",
-        autoClose: 3000,
-      });
+      toast.error("Please log in as an employer to view applicants");
       navigate("/login");
       return;
     }
 
-    if (applicantsStatus === "idle") {
-      const fetchAction = jobId
-        ? fetchApplicantsByJob({ jobId })
-        : fetchAllApplicants({ userId: userInfo.id });
+    const fetchApplicants = async () => {
+      try {
+        if (jobId) {
+          console.log(`DEBUG: Fetching applicants for jobId ${jobId}`);
+          await dispatch(fetchApplicantsByJob({ jobId })).unwrap();
+        } else {
+          console.log(`DEBUG: Fetching all applicants for userId ${userInfo.id}`);
+          await dispatch(fetchApplicantsByUserJobs(userInfo.id)).unwrap();
+        }
+      } catch (err) {
+        console.error("DEBUG: Fetch error:", err);
+        toast.error(`Failed to fetch applicants: ${err}`);
+      }
+    };
 
-      dispatch(fetchAction)
-        .unwrap()
-        .then((res) => {
-          console.log(`${jobId ? "Job Applicants" : "All Applicants"} fetched:`, res);
-        })
-        .catch((err) => {
-          console.error(`Failed to fetch ${jobId ? "job" : "all"} applicants:`, err);
-          const errorMessage = err.includes("404")
-            ? `No ${jobId ? "applicants found for job #" + jobId : "applicants found for your jobs"}`
-            : `Failed to load applicants: ${err}`;
-          toast.error(errorMessage, {
-            position: "top-right",
-            autoClose: 3000,
-          });
-        });
+    if (applicantsStatus === "idle") {
+      fetchApplicants();
     }
   }, [dispatch, jobId, applicantsStatus, userInfo, userType, navigate]);
+
+  // ensure applicants is an array
+  const applicants = Array.isArray(applicantsState)
+    ? applicantsState
+    : Object.values(applicantsState);
 
   const filteredApplicants = applicants.filter((applicant) =>
     [
@@ -84,7 +94,7 @@ const Applicants = () => {
   if (applicantsStatus === "failed") {
     return (
       <p className="text-red-600 text-lg">
-        {applicantsError.includes("404")
+        {applicantsError?.includes("404")
           ? `No ${jobId ? "applicants found for job #" + jobId : "applicants found for your jobs"}`
           : `Error: ${applicantsError}`}
       </p>
@@ -113,26 +123,20 @@ const Applicants = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode("table")}
-              aria-label="Switch to table view"
-              className={`p-2 rounded-lg ${
-                viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
-              }`}
+              className={`p-2 rounded-lg ${viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
             >
               <FaList />
             </button>
             <button
               onClick={() => setViewMode("card")}
-              aria-label="Switch to card view"
-              className={`p-2 rounded-lg ${
-                viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"
-              }`}
+              className={`p-2 rounded-lg ${viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
             >
               <FaTh />
             </button>
           </div>
         </div>
 
-        {/* Applicants */}
+        {/* Applicants List */}
         {filteredApplicants.length === 0 ? (
           <p className="text-gray-600 text-lg">
             No applicants found {jobId ? `for job #${jobId}` : "for your jobs"}.
@@ -142,9 +146,7 @@ const Applicants = () => {
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">#</th>
-                {jobId ? null : (
-                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job ID</th>
-                )}
+                {!jobId && <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job ID</th>}
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Phone</th>
@@ -164,11 +166,9 @@ const Applicants = () => {
             </thead>
             <tbody>
               {filteredApplicants.map((applicant, index) => (
-                <tr key={applicant.id} className="border-t border-gray-200 hover:bg-gray-50">
+                <tr key={applicant.id || index} className="border-t border-gray-200 hover:bg-gray-50">
                   <td className="px-4 py-2">{index + 1}</td>
-                  {jobId ? null : (
-                    <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>
-                  )}
+                  {!jobId && <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>}
                   <td className="px-4 py-2">{applicant.fullName || "N/A"}</td>
                   <td className="px-4 py-2">{applicant.email || "N/A"}</td>
                   <td className="px-4 py-2">{applicant.phone || "N/A"}</td>
@@ -182,51 +182,26 @@ const Applicants = () => {
                   <td className="px-4 py-2">{applicant.skills?.join(", ") || "N/A"}</td>
                   <td className="px-4 py-2">
                     {applicant.resume ? (
-                      <a
-                        href={`http://localhost:5000/${applicant.resume}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:underline"
-                      >
+                      <a href={`http://localhost:5000/${applicant.resume}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                         View
                       </a>
-                    ) : (
-                      "N/A"
-                    )}
+                    ) : "N/A"}
                   </td>
                   <td className="px-4 py-2">
                     {applicant.coverLetter ? (
-                      <a
-                        href={`http://localhost:5000/${applicant.coverLetter}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:underline"
-                      >
+                      <a href={`http://localhost:5000/${applicant.coverLetter}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                         View
                       </a>
-                    ) : (
-                      "N/A"
-                    )}
+                    ) : "N/A"}
                   </td>
                   <td className="px-4 py-2">
                     {applicant.linkedIn ? (
-                      <a
-                        href={applicant.linkedIn}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-indigo-600 hover:underline"
-                      >
+                      <a href={applicant.linkedIn} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
                         View
                       </a>
-                    ) : (
-                      "N/A"
-                    )}
+                    ) : "N/A"}
                   </td>
-                  <td className="px-4 py-2">
-                    {applicant.createdAt
-                      ? new Date(applicant.createdAt).toLocaleDateString()
-                      : "N/A"}
-                  </td>
+                  <td className="px-4 py-2">{applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}</td>
                 </tr>
               ))}
             </tbody>
@@ -234,99 +209,23 @@ const Applicants = () => {
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApplicants.map((applicant) => (
-              <div
-                key={applicant.id}
-                className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow"
-              >
-                {jobId ? null : (
-                  <p>
-                    <strong>Job ID:</strong> {applicant.jobId || "N/A"}
-                  </p>
-                )}
-                <p>
-                  <strong>Name:</strong> {applicant.fullName || "N/A"}
-                </p>
-                <p>
-                  <strong>Email:</strong> {applicant.email || "N/A"}
-                </p>
-                <p>
-                  <strong>Phone:</strong> {applicant.phone || "N/A"}
-                </p>
-                <p>
-                  <strong>Location:</strong> {applicant.location || "N/A"}
-                </p>
-                <p>
-                  <strong>Experience:</strong> {applicant.experience || "N/A"}
-                </p>
-                <p>
-                  <strong>Job Title:</strong> {applicant.jobTitle || "N/A"}
-                </p>
-                <p>
-                  <strong>Company:</strong> {applicant.company || "N/A"}
-                </p>
-                <p>
-                  <strong>Qualification:</strong> {applicant.qualification || "N/A"}
-                </p>
-                <p>
-                  <strong>Specialization:</strong> {applicant.specialization || "N/A"}
-                </p>
-                <p>
-                  <strong>University:</strong> {applicant.university || "N/A"}
-                </p>
-                <p>
-                  <strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}
-                </p>
-                <p>
-                  <strong>Resume:</strong>{" "}
-                  {applicant.resume ? (
-                    <a
-                      href={`http://localhost:5000/${applicant.resume}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "N/A"
-                  )}
-                </p>
-                <p>
-                  <strong>Cover Letter:</strong>{" "}
-                  {applicant.coverLetter ? (
-                    <a
-                      href={`http://localhost:5000/${applicant.coverLetter}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "N/A"
-                  )}
-                </p>
-                <p>
-                  <strong>LinkedIn:</strong>{" "}
-                  {applicant.linkedIn ? (
-                    <a
-                      href={applicant.linkedIn}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-indigo-600 hover:underline"
-                    >
-                      View
-                    </a>
-                  ) : (
-                    "N/A"
-                  )}
-                </p>
-                <p>
-                  <strong>Applied On:</strong>{" "}
-                  {applicant.createdAt
-                    ? new Date(applicant.createdAt).toLocaleDateString()
-                    : "N/A"}
-                </p>
+              <div key={applicant.id || Math.random()} className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+                {!jobId && <p><strong>Job ID:</strong> {applicant.jobId || "N/A"}</p>}
+                <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
+                <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
+                <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
+                <p><strong>Location:</strong> {applicant.location || "N/A"}</p>
+                <p><strong>Experience:</strong> {applicant.experience || "N/A"}</p>
+                <p><strong>Job Title:</strong> {applicant.jobTitle || "N/A"}</p>
+                <p><strong>Company:</strong> {applicant.company || "N/A"}</p>
+                <p><strong>Qualification:</strong> {applicant.qualification || "N/A"}</p>
+                <p><strong>Specialization:</strong> {applicant.specialization || "N/A"}</p>
+                <p><strong>University:</strong> {applicant.university || "N/A"}</p>
+                <p><strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}</p>
+                <p><strong>Resume:</strong> {applicant.resume ? <a href={`http://localhost:5000/${applicant.resume}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
+                <p><strong>Cover Letter:</strong> {applicant.coverLetter ? <a href={`http://localhost:5000/${applicant.coverLetter}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
+                <p><strong>LinkedIn:</strong> {applicant.linkedIn ? <a href={applicant.linkedIn} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
+                <p><strong>Applied On:</strong> {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}</p>
               </div>
             ))}
           </div>

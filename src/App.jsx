@@ -71,7 +71,7 @@ const App = () => {
           <Route path="/cmpprofile" element={<CmpProfile />} />
           {/* <Route path="/applicants" element={<Applicants />} /> */}
 
-          <Route path="/jobs/:jobId/applicants" element={<Applicants />} />
+          <Route path="/applicants" element={<Applicants />} />
         
         </Route>
 
