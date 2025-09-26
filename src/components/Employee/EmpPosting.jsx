@@ -42,6 +42,34 @@ const EmpPosting = () => {
     vacancies: 1,
   });
   const [errors, setErrors] = useState({});
+  const [availableSkills, setAvailableSkills] = useState([]);
+  const [skillsStatus, setSkillsStatus] = useState('idle'); // Track skills fetching status
+
+  useEffect(() => {
+    const fetchSkills = async () => {
+      setSkillsStatus('loading');
+      try {
+        const response = await axios.get('http://localhost:5000/api/jobs/skills');
+        console.log('Skills fetched:', response.data);
+        const skills = Array.isArray(response.data) ? response.data : [];
+        setAvailableSkills(skills);
+        setSkillsStatus('succeeded');
+      } catch (err) {
+        console.error('Error fetching skills:', {
+          message: err.message,
+          status: err.response?.status,
+          data: err.response?.data,
+        });
+        toast.error(err.response?.data?.error || 'Failed to fetch skills.', {
+          position: 'top-right',
+          autoClose: 3000,
+        });
+        setAvailableSkills([]);
+        setSkillsStatus('failed');
+      }
+    };
+    fetchSkills();
+  }, []);
 
   useEffect(() => {
     if (!userInfo || !userType || (userType !== 'employer' && userType !== 'admin')) {
