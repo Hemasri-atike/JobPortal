@@ -28,9 +28,9 @@ const EmpPosting = () => {
     company_name: '',
     location: '',
     description: '',
-    category: '',
-    subcategory: '',
-    salary: '',
+    category_id: '',
+    subcategory_id: '',
+    salary: 0,
     type: '',
     experience: '',
     deadline: '',
@@ -39,7 +39,7 @@ const EmpPosting = () => {
     contactPerson: '',
     role: '',
     startDate: '',
-    vacancies: '',
+    vacancies: 1,
   });
   const [errors, setErrors] = useState({});
 
@@ -55,23 +55,25 @@ const EmpPosting = () => {
   }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
 
   useEffect(() => {
-    if (formData.category) {
-      dispatch(fetchSubcategories(formData.category));
+    if (formData.category_id) {
+      dispatch(fetchSubcategories(formData.category_id));
+    } else {
+      dispatch({ type: 'categories/resetSubcategories' });
     }
-  }, [dispatch, formData.category]);
+  }, [dispatch, formData.category_id]);
 
   useEffect(() => {
     if (id && job) {
-      const categoryExists = categories.find((cat) => cat.id === job.category || cat.name === job.category);
-      const subcategoryExists = subcategories.find((sub) => sub.id === job.subcategory || sub.name === job.subcategory);
+      const category = categories.find((cat) => cat.id === job.category_id || cat.name === job.category);
+      const subcategory = subcategories.find((sub) => sub.id === job.subcategory_id || sub.name === job.subcategory);
       setFormData({
         title: job.title || '',
         company_name: job.company_name || '',
         location: job.location || '',
         description: job.description || '',
-        category: categoryExists ? (job.category_id || job.category || '') : '',
-        subcategory: subcategoryExists ? (job.subcategory_id || job.subcategory || '') : '',
-        salary: job.salary || '',
+        category_id: category ? String(category.id) : '',
+        subcategory_id: subcategory ? String(subcategory.id) : '',
+        salary: job.salary || 0,
         type: job.type || '',
         experience: job.experience || '',
         deadline: job.deadline && !isNaN(new Date(job.deadline))
@@ -84,24 +86,30 @@ const EmpPosting = () => {
         startDate: job.startDate && !isNaN(new Date(job.startDate))
           ? new Date(job.startDate).toISOString().split('T')[0]
           : '',
-        vacancies: job.vacancies || '',
+        vacancies: job.vacancies || 1,
       });
+      if (category && !subcategories.length && formData.category_id) {
+        dispatch(fetchSubcategories(category.id));
+      }
     }
-  }, [id, job, categories, subcategories]);
+  }, [id, job, categories, subcategories, dispatch]);
 
   const validateForm = () => {
     const newErrors = {};
+    const today = new Date().toISOString().split('T')[0];
     if (!formData.title) newErrors.title = 'Job Title is required';
     if (!formData.company_name) newErrors.company_name = 'Company Name is required';
     if (!formData.location) newErrors.location = 'Location is required';
     if (!formData.description) newErrors.description = 'Job Description is required';
-    if (!formData.category) newErrors.category = 'Category is required';
-    if (!formData.subcategory && formData.category && subcategories.length > 0)
-      newErrors.subcategory = 'Subcategory is required';
+    if (!formData.category_id) newErrors.category_id = 'Category is required';
+    if (!formData.subcategory_id && formData.category_id && subcategories.length > 0)
+      newErrors.subcategory_id = 'Subcategory is required';
     if (!formData.type) newErrors.type = 'Job Type is required';
     if (!formData.deadline) newErrors.deadline = 'Application Deadline is required';
-    if (formData.salary && formData.salary < 0) newErrors.salary = 'Salary cannot be negative';
-    if (formData.vacancies && formData.vacancies < 1) newErrors.vacancies = 'Vacancies must be at least 1';
+    if (formData.deadline && formData.deadline < today)
+      newErrors.deadline = 'Deadline must be a future date';
+    if (formData.salary < 0) newErrors.salary = 'Salary cannot be negative';
+    if (formData.vacancies < 1) newErrors.vacancies = 'Vacancies must be at least 1';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -110,14 +118,18 @@ const EmpPosting = () => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: value,
-      ...(name === 'category' ? { subcategory: '' } : {}),
+      [name]: name === 'category_id' || name === 'subcategory_id' ? String(value) : value,
+      ...(name === 'category_id' ? { subcategory_id: '' } : {}),
     }));
-    setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'category' ? { subcategory: '' } : {}) }));
+    setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'category_id' ? { subcategory_id: '' } : {}) }));
   };
 
   const handleTagsChange = (e) => {
-    const tags = e.target.value.split(',').map((tag) => tag.trim()).filter((tag) => tag);
+    const tags = e.target.value
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag && tag.length <= 50 && /^[a-zA-Z0-9\s-]+$/.test(tag))
+      .slice(0, 10);
     setFormData((prev) => ({ ...prev, tags }));
   };
 
@@ -128,17 +140,42 @@ const EmpPosting = () => {
       return;
     }
     try {
+      const payload = {
+        ...formData,
+        userId: userInfo.id,
+        category: categories.find((cat) => cat.id === parseInt(formData.category_id))?.name || '',
+        subcategory: subcategories.find((sub) => sub.id === parseInt(formData.subcategory_id))?.name || '',
+      };
       if (id) {
-        await dispatch(updateJob({ id, ...formData })).unwrap();
+        await dispatch(updateJob({ id, ...payload })).unwrap();
         toast.success('Job updated successfully.', { position: 'top-right', autoClose: 3000 });
       } else {
-        await dispatch(createJob({ ...formData, userId: userInfo.id })).unwrap();
+        await dispatch(createJob(payload)).unwrap();
         toast.success('Job created successfully.', { position: 'top-right', autoClose: 3000 });
+        setFormData({
+          title: '',
+          company_name: '',
+          location: '',
+          description: '',
+          category_id: '',
+          subcategory_id: '',
+          salary: 0,
+          type: '',
+          experience: '',
+          deadline: '',
+          tags: [],
+          status: 'Active',
+          contactPerson: '',
+          role: '',
+          startDate: '',
+          vacancies: 1,
+        });
       }
       navigate('/joblistings');
     } catch (err) {
-      const errorMessage = err?.message || err?.error || `Failed to ${id ? 'update' : 'create'} job. Please try again.`;
-      console.error('Submit error:', err);
+      const errorMessage = err?.message?.includes('network')
+        ? 'Network error. Please check your connection.'
+        : err?.message || `Failed to ${id ? 'update' : 'create'} job.`;
       toast.error(errorMessage, { position: 'top-right', autoClose: 3000 });
     }
   };
@@ -150,15 +187,9 @@ const EmpPosting = () => {
           {id ? 'Edit Job Posting' : 'Create a New Job Posting'}
         </h1>
 
-        {jobsStatus === 'failed' && (
+        {(jobsStatus === 'failed' || categoriesStatus === 'failed') && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
-            {jobsError || 'An error occurred while processing your request.'}
-          </div>
-        )}
-
-        {categoriesStatus === 'failed' && (
-          <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
-            {categoriesError || 'Failed to load categories.'}
+            {jobsError || categoriesError || 'An error occurred while processing your request.'}
           </div>
         )}
 
@@ -241,25 +272,25 @@ const EmpPosting = () => {
                 )}
               </div>
               <div>
-                <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
                 <select
-                  id="category"
-                  name="category"
-                  value={formData.category}
+                  id="category_id"
+                  name="category_id"
+                  value={formData.category_id}
                   onChange={handleChange}
                   disabled={categoriesStatus === 'loading' || categories.length === 0}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
-                    errors.category ? 'border-red-500' : 'border-gray-300'
+                    errors.category_id ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  aria-invalid={!!errors.category}
-                  aria-describedby={errors.category ? 'category-error' : undefined}
+                  aria-invalid={!!errors.category_id}
+                  aria-describedby={errors.category_id ? 'category_id-error' : undefined}
                   aria-required="true"
                 >
                   <option value="">Select a category</option>
                   {categories.map((category) => (
-                    <option key={category.id} value={category.name}>
+                    <option key={category.id} value={category.id}>
                       {category.name}
                     </option>
                   ))}
@@ -267,27 +298,27 @@ const EmpPosting = () => {
                 {categoriesStatus === 'loading' && (
                   <p className="mt-1 text-sm text-gray-500">Loading categories...</p>
                 )}
-                {errors.category && (
-                  <p id="category-error" className="mt-1 text-sm text-red-500">
-                    {errors.category}
+                {errors.category_id && (
+                  <p id="category_id-error" className="mt-1 text-sm text-red-500">
+                    {errors.category_id}
                   </p>
                 )}
               </div>
               <div>
-                <label htmlFor="subcategory" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700 mb-1">
                   Subcategory <span className="text-red-500">*</span>
                 </label>
                 <select
-                  id="subcategory"
-                  name="subcategory"
-                  value={formData.subcategory}
+                  id="subcategory_id"
+                  name="subcategory_id"
+                  value={formData.subcategory_id}
                   onChange={handleChange}
-                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category}
+                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category_id}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
-                    errors.subcategory ? 'border-red-500' : 'border-gray-300'
+                    errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
                   }`}
-                  aria-invalid={!!errors.subcategory}
-                  aria-describedby={errors.subcategory ? 'subcategory-error' : undefined}
+                  aria-invalid={!!errors.subcategory_id}
+                  aria-describedby={errors.subcategory_id ? 'subcategory_id-error' : undefined}
                   aria-required="true"
                 >
                   <option value="">Select a subcategory</option>
@@ -300,9 +331,9 @@ const EmpPosting = () => {
                 {subcategoriesStatus === 'loading' && (
                   <p className="mt-1 text-sm text-gray-500">Loading subcategories...</p>
                 )}
-                {errors.subcategory && (
-                  <p id="subcategory-error" className="mt-1 text-sm text-red-500">
-                    {errors.subcategory}
+                {errors.subcategory_id && (
+                  <p id="subcategory_id-error" className="mt-1 text-sm text-red-500">
+                    {errors.subcategory_id}
                   </p>
                 )}
               </div>
@@ -349,6 +380,7 @@ const EmpPosting = () => {
                   min="0"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., 50000"
+                  aria-required="false"
                 />
                 {errors.salary && (
                   <p id="salary-error" className="mt-1 text-sm text-red-500">
@@ -377,6 +409,7 @@ const EmpPosting = () => {
                   <option value="Part-time">Part-time</option>
                   <option value="Contract">Contract</option>
                   <option value="Remote">Remote</option>
+                  <option value="Onsite">Onsite</option>
                 </select>
                 {errors.type && (
                   <p id="type-error" className="mt-1 text-sm text-red-500">
@@ -396,6 +429,7 @@ const EmpPosting = () => {
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., 2-5 years"
+                  aria-required="false"
                 />
               </div>
             </div>
@@ -434,6 +468,7 @@ const EmpPosting = () => {
                   value={formData.startDate}
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  aria-required="false"
                 />
               </div>
               <div>
@@ -449,6 +484,7 @@ const EmpPosting = () => {
                   min="1"
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., 3"
+                  aria-required="false"
                 />
                 {errors.vacancies && (
                   <p id="vacancies-error" className="mt-1 text-sm text-red-500">
@@ -470,6 +506,7 @@ const EmpPosting = () => {
                   onChange={handleTagsChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., React, Node, Remote"
+                  aria-required="false"
                 />
               </div>
               <div>
@@ -484,6 +521,7 @@ const EmpPosting = () => {
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., John Doe, HR Manager"
+                  aria-required="false"
                 />
               </div>
               <div>
@@ -498,6 +536,7 @@ const EmpPosting = () => {
                   onChange={handleChange}
                   className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
                   placeholder="e.g., Frontend Developer"
+                  aria-required="false"
                 />
               </div>
             </div>
@@ -511,6 +550,7 @@ const EmpPosting = () => {
                 value={formData.status}
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                aria-required="false"
               >
                 <option value="Draft">Draft</option>
                 <option value="Active">Active</option>
