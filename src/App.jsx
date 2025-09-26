@@ -77,7 +77,7 @@ const App = () => {
 
         {/* Candidate Routes */}
         <Route element={<ProtectedRoute allowedRoles={['job_seeker']} />}>
-          <Route path="/cadprofile" element={<Profile />} />
+          {/* <Route path="/cadprofile" element={<Profile />} /> */}
           <Route path="/resume" element={<Myresume />} />
           <Route path="/applied" element={<Applied />} />
           <Route path="/job-alerts" element={<JobAlert />} />

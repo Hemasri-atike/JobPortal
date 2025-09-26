@@ -22,7 +22,7 @@ const Login = () => {
 
   const from =
     location.state?.from?.pathname ||
-    (loginType === "employer" ? "/empdashboard" : "/cadprofile");
+    (loginType === "employer" ? "/empdashboard" : "/caddetails");
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -107,7 +107,7 @@ const Dashboard = () => {
             <p className="text-base text-gray-600">
               Your profile is {profileCompletion || 0}% complete.{" "}
               <Link
-                to="/cadprofile"
+                to="/caddetails"
                 className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
                 aria-label="Complete your profile"
               >
