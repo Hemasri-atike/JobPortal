@@ -83,7 +83,7 @@ const Header = () => {
     const role = userInfo.role?.toLowerCase();
     const route =
       role === "job_seeker"
-        ? "/cadprofile"
+        ? "/caddetails"
         : role === "employer"
         ? "/cmpprofile"
         : "/profile";
