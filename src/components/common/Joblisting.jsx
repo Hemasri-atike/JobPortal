@@ -5,7 +5,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   fetchJobs,
-  fetchCategories,
+
   deleteJob,
   bulkDeleteJobs,
   toggleJobStatus,
@@ -15,26 +15,45 @@ import {
   setSortBy,
   setPage,
 } from '../../store/jobsSlice.js';
+import { fetchCategories } from '../../store/categoriesSlice.js';
 import { useDebounce } from 'use-debounce';
 
 const JobListing = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  // const {
+  //   jobs = [],
+  //   total = 0,
+  //   page = 1,
+  //   jobsPerPage = 10,
+  //   searchQuery = '',
+  //   statusFilter = 'All',
+  //   categoryFilter = '',
+  //   sortBy = 'createdAt-desc',
+  //   jobsStatus = 'idle',
+  //   jobsError = null,
+  //   categories = [],
+  //   categoriesStatus = 'idle',
+  //   categoriesError = null,
+  // } = useSelector((state) => state.jobs || {});
+
   const {
-    jobs = [],
-    total = 0,
-    page = 1,
-    jobsPerPage = 10,
-    searchQuery = '',
-    statusFilter = 'All',
-    categoryFilter = '',
-    sortBy = 'createdAt-desc',
-    jobsStatus = 'idle',
-    jobsError = null,
-    categories = [],
-    categoriesStatus = 'idle',
-    categoriesError = null,
-  } = useSelector((state) => state.jobs || {});
+  jobs = [],
+  total = 0,
+  page = 1,
+  jobsPerPage = 10,
+  searchQuery = '',
+  statusFilter = 'All',
+  categoryFilter = '',
+  sortBy = 'createdAt-desc',
+  jobsStatus = 'idle',
+  jobsError = null,
+} = useSelector((state) => state.jobs || {});
+const {
+  categories = [],
+  status: categoriesStatus = 'idle',
+  error: categoriesError = null,
+} = useSelector((state) => state.categories || {});
   const { userInfo = null, userType = null } = useSelector((state) => state.user || {});
   const [viewMode, setViewMode] = useState('grid');
   const [selectedJobs, setSelectedJobs] = useState([]);
