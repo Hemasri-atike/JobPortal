@@ -110,6 +110,27 @@ export const fetchJobsByCategory = createAsyncThunk(
     }
   }
 );
+// jobsSlice.js
+export const fetchApplicantsByUserJobs = createAsyncThunk(
+  "jobs/fetchApplicantsByUserJobs",
+  async (userId, { rejectWithValue }) => {
+    try {
+      const response = await axios.get(`http://localhost:5000/jobs/applicants?user_id=${userId}`);
+      // make sure the payload is an array
+      return response.data || [];
+    } catch (error) {
+      return rejectWithValue(error.response?.data?.message || error.message);
+    }
+  }
+);
+
+// initialState
+const initialState = {
+  applicants: [], // array
+  applicantsStatus: "idle",
+  applicantsError: null,
+};
+
 
 // Fetch user applications
 export const fetchUserApplications = createAsyncThunk(
