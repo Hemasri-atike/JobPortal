@@ -14,7 +14,7 @@ import {
 // Candidate Sidebar
 export const candidateSidebarItems = [
   { icon: FaHome, label: "Dashboard", path: "/dashboard" },
-  { icon: FaUser, label: "My Profile", path: "/cadprofile" },
+  { icon: FaUser, label: "My Profile", path: "/caddetails" },
   { icon: FaFileAlt, label: "My Resume", path: "/resume" },
   { icon: FaClipboardList, label: "Applied Jobs", path: "/applied" },
   { icon: FaBell, label: "Job Alerts", path: "/job-alerts" },

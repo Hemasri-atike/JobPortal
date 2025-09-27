@@ -22,7 +22,7 @@ const Applied = () => {
   const jobsPerPage = 4;
 
   const axiosAuth = (token) => {
-    const instance = axios.create({
+    const instance = Ascertainable = axios.create({
       baseURL: 'http://localhost:5000/api',
       headers: { Authorization: `Bearer ${token}` },
     });
@@ -39,8 +39,9 @@ const Applied = () => {
             originalRequest.headers.Authorization = `Bearer ${newToken}`;
             return instance(originalRequest);
           } catch (refreshError) {
+            // Instead of redirecting, dispatch logout and set error
             dispatch(logoutUser());
-            window.location.href = '/login';
+            setError('Session expired. Please try again later.');
             return Promise.reject(refreshError);
           }
         }
@@ -52,7 +53,7 @@ const Applied = () => {
 
   const fetchJobs = async (reset = false) => {
     if (!candidateId) {
-      setError('Please log in to view applied jobs.');
+      setError('No user data available. Please try again later.');
       return;
     }
     setIsLoading(true);
@@ -68,7 +69,7 @@ const Applied = () => {
         page,
         limit: jobsPerPage,
       });
-      const res = await axiosAuth(token).get(`/applications?${params}`); // Changed to /api/applications
+      const res = await axiosAuth(token).get(`/api/applications?${params}`);
       const { jobs: fetchedJobs, total } = res.data;
       if (reset || page === 1) {
         setJobs(fetchedJobs || []);
@@ -85,12 +86,11 @@ const Applied = () => {
       });
       setError(
         err.response?.status === 403
-          ? 'You do not have permission to view applied jobs. Please ensure you are logged in as a job seeker.'
+          ? 'You do not have permission to view applied jobs.'
+          : err.response?.status === 401
+          ? 'Unable to authenticate. Please try again later.'
           : err.response?.data?.details || err.message || 'Failed to load applied jobs.'
       );
-      if (err.response?.status === 401) {
-        setTimeout(() => window.location.href = '/login', 2000);
-      }
     } finally {
       setIsLoading(false);
     }
@@ -144,13 +144,15 @@ const Applied = () => {
           {error && (
             <div className="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 rounded-md mb-6 animate-fade-in">
               {error}
-              <button
-                onClick={() => setError(null)}
-                className="ml-4 text-red-700 hover:text-red-900 font-medium focus:outline-none focus:underline"
-                aria-label="Dismiss error"
-              >
-                Dismiss
-              </button>
+              <div className="mt-2">
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-4 text-red-700 hover:text-red-900 font-medium focus:outline-none focus:underline"
+                  aria-label="Dismiss error"
+                >
+                  Dismiss
+                </button>
+              </div>
             </div>
           )}
 
