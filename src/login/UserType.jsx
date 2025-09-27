@@ -1,55 +1,59 @@
 import { Link } from "react-router-dom";
 import { User, Briefcase } from "lucide-react";
+import IHireboy from "../../public/assets/SignIn.jpg";
 
 const UserType = () => {
   return (
-    <div className="w-full max-w-sm bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm p-6 text-center animate-fade-in">
-      <h2 className="text-2xl font-bold text-gray-900 mb-4">
-        Welcome to{" "}
-        <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-          IHire
-        </span>
-      </h2>
-      <p className="text-base text-gray-600 mb-6">
-        Please select your role to continue
-      </p>
+    <div className="w-full max-w-4xl flex flex-col md:flex-row items-center animate-fade-in">
+      {/* Left Section: Existing Content */}
+      <div className="w-full md:w-1/2 text-center md:text-left p-4">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">
+          Welcome to{" "}
+          <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+            IHire
+          </span>
+        </h2>
+        <p className="text-base text-gray-600 mb-6">
+          Please select your role to continue
+        </p>
 
-      <div className="flex flex-col gap-4">
-        <Link
-          to="/login?type=candidate"
-          className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors font-semibold"
-          aria-label="Log in as a candidate"
-        >
-          <User size={20} /> I'm a Candidate
-        </Link>
+        <div className="flex flex-col gap-4">
+          <Link
+            to="/login?type=candidate"
+            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors font-semibold"
+            aria-label="Log in as a candidate"
+          >
+            <User size={20} /> I'm a Candidate
+          </Link>
 
-        <Link
-          to="/login?type=employer"
-          className="flex items-center justify-center gap-2 bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-semibold"
-          aria-label="Log in as an employer"
-        >
-          <Briefcase size={20} /> I'm an Employer
-        </Link>
+          <Link
+            to="/login?type=employer"
+            className="flex items-center justify-center gap-2 bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-semibold"
+            aria-label="Log in as an employer"
+          >
+            <Briefcase size={20} /> I'm an Employer
+          </Link>
+        </div>
+
+        <div className="mt-6 text-sm text-gray-600">
+          Don’t have an account?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+            aria-label="Sign up for an account"
+          >
+            Sign up here
+          </Link>
+        </div>
       </div>
 
-      <div className="mt-6 text-sm text-gray-600">
-        Don’t have an account?{" "}
-        <Link
-          to="/register"
-          className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
-          aria-label="Sign up for an account"
-        >
-          Sign up here
-        </Link>
-      </div>
-
-      <div className="mt-4 text-sm text-gray-500">
-        <p>
-          <strong>Candidate</strong>: Job seekers looking for opportunities.
-        </p>
-        <p>
-          <strong>Employer</strong>: Employers or recruiters posting jobs.
-        </p>
+      {/* Right Section: Image */}
+      <div className="w-full md:w-1/2 mt-6 md:mt-0">
+        <img
+          src={IHireboy}
+          alt="IHire mascot"
+          className="w-full h-auto max-h-96 object-contain rounded-lg"
+        />
       </div>
 
       {/* Tailwind Animation Classes */}

@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import Application from '../../components/job/Application';
@@ -11,7 +10,7 @@ const JobCard = ({ job }) => {
   // Validate job and job.id
   if (!job || !job.id) {
     console.error('Invalid job data in JobCard:', job);
-    return null; // Skip rendering if job or job.id is missing
+    return null;
   }
 
   const {
@@ -39,25 +38,28 @@ const JobCard = ({ job }) => {
 
   return (
     <>
+      {/* Job Card Container */}
       <div
-        className="bg-white rounded-xl shadow-md p-4 sm:p-5 hover:shadow-lg transition duration-300 flex flex-col min-h-[240px] max-w-full border border-gray-200"
+        className="bg-white rounded-2xl shadow-lg p-5 sm:p-6 hover:shadow-xl transition-all duration-300 flex flex-col gap-4 border border-gray-100 max-w-full hover:border-blue-200"
         role="article"
         aria-labelledby={`job-title-${id}`}
       >
-        <div className="mb-2">
+        {/* Header: Job Title and Company */}
+        <div className="flex flex-col gap-1">
           <h3
             id={`job-title-${id}`}
-            className="text-lg sm:text-xl font-semibold text-gray-800 line-clamp-1"
+            className="text-xl sm:text-2xl font-bold text-gray-900 line-clamp-1"
           >
             {title}
           </h3>
-          <p className="text-sm text-gray-500">{company_name}</p>
+          <p className="text-sm font-medium text-gray-600">{company_name}</p>
         </div>
 
-        <div className="text-sm text-gray-400 mb-2">
-          <span className="inline-flex items-center">
+        {/* Metadata: Location and Salary */}
+        <div className="flex flex-col sm:flex-row sm:gap-4 text-sm text-gray-500">
+          <div className="flex items-center gap-1">
             <svg
-              className="w-4 h-4 mr-1"
+              className="w-4 h-4 text-gray-400"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -70,18 +72,34 @@ const JobCard = ({ job }) => {
                 d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.828 0l-4.243-4.243a8 8 0 1111.314 0z"
               />
             </svg>
-            {location}
-          </span>
+            <span>{location}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <svg
+              className="w-4 h-4 text-gray-400"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            <span>{salary}</span>
+          </div>
         </div>
 
-        <p className="text-sm text-gray-500 mb-2">Salary: {salary}</p>
-
+        {/* Tags */}
         {tags.length > 0 && (
-          <div className="flex gap-2 mb-2 flex-wrap">
+          <div className="flex flex-wrap gap-2">
             {tags.map((tag, i) => (
               <span
                 key={`${id}-${tag}-${i}`}
-                className="bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full"
+                className="bg-blue-50 text-blue-600 text-xs font-medium px-2.5 py-1 rounded-full"
               >
                 {tag}
               </span>
@@ -89,13 +107,15 @@ const JobCard = ({ job }) => {
           </div>
         )}
 
-        <p className="text-sm text-gray-600 flex-grow line-clamp-2">{description}</p>
+        {/* Description */}
+        <p className="text-sm text-gray-600 line-clamp-3 flex-grow">{description}</p>
 
+        {/* Apply Button */}
         <button
-          className={`mt-3 px-4 py-2 rounded-lg text-sm font-medium text-white w-full sm:w-auto self-end ${
+          className={`mt-4 px-5 py-2.5 rounded-lg text-sm font-semibold text-white w-full sm:w-fit transition-colors duration-200 self-end ${
             hasApplied || !id
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2'
+              ? 'bg-[#4A628A] cursor-not-allowed'
+              : 'bg-[#4A628A] focus:ring-4 focus:ring-blue-200 focus:outline-none'
           }`}
           onClick={handleApply}
           disabled={hasApplied || !id}
@@ -105,24 +125,25 @@ const JobCard = ({ job }) => {
         </button>
       </div>
 
+      {/* Application Modal */}
       {isModalOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 sm:p-0"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="application-modal-title"
         >
-          <div className="bg-white rounded-lg w-full max-w-lg sm:max-w-2xl lg:max-w-3xl overflow-y-auto max-h-[90vh]">
-            <div className="p-4 sm:p-6 border-b border-gray-200 flex justify-between items-center">
+          <div className="bg-white rounded-2xl w-full max-w-lg sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+            <div className="p-5 sm:p-6 border-b border-gray-200 flex justify-between items-center">
               <h2
                 id="application-modal-title"
-                className="text-lg sm:text-xl font-semibold text-gray-900"
+                className="text-xl sm:text-2xl font-bold text-gray-900"
               >
                 Apply for {title} at {company_name}
               </h2>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-500 hover:text-gray-700 text-lg"
+                className="text-gray-500 hover:text-gray-700 text-xl font-medium"
                 aria-label="Close application modal"
               >
                 ✕

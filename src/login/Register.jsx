@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { registerUser } from "../store/userSlice.js";
+import SignIn from "../../public/assets/SignIn.jpg";
 
 const Register = () => {
   const navigate = useNavigate();
@@ -78,163 +79,237 @@ const Register = () => {
     }
   };
 
+  const handleCancel = () => {
+    navigate(-1);
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-white px-4 relative overflow-hidden">
-      {/* Animated Background */}
-      <div className="absolute inset-0 z-0">
-        <div className="absolute top-10 left-10 w-40 h-40 bg-blue-500/20 rounded-full blur-3xl animate-float"></div>
-        <div
-          className="absolute bottom-10 right-10 w-56 h-56 bg-purple-500/20 rounded-full blur-3xl animate-float"
-          style={{ animationDelay: "1s" }}
-        ></div>
-        <div
-          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-pink-500/20 rounded-full blur-3xl animate-float"
-          style={{ animationDelay: "2s" }}
-        ></div>
-      </div>
+    <section className="w-full max-w-4xl bg-white shadow-2xl rounded-2xl max-h-screen mx-auto my-10 flex items-center justify-center px-4 py-8 relative overflow-hidden">
+      <button
+        onClick={handleCancel}
+        className="absolute top-8 right-8 bg-[#cfe0fa] p-2 rounded-xl text-black focus:outline-none transition-colors"
+        aria-label="Cancel registration"
+      >
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M6 18L18 6M6 6l12 12"
+          ></path>
+        </svg>
+      </button>
 
-      <div className="relative z-10 w-full max-w-md bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm p-8 animate-fade-in">
-        <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-gray-900 mb-2">
-            {userType === "employer" ? "Employer" : "Candidate"}{" "}
-            <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
-              Registration
-            </span>
-          </h2>
-          <p className="text-base text-gray-600">
-            {userType === "employer"
-              ? "Create your company account"
-              : "Join thousands of job seekers"}
-          </p>
-        </div>
+      <div className="flex items-center justify-center w-full max-w-4xl gap-6">
+        {/* Form Section */}
+        <div className="relative z-10 w-full max-w-sm rounded-xl p-6 animate-fade-in">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-semibold text-gray-900 mb-1">
+              {userType === "employer" ? "Employer" : "Candidate"}{" "}
+              <span className="bg-gradient-to-r from-blue-500 to-purple-600 text-transparent bg-clip-text">
+                Registration
+              </span>
+            </h2>
+            <p className="text-sm text-gray-500">
+              {userType === "employer"
+                ? "Create your company account"
+                : "Join thousands of job seekers"}
+            </p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            name="name"
-            placeholder="Full Name"
-            value={formData.name}
-            onChange={handleInputChange}
-            className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
-            aria-label="Full name"
-          />
-
-          <input
-            type="email"
-            name="email"
-            placeholder="Email Address"
-            value={formData.email}
-            onChange={handleInputChange}
-            className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
-            aria-label="Email address"
-          />
-
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={formData.password}
-            onChange={handleInputChange}
-            className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
-            aria-label="Password"
-          />
-
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
-            aria-label="Confirm password"
-          />
-
-          <input
-            type="text"
-            name="mobile"
-            placeholder="Mobile Number"
-            value={formData.mobile}
-            onChange={handleInputChange}
-            className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-            required
-            aria-label="Mobile number"
-          />
-
-          {userType === "employer" && (
-            <input
-              type="text"
-              name="company_name"
-              placeholder="Company Name"
-              value={formData.company_name}
-              onChange={handleInputChange}
-              className="w-full bg-transparent border border-gray-300 rounded-lg px-4 py-3 text-base text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-600"
-              required
-              aria-label="Company name"
-            />
-          )}
-
-          {(localError || reduxError) && (
-            <div
-              className="bg-red-100 border border-red-300 text-red-600 px-4 py-2 rounded-lg"
-              role="alert"
-            >
-              {localError || reduxError}
+          <form onSubmit={handleSubmit} className="space-y-3">
+            <div>
+              <label htmlFor="name" className="text-sm font-medium text-gray-700 block mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                placeholder="Full Name"
+                value={formData.name}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                required
+                aria-label="Full name"
+              />
             </div>
-          )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className={`w-full ${
-              userType === "employer"
-                ? "bg-purple-500 hover:bg-purple-600 focus:ring-purple-500"
-                : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-600"
-            } text-white px-6 py-3 rounded-lg disabled:bg-gray-400 focus:outline-none focus:ring-2 transition-colors font-semibold`}
-            aria-label={userType === "employer" ? "Register as employer" : "Register as candidate"}
-          >
-            {isLoading ? "Registering..." : "Register Now"}
-          </button>
+            <div>
+              <label htmlFor="email" className="text-sm font-medium text-gray-700 block mb-1">
+                Email Address
+              </label>
+              <input
+                type="email"
+                id="email"
+                name="email"
+                placeholder="Email Address"
+                value={formData.email}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                required
+                aria-label="Email address"
+              />
+            </div>
 
-          <div className="text-center mt-4 text-sm text-gray-600">
-            <Link
-              to={`/register?type=${userType === "employer" ? "candidate" : "employer"}`}
-              className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+            <div>
+              <label htmlFor="password" className="text-sm font-medium text-gray-700 block mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                required
+                aria-label="Password"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700 block mb-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                placeholder="Confirm Password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                required
+                aria-label="Confirm password"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="mobile" className="text-sm font-medium text-gray-700 block mb-1">
+                Mobile Number
+              </label>
+              <input
+                type="text"
+                id="mobile"
+                name="mobile"
+                placeholder="Mobile Number"
+                value={formData.mobile}
+                onChange={handleInputChange}
+                className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                required
+                aria-label="Mobile number"
+              />
+            </div>
+
+            {userType === "employer" && (
+              <div>
+                <label htmlFor="company_name" className="text-sm font-medium text-gray-700 block mb-1">
+                  Company Name
+                </label>
+                <input
+                  type="text"
+                  id="company_name"
+                  name="company_name"
+                  placeholder="Company Name"
+                  value={formData.company_name}
+                  onChange={handleInputChange}
+                  className="w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                  required
+                  aria-label="Company name"
+                />
+              </div>
+            )}
+
+            {(localError || reduxError) && (
+              <div
+                className="bg-red-50 border border-red-200 text-red-600 px-3 py-1.5 rounded-lg text-sm"
+                role="alert"
+              >
+                {localError || reduxError}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={isLoading}
+              className={`w-full ${
+                userType === "employer"
+                  ? "bg-gradient-to-r from-purple-500 to-purple-600 hover:from-purple-600 hover:to-purple-700 focus:ring-purple-500"
+                  : "bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 focus:ring-blue-500"
+              } text-white px-4 py-2 rounded-lg disabled:bg-gray-300 disabled:cursor-not-allowed focus:outline-none focus:ring-2 transition-all font-medium text-sm`}
               aria-label={
                 userType === "employer"
-                  ? "Register as a candidate"
-                  : "Register as an employer"
+                  ? "Register as employer"
+                  : "Register as candidate"
               }
             >
-              {userType === "employer"
-                ? "Looking for a job? Register as a candidate"
-                : "Are you an employer? Register as an employer"}
-            </Link>
-          </div>
-        </form>
+              {isLoading ? "Registering..." : "Register Now"}
+            </button>
+
+            <div className="text-center mt-3 text-xs text-gray-500">
+              <Link
+                to={`/register?type=${
+                  userType === "employer" ? "candidate" : "employer"
+                }`}
+                className="text-blue-500 hover:text-purple-600 font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                aria-label={
+                  userType === "employer"
+                    ? "Register as a candidate"
+                    : "Register as an employer"
+                }
+              >
+                {userType === "employer"
+                  ? "Looking for a job? Register as a candidate"
+                  : "Are you an employer? Register as an employer"}
+              </Link>
+            </div>
+          </form>
+        </div>
+
+        {/* Image Section */}
+        <div className="relative max-h-max animate-float z-10  w-full transition-transform hover:scale-102 p-4 rounded-xl ">
+          <img src={SignIn} alt="Sign In" className="rounded-xl w-full h-full object-cover" />
+        </div>
       </div>
 
       {/* Tailwind Animation Classes */}
       <style jsx>{`
         .animate-fade-in {
-          animation: fadeIn 0.5s ease-in-out;
+          animation: fadeIn 0.4s ease-in-out;
         }
         .animate-float {
-          animation: float 6s ease-in-out infinite;
+          animation: float 5s ease-in-out infinite;
         }
         @keyframes fadeIn {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
+          from {
+            opacity: 0;
+            transform: translateY(8px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
         }
         @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-20px); }
-          100% { transform: translateY(0px); }
+          0% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-15px);
+          }
+          100% {
+            transform: translateY(0px);
+          }
         }
       `}</style>
-    </div>
+    </section>
   );
 };
 

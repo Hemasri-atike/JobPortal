@@ -134,7 +134,7 @@ const Featured = () => {
           {hasMoreJobs && (
             <div className="mt-8 text-center">
               <button
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300"
+                className="inline-flex items-center px-4 py-2 bg-[#4A628A] text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-300"
                 onClick={handleLoadMore}
                 aria-label="Load more jobs"
                 disabled={jobsStatus === "loading"}

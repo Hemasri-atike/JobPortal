@@ -116,7 +116,11 @@ const Login = () => {
                 ? "bg-purple-500 hover:bg-purple-600 focus:ring-purple-500"
                 : "bg-blue-600 hover:bg-blue-700 focus:ring-blue-600"
             } text-white px-6 py-3 rounded-lg disabled:bg-gray-400 focus:outline-none focus:ring-2 transition-colors font-semibold`}
-            aria-label={loginType === "employer" ? "Sign in as employer" : "Sign in as candidate"}
+            aria-label={
+              loginType === "employer"
+                ? "Sign in as employer"
+                : "Sign in as candidate"
+            }
           >
             {isLoading ? "Signing In..." : "Sign In"}
           </button>
@@ -132,21 +136,16 @@ const Login = () => {
             </Link>
           </div>
 
-
-
- 
-
-{/* Forgot Password */}
-<div className="flex justify-end mt-2">
-  <Link
-    to="/forgot-password"
-    className="text-sm text-blue-600 hover:text-purple-500 font-medium transition-colors"
-    aria-label="Forgot your password?"
-  >
-    Forgot Password?
-  </Link>
-</div>
-
+          {/* Forgot Password */}
+          <div className="flex justify-end mt-2">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 hover:text-purple-500 font-medium transition-colors"
+              aria-label="Forgot your password?"
+            >
+              Forgot Password?
+            </Link>
+          </div>
         </form>
       </div>
       <ToastContainer position="top-right" autoClose={3000} />
