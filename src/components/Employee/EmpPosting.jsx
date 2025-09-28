@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { createJob, updateJob } from '../../store/jobsSlice.js';
+import { createJob, updateJob, deleteJob, clearUpdateJobState, clearDeleteJobState } from '../../store/jobsSlice.js';
 import { fetchCategories, fetchSubcategories } from '../../store/categoriesSlice.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -27,6 +27,10 @@ const EmpPosting = () => {
     jobsError = null,
     updateJobError = null,
     updateJobSuccess = false,
+    addJobError = null,
+    addJobSuccess = false,
+    deleteJobError = null,
+    deleteJobSuccess = false,
   } = useSelector((state) => state.jobs || {});
   const { userInfo = null, userType = null } = useSelector((state) => state.user || {});
 
@@ -50,8 +54,10 @@ const EmpPosting = () => {
   });
   const [errors, setErrors] = useState({});
   const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsStatus, setSkillsStatus] = useState('idle'); // Track skills fetching status
+  const [skillsStatus, setSkillsStatus] = useState('idle');
+  const [isDeleting, setIsDeleting] = useState(false);
 
+  // Fetch skills
   useEffect(() => {
     const fetchSkills = async () => {
       setSkillsStatus('loading');
@@ -78,6 +84,7 @@ const EmpPosting = () => {
     fetchSkills();
   }, []);
 
+  // Check authentication and fetch categories
   useEffect(() => {
     if (!userInfo || !userType || (userType !== 'employer' && userType !== 'admin')) {
       toast.error('Unauthorized access.', { position: 'top-right', autoClose: 3000 });
@@ -89,6 +96,7 @@ const EmpPosting = () => {
     }
   }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
 
+  // Fetch subcategories when category_id changes
   useEffect(() => {
     if (formData.category_id) {
       dispatch(fetchSubcategories(formData.category_id));
@@ -97,6 +105,7 @@ const EmpPosting = () => {
     }
   }, [dispatch, formData.category_id]);
 
+  // Populate form for editing
   useEffect(() => {
     if (id && job && skillsStatus === 'succeeded' && availableSkills.length > 0) {
       const category = categories.find((cat) => cat.id === job.category_id);
@@ -138,16 +147,68 @@ const EmpPosting = () => {
     }
   }, [id, job, categories, subcategories, dispatch, availableSkills, skillsStatus]);
 
+  // Handle success and error states
   useEffect(() => {
     if (updateJobSuccess) {
       toast.success('Job updated successfully.', { position: 'top-right', autoClose: 3000 });
+      dispatch(clearUpdateJobState());
       navigate('/joblistings');
     }
     if (updateJobError) {
       const errorMessage = updateJobError.message || updateJobError.data?.error || 'Failed to update job.';
       toast.error(errorMessage, { position: 'top-right', autoClose: 5000 });
+      dispatch(clearUpdateJobState());
     }
-  }, [updateJobSuccess, updateJobError, navigate]);
+    if (addJobSuccess) {
+      toast.success('Successfully posted a job.', { position: 'top-right', autoClose: 3000 });
+      setFormData({
+        title: '',
+        company_name: '',
+        location: '',
+        description: '',
+        category_id: '',
+        subcategory_id: '',
+        salary: 0,
+        type: '',
+        experience: '',
+        deadline: '',
+        skills: [],
+        status: 'Active',
+        contactPerson: '',
+        role: '',
+        startDate: '',
+        vacancies: 1,
+      });
+      setErrors({});
+      dispatch(clearAddJobState());
+      navigate('/joblistings');
+    }
+    if (addJobError) {
+      const errorMessage = addJobError.message || addJobError.data?.error || 'Failed to create job.';
+      toast.error(errorMessage, { position: 'top-right', autoClose: 5000 });
+      dispatch(clearAddJobState());
+    }
+    if (deleteJobSuccess) {
+      toast.success('Job deleted successfully.', { position: 'top-right', autoClose: 3000 });
+      dispatch(clearDeleteJobState());
+      navigate('/joblistings');
+    }
+    if (deleteJobError) {
+      const errorMessage = deleteJobError.message || deleteJobError.data?.error || 'Failed to delete job.';
+      toast.error(errorMessage, { position: 'top-right', autoClose: 5000 });
+      dispatch(clearDeleteJobState());
+      setIsDeleting(false);
+    }
+  }, [
+    updateJobSuccess,
+    updateJobError,
+    addJobSuccess,
+    addJobError,
+    deleteJobSuccess,
+    deleteJobError,
+    dispatch,
+    navigate,
+  ]);
 
   // Handle input changes
   const handleChange = (e) => {
@@ -160,7 +221,7 @@ const EmpPosting = () => {
     setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'category_id' ? { subcategory_id: '' } : {}) }));
   };
 
-  // Handle skills change with react-select
+  // Handle skills change
   const handleSkillsChange = (selectedOptions) => {
     const selectedSkills = selectedOptions ? selectedOptions.map((option) => option.value) : [];
     setFormData((prev) => ({ ...prev, skills: selectedSkills }));
@@ -201,39 +262,19 @@ const EmpPosting = () => {
       return;
     }
     try {
-      const token = localStorage.getItem('token');
-      const config = {
-        headers: { Authorization: `Bearer ${token}` },
-      };
       const payload = {
         ...formData,
         userId: userInfo?.id || 1,
+        salary: Number(formData.salary),
+        vacancies: Number(formData.vacancies),
+        category_id: formData.category_id ? Number(formData.category_id) : null,
+        subcategory_id: formData.subcategory_id ? Number(formData.subcategory_id) : null,
       };
-      delete payload.category;
-      delete payload.subcategory;
+      console.log('Submitting payload:', { id, ...payload });
       if (id) {
-        await dispatch(updateJob({ id, ...payload, config })).unwrap();
+        await dispatch(updateJob({ id, ...payload })).unwrap();
       } else {
-        await dispatch(createJob({ ...payload, config })).unwrap();
-        toast.success('Job created successfully.', { position: 'top-right', autoClose: 3000 });
-        setFormData({
-          title: '',
-          company_name: '',
-          location: '',
-          description: '',
-          category_id: '',
-          subcategory_id: '',
-          salary: 0,
-          type: '',
-          experience: '',
-          deadline: '',
-          skills: [],
-          status: 'Active',
-          contactPerson: '',
-          role: '',
-          startDate: '',
-          vacancies: 1,
-        });
+        await dispatch(createJob(payload)).unwrap();
       }
     } catch (err) {
       const errorMessage = err.message?.includes('network')
@@ -243,12 +284,40 @@ const EmpPosting = () => {
     }
   };
 
+  // Handle job deletion
+  const handleDelete = async () => {
+    if (!id) return;
+    if (!window.confirm('Are you sure you want to delete this job? This action cannot be undone.')) {
+      return;
+    }
+    setIsDeleting(true);
+    try {
+      await dispatch(deleteJob(id)).unwrap();
+    } catch (err) {
+      setIsDeleting(false);
+      const errorMessage = err.message || 'Failed to delete job.';
+      toast.error(errorMessage, { position: 'top-right', autoClose: 5000 });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8 flex justify-center">
       <div className="w-full max-w-3xl bg-white shadow-xl rounded-2xl p-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-8 tracking-tight">
-          {id ? 'Edit Job Posting' : 'Create a New Job Posting'}
-        </h1>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-gray-900 tracking-tight">
+            {id ? 'Edit Job Posting' : 'Create a New Job Posting'}
+          </h1>
+          {id && (
+            <button
+              type="button"
+              onClick={handleDelete}
+              disabled={isDeleting || jobsStatus === 'loading'}
+              className="px-4 py-2 bg-red-600 text-white font-medium rounded-lg hover:bg-red-700 transition-all focus:ring-2 focus:ring-red-400 focus:outline-none disabled:bg-red-400 disabled:cursor-not-allowed"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete Job'}
+            </button>
+          )}
+        </div>
 
         {(jobsStatus === 'failed' || categoriesStatus === 'failed' || skillsStatus === 'failed') && (
           <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-lg">
@@ -256,7 +325,7 @@ const EmpPosting = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-8">
+        <form onSubmit={handleSubmit} className="space-y-8" disabled={jobsStatus === 'loading'}>
           <div className="space-y-6">
             <h2 className="text-lg font-semibold text-gray-800">Job Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -270,7 +339,8 @@ const EmpPosting = () => {
                   name="title"
                   value={formData.title}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.title ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="e.g., Frontend Developer"
@@ -294,7 +364,8 @@ const EmpPosting = () => {
                   name="company_name"
                   value={formData.company_name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.company_name ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="e.g., Tech Corp"
@@ -320,7 +391,8 @@ const EmpPosting = () => {
                   name="location"
                   value={formData.location}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.location ? 'border-red-500' : 'border-gray-300'
                   }`}
                   placeholder="e.g., Mumbai, India"
@@ -343,7 +415,7 @@ const EmpPosting = () => {
                   name="category_id"
                   value={formData.category_id}
                   onChange={handleChange}
-                  disabled={categoriesStatus === 'loading' || categories.length === 0}
+                  disabled={categoriesStatus === 'loading' || categories.length === 0 || jobsStatus === 'loading'}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.category_id ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -376,7 +448,7 @@ const EmpPosting = () => {
                   name="subcategory_id"
                   value={formData.subcategory_id}
                   onChange={handleChange}
-                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category_id}
+                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category_id || jobsStatus === 'loading'}
                   className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
                   }`}
@@ -411,7 +483,8 @@ const EmpPosting = () => {
                 value={formData.description}
                 onChange={handleChange}
                 rows="5"
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                disabled={jobsStatus === 'loading'}
+                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                   errors.description ? 'border-red-500' : 'border-gray-300'
                 }`}
                 placeholder="Describe the job responsibilities, requirements, and perks..."
@@ -441,7 +514,7 @@ const EmpPosting = () => {
                   className="basic-multi-select"
                   classNamePrefix="select"
                   placeholder="Select skills..."
-                  isDisabled={skillsStatus !== 'succeeded'}
+                  isDisabled={skillsStatus !== 'succeeded' || jobsStatus === 'loading'}
                   aria-invalid={!!errors.skills}
                   aria-describedby={errors.skills ? 'skills-error' : undefined}
                   aria-required="true"
@@ -471,7 +544,8 @@ const EmpPosting = () => {
                   value={formData.salary}
                   onChange={handleChange}
                   min="0"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   placeholder="e.g., 50000"
                   aria-required="false"
                 />
@@ -490,7 +564,8 @@ const EmpPosting = () => {
                   name="type"
                   value={formData.type}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.type ? 'border-red-500' : 'border-gray-300'
                   }`}
                   aria-invalid={!!errors.type}
@@ -520,7 +595,8 @@ const EmpPosting = () => {
                   name="experience"
                   value={formData.experience}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   placeholder="e.g., 2-5 years"
                   aria-required="false"
                 />
@@ -537,7 +613,8 @@ const EmpPosting = () => {
                   name="deadline"
                   value={formData.deadline}
                   onChange={handleChange}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm ${
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
                     errors.deadline ? 'border-red-500' : 'border-gray-300'
                   }`}
                   aria-invalid={!!errors.deadline}
@@ -560,7 +637,8 @@ const EmpPosting = () => {
                   name="startDate"
                   value={formData.startDate}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   aria-required="false"
                 />
               </div>
@@ -575,7 +653,8 @@ const EmpPosting = () => {
                   value={formData.vacancies}
                   onChange={handleChange}
                   min="1"
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   placeholder="e.g., 3"
                   aria-required="false"
                 />
@@ -597,7 +676,8 @@ const EmpPosting = () => {
                   name="contactPerson"
                   value={formData.contactPerson}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   placeholder="e.g., John Doe, HR Manager"
                   aria-required="false"
                 />
@@ -612,7 +692,8 @@ const EmpPosting = () => {
                   name="role"
                   value={formData.role}
                   onChange={handleChange}
-                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                   placeholder="e.g., Frontend Developer"
                   aria-required="false"
                 />
@@ -627,7 +708,8 @@ const EmpPosting = () => {
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm"
+                disabled={jobsStatus === 'loading'}
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
                 aria-required="false"
               >
                 <option value="Draft">Draft</option>
@@ -642,13 +724,14 @@ const EmpPosting = () => {
             <button
               type="button"
               onClick={() => navigate('/joblistings')}
-              className="px-6 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-all focus:ring-2 focus:ring-gray-400 focus:outline-none"
+              disabled={jobsStatus === 'loading' || isDeleting}
+              className="px-6 py-2.5 bg-gray-200 text-gray-700 font-medium rounded-lg hover:bg-gray-300 transition-all focus:ring-2 focus:ring-gray-400 focus:outline-none disabled:bg-gray-400 disabled:cursor-not-allowed"
             >
               Cancel
             </button>
             <button
               type="submit"
-              disabled={jobsStatus === 'loading' || skillsStatus === 'loading'}
+              disabled={jobsStatus === 'loading' || skillsStatus === 'loading' || isDeleting}
               className="px-6 py-2.5 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-all focus:ring-2 focus:ring-indigo-400 focus:outline-none disabled:bg-indigo-400 disabled:cursor-not-allowed"
             >
               {jobsStatus === 'loading' ? 'Submitting...' : id ? 'Update Job' : 'Post Job'}
