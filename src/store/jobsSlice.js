@@ -47,9 +47,6 @@ export const fetchJobById = createAsyncThunk(
   }
 );
 
-
-
-
 export const fetchUserApplications = createAsyncThunk(
   'jobs/fetchUserApplications',
   async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
@@ -61,11 +58,6 @@ export const fetchUserApplications = createAsyncThunk(
     }
   }
 );
-
-
-
-
-
 
 // Fetch applicants by user jobs
 export const fetchApplicantsByUserJobs = createAsyncThunk(
@@ -116,30 +108,6 @@ export const fetchApplicantsByUserJobs = createAsyncThunk(
   }
 );
 
-// // Fetch user applications
-// export const fetchUserApplications = createAsyncThunk(
-//   'jobs/fetchUserApplications',
-//   async ({ page = 1, limit = 10, search = '', status = 'All' }, { rejectWithValue, getState }) => {
-//     try {
-//       const { user } = getState();
-//       const token = user.userInfo?.token || localStorage.getItem('token');
-//       if (!token || !user.userInfo || user.userType !== 'job_seeker') {
-//         throw new Error('Authentication required or unauthorized access');
-//       }
-//       const response = await axios.get('http://localhost:5000/api/jobs/user-applications', {
-//         params: { page, limit, search, status },
-//         headers: { Authorization: `Bearer ${token}` },
-//       });
-//       return {
-//         applications: response.data.jobs || [],
-//         total: response.data.total || 0,
-//       };
-//     } catch (err) {
-//       const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch user applications';
-//       return rejectWithValue(errorMessage);
-//     }
-//   }
-// );
 
 // Fetch all applicants
 export const fetchAllApplicants = createAsyncThunk(
