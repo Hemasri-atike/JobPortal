@@ -9,7 +9,7 @@ const UserType = () => {
       <div className="w-full md:w-1/2 text-center md:text-left p-4">
         <h2 className="text-2xl font-bold text-gray-900 mb-4">
           Welcome to{" "}
-          <span className="bg-gradient-to-r from-blue-400 to-purple-500 text-transparent bg-clip-text">
+          <span className="bg-gradient-to-r from-[#4A628A] to-[#4A628A] text-transparent bg-clip-text">
             IHire
           </span>
         </h2>
@@ -20,7 +20,7 @@ const UserType = () => {
         <div className="flex flex-col gap-4">
           <Link
             to="/login?type=candidate"
-            className="flex items-center justify-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors font-semibold"
+            className="flex items-center justify-center gap-2 bg-[#4A628A] text-white px-6 py-3 rounded-lg hover:bg-[#89b4d4] focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors font-semibold"
             aria-label="Log in as a candidate"
           >
             <User size={20} /> I'm a Candidate
@@ -28,7 +28,7 @@ const UserType = () => {
 
           <Link
             to="/login?type=employer"
-            className="flex items-center justify-center gap-2 bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-semibold"
+            className="flex items-center justify-center gap-2 bg-[#4A628A] text-white px-6 py-3 rounded-lg hover:bg-[#89b4d4] focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors font-semibold"
             aria-label="Log in as an employer"
           >
             <Briefcase size={20} /> I'm an Employer
@@ -39,7 +39,7 @@ const UserType = () => {
           Don’t have an account?{" "}
           <Link
             to="/register"
-            className="text-blue-600 hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
+            className="text-black hover:text-purple-500 font-semibold focus:outline-none focus:ring-2 focus:ring-blue-600 transition-colors"
             aria-label="Sign up for an account"
           >
             Sign up here
