@@ -1,19 +1,21 @@
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Search, Mail, Download, Filter } from 'lucide-react';
 import Header from '../../navbar/Header';
 import Sidebar from '../layout/Sidebar';
-import axios from 'axios';
-import { logoutUser } from '../../../store/userSlice.js';
+import { logoutUser } from '../../../store/userSlice';
+import { fetchAppliedJobs } from '../../../store/jobsSlice';
 
 const Applied = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const candidateId = useSelector((state) => state.user.userInfo?.id);
+  const { appliedJobs = [], totalAppliedJobs = 0, jobsStatus, jobsError } = useSelector((state) => state.jobs || {});
   const [jobs, setJobs] = useState([]);
   const [totalJobs, setTotalJobs] = useState(0);
-  const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
   const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,76 +23,38 @@ const Applied = () => {
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const jobsPerPage = 4;
 
-  const axiosAuth = (token) => {
-    const instance = Ascertainable = axios.create({
-      baseURL: 'http://localhost:5000/api',
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    instance.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        const originalRequest = error.config;
-        if (error.response?.status === 401 && !originalRequest._retry) {
-          originalRequest._retry = true;
-          try {
-            const res = await axios.post('http://localhost:5000/api/auth/refresh', {}, { withCredentials: true });
-            const newToken = res.data.token;
-            localStorage.setItem('token', newToken);
-            originalRequest.headers.Authorization = `Bearer ${newToken}`;
-            return instance(originalRequest);
-          } catch (refreshError) {
-            // Instead of redirecting, dispatch logout and set error
-            dispatch(logoutUser());
-            setError('Session expired. Please try again later.');
-            return Promise.reject(refreshError);
-          }
-        }
-        return Promise.reject(error);
-      }
-    );
-    return instance;
-  };
-
   const fetchJobs = async (reset = false) => {
     if (!candidateId) {
-      setError('No user data available. Please try again later.');
+      setError('Please log in to view applied jobs.');
+      navigate('/login');
       return;
     }
     setIsLoading(true);
     setError(null);
 
     try {
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token found');
-      console.log('Fetching applied jobs for:', { candidateId, token: token.substring(0, 20) + '...', searchQuery, statusFilter, page, limit: jobsPerPage });
-      const params = new URLSearchParams({
-        search: searchQuery,
-        status: statusFilter,
-        page,
-        limit: jobsPerPage,
-      });
-      const res = await axiosAuth(token).get(`/api/applications?${params}`);
-      const { jobs: fetchedJobs, total } = res.data;
-      if (reset || page === 1) {
-        setJobs(fetchedJobs || []);
-      } else {
-        setJobs((prev) => [...prev, ...(fetchedJobs || [])]);
-      }
-      setTotalJobs(total || fetchedJobs.length);
-      console.log(`Fetched applied jobs:`, fetchedJobs, { total });
+      console.log('Dispatching fetchAppliedJobs:', { userId: candidateId, searchQuery, statusFilter, page, limit: jobsPerPage });
+    const result = await dispatch(
+  fetchAppliedJobs({
+    search: searchQuery,
+    status: statusFilter,
+    page,
+    limit: jobsPerPage,
+  })
+).unwrap();
+
+      console.log('Fetched jobs result:', result);
+
+      // Update local state
+      setJobs((prev) => (reset || page === 1 ? result.jobs : [...prev, ...result.jobs]));
+      setTotalJobs(result.total);
     } catch (err) {
-      console.error('Fetch jobs error:', {
-        message: err.message,
-        status: err.response?.status,
-        details: err.response?.data?.details,
-      });
-      setError(
-        err.response?.status === 403
-          ? 'You do not have permission to view applied jobs.'
-          : err.response?.status === 401
-          ? 'Unable to authenticate. Please try again later.'
-          : err.response?.data?.details || err.message || 'Failed to load applied jobs.'
-      );
+      console.error('fetchJobs error:', err);
+      setError(err || 'Failed to load applied jobs.');
+      if (err.includes('HTML response') || err === 'No authentication token found' || err.includes('authenticate')) {
+        dispatch(logoutUser());
+        navigate('/login');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -104,6 +68,21 @@ const Applied = () => {
   useEffect(() => {
     if (page > 1) fetchJobs();
   }, [page]);
+
+  // Optional: Sync with Redux state (if you want to use Redux state directly)
+  useEffect(() => {
+    if (jobsStatus === 'succeeded') {
+      setJobs((prev) => (page === 1 ? appliedJobs : [...prev, ...appliedJobs]));
+      setTotalJobs(totalAppliedJobs);
+      setError(null);
+    } else if (jobsStatus === 'failed' && jobsError) {
+      setError(jobsError || 'Failed to load applied jobs.');
+      if (jobsError.includes('HTML response') || jobsError.includes('authenticate')) {
+        dispatch(logoutUser());
+        navigate('/login');
+      }
+    }
+  }, [jobsStatus, appliedJobs, totalAppliedJobs, jobsError, page, dispatch, navigate]);
 
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleFilter = () => setIsFilterOpen(!isFilterOpen);
@@ -194,7 +173,7 @@ const Applied = () => {
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-teal-600"></div>
               <span className="ml-2 text-gray-600 text-sm font-medium" aria-live="polite">Loading jobs...</span>
             </div>
-          ) : jobs.length === 0 ? (
+          ) : !jobs || jobs.length === 0 ? (
             <div className="text-center py-16 bg-gray-50 rounded-md border border-gray-100 shadow-sm">
               <p className="text-gray-600 text-base mb-4">No applied jobs match your filters.</p>
               <Link
@@ -229,7 +208,7 @@ const Applied = () => {
                           <span className="text-gray-300">|</span>
                           <span>Applied {new Date(job.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <div> {job.salary || 'Not disclosed'}</div>
+                        <div>{job.salary || 'Not disclosed'}</div>
                       </div>
                       <div className="flex flex-wrap gap-2 mt-2">
                         {job.tags && job.tags.length > 0 ? (
@@ -294,13 +273,13 @@ const Applied = () => {
             <div className="mt-6 text-center">
               <button
                 onClick={() => setPage(page + 1)}
-                disabled={isLoading}
+                disabled={isLoading || jobsStatus === 'loading'}
                 className={`inline-flex items-center px-5 py-2 bg-teal-600 text-white rounded-md text-sm font-medium hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors ${
-                  isLoading ? 'opacity-50 cursor-not-allowed' : ''
+                  isLoading || jobsStatus === 'loading' ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
                 aria-label="Load more applied jobs"
               >
-                {isLoading ? (
+                {isLoading || jobsStatus === 'loading' ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-t-2 border-white mr-2"></div>
                     Loading...

@@ -13,15 +13,16 @@ const JobCard = ({ job }) => {
     return null;
   }
 
-  const {
-    id,
-    title = 'Untitled Job',
-    company_name = 'Unknown Company',
-    location = 'Location not specified',
-    tags = [],
-    description = 'No description available',
-    salary = 'Not specified',
-  } = job;
+ const {
+  id,
+  title = 'Untitled Job',
+  company_name = 'Unknown Company',
+  location = 'Location not specified',
+  tags = [], // fallback to empty array
+  description = 'No description available',
+  salary = 'Not specified',
+} = job || {};
+
 
   const handleApply = () => {
     if (!id) {
@@ -94,7 +95,7 @@ const JobCard = ({ job }) => {
         </div>
 
         {/* Tags */}
-        {tags.length > 0 && (
+        {/* {tags.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag, i) => (
               <span
@@ -105,7 +106,19 @@ const JobCard = ({ job }) => {
               </span>
             ))}
           </div>
-        )}
+        )} */}
+
+
+        {(tags || []).length > 0 && (
+  <div className="flex flex-wrap gap-2">
+    {(tags || []).map((tag, i) => (
+      <span key={`${id}-${tag}-${i}`} className="bg-blue-50 text-blue-600 text-xs font-medium px-2.5 py-1 rounded-full">
+        {tag}
+      </span>
+    ))}
+  </div>
+)}
+
 
         {/* Description */}
         <p className="text-sm text-gray-600 line-clamp-3 flex-grow">{description}</p>

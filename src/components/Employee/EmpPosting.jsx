@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { createJob, updateJob, deleteJob, clearUpdateJobState, clearDeleteJobState } from '../../store/jobsSlice.js';
+import { 
+  createJob, 
+  updateJob, 
+  deleteJob, 
+  clearUpdateJobState, 
+  clearDeleteJobState, 
+  clearAddJobState     
+} from '../../store/jobsSlice.js';
+
 import { fetchCategories, fetchSubcategories } from '../../store/categoriesSlice.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';

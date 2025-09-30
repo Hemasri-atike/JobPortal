@@ -16,100 +16,56 @@ export const fetchJobs = createAsyncThunk(
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      const params = {
-        statusFilter,
-        searchQuery,
-        page,
-        jobsPerPage,
-        ...(category_id && { category_id }),
-        ...(subcategory_id && { subcategory_id }),
-      };
-      const response = await axios.get('http://localhost:5000/api/jobs/getalljobs', {
-        params,
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+      const params = { statusFilter, searchQuery, page, jobsPerPage, ...(category_id && { category_id }), ...(subcategory_id && { subcategory_id }) };
+      const response = await axiosAuth(token).get('/jobs/getalljobs', { params });
       return {
         jobs: response.data.jobs || [],
         total: response.data.total || 0,
         page: response.data.page || page,
         jobsPerPage: response.data.limit || jobsPerPage,
       };
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Failed to fetch jobs';
-      if (error.response?.status === 404) {
-        return { jobs: [], total: 0, page, jobsPerPage };
-      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch jobs';
+      if (err.response?.status === 404) return { jobs: [], total: 0, page, jobsPerPage };
       return rejectWithValue(errorMessage);
     }
   }
 );
 
-// Fetch job by ID
 export const fetchJobById = createAsyncThunk(
   'jobs/fetchJobById',
   async (jobId, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/jobs/${jobId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      return {
-        ...response.data,
-        createdAt: response.data.created_at || response.data.createdAt || new Date().toISOString(),
-        applicantCount: response.data.applicantCount ?? 0,
-        views: response.data.views ?? 0,
-      };
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Job not found';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
-
-// Fetch categories
-export const fetchCategories = createAsyncThunk(
-  'jobs/fetchCategories',
-  async (_, { rejectWithValue, getState }) => {
-    try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      const response = await axios.get('http://localhost:5000/api/jobs/categories', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      return Array.isArray(response.data) ? response.data : [];
+      const response = await axiosAuth(token).get(`/jobs/${jobId}`);
+      return { ...response.data, createdAt: response.data.created_at || new Date().toISOString(), applicantCount: response.data.applicantCount || 0, views: response.data.views || 0 };
     } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch categories';
+      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Job not found';
       return rejectWithValue(errorMessage);
     }
   }
 );
 
-// // Fetch jobs by category
-// export const fetchJobsByCategory = createAsyncThunk(
-//   'jobs/fetchJobsByCategory',
-//   async (category_id, { rejectWithValue, getState }) => {
-//     try {
-//       const { user } = getState();
-//       const token = user.userInfo?.token || localStorage.getItem('token');
-//       const response = await axios.get('http://localhost:5000/api/jobs/by-category', {
-//         params: { category_id },
-//         headers: token ? { Authorization: `Bearer ${token}` } : {},
-//       });
-//       const normalizedJobs = (response.data.jobs || []).map((job) => ({
-//         ...job,
-//         createdAt: job.created_at || job.createdAt || new Date().toISOString(),
-//         applicantCount: job.applicantCount ?? 0,
-//         views: job.views ?? 0,
-//         skills: Array.isArray(job.skills) ? job.skills : [],
-//       }));
-//       return { jobs: normalizedJobs, total: Number(response.data.total) || 0 };
-//     } catch (err) {
-//       const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch jobs by category';
-//       return rejectWithValue(errorMessage);
-//     }
-//   }
-// );
+
+
+
+export const fetchUserApplications = createAsyncThunk(
+  'jobs/fetchUserApplications',
+  async ({ page = 1, limit = 10 }, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('/applications', { params: { page, limit } });
+      return response.data.applications.map(app => app.job_id); // just store job_ids
+    } catch (err) {
+      return rejectWithValue(err.response?.data || err.message);
+    }
+  }
+);
+
+
+
+
+
 
 // Fetch applicants by user jobs
 export const fetchApplicantsByUserJobs = createAsyncThunk(
@@ -160,30 +116,30 @@ export const fetchApplicantsByUserJobs = createAsyncThunk(
   }
 );
 
-// Fetch user applications
-export const fetchUserApplications = createAsyncThunk(
-  'jobs/fetchUserApplications',
-  async ({ page = 1, limit = 10, search = '', status = 'All' }, { rejectWithValue, getState }) => {
-    try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token || !user.userInfo || user.userType !== 'job_seeker') {
-        throw new Error('Authentication required or unauthorized access');
-      }
-      const response = await axios.get('http://localhost:5000/api/jobs/user-applications', {
-        params: { page, limit, search, status },
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return {
-        applications: response.data.jobs || [],
-        total: response.data.total || 0,
-      };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch user applications';
-      return rejectWithValue(errorMessage);
-    }
-  }
-);
+// // Fetch user applications
+// export const fetchUserApplications = createAsyncThunk(
+//   'jobs/fetchUserApplications',
+//   async ({ page = 1, limit = 10, search = '', status = 'All' }, { rejectWithValue, getState }) => {
+//     try {
+//       const { user } = getState();
+//       const token = user.userInfo?.token || localStorage.getItem('token');
+//       if (!token || !user.userInfo || user.userType !== 'job_seeker') {
+//         throw new Error('Authentication required or unauthorized access');
+//       }
+//       const response = await axios.get('http://localhost:5000/api/jobs/user-applications', {
+//         params: { page, limit, search, status },
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       return {
+//         applications: response.data.jobs || [],
+//         total: response.data.total || 0,
+//       };
+//     } catch (err) {
+//       const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch user applications';
+//       return rejectWithValue(errorMessage);
+//     }
+//   }
+// );
 
 // Fetch all applicants
 export const fetchAllApplicants = createAsyncThunk(
@@ -249,7 +205,7 @@ export const createJob = createAsyncThunk(
         category_id: jobData.category_id || null,
         subcategory_id: jobData.subcategory_id || null,
       };
-      const response = await axios.post('http://localhost:5000/api/jobs', payload, {
+      const response = await axios.post('http://localhost:5000/api/jobs/create-job', payload, {
         headers: token ? { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' } : { 'Cache-Control': 'no-cache' },
         timeout: 10000,
       });
@@ -308,9 +264,6 @@ export const updateJob = createAsyncThunk(
   }
 );
 
-
-
-
 export const deleteJob = createAsyncThunk(
   "jobs/deleteJob",
   async (id, { rejectWithValue, getState }) => {
@@ -333,11 +286,6 @@ export const deleteJob = createAsyncThunk(
     }
   }
 );
-
-
-
-
-
 
 // Bulk delete jobs
 export const bulkDeleteJobs = createAsyncThunk(
@@ -375,14 +323,6 @@ export const toggleJobStatus = createAsyncThunk(
     }
   }
 );
-
-
-
-
-
-
-
-
 
 // export const deleteJob = createAsyncThunk(
 //   "jobs/deleteJob",
@@ -535,6 +475,40 @@ export const updateApplicantStatus = createAsyncThunk(
   }
 );
 
+export const fetchAppliedJobs = createAsyncThunk(
+  "jobs/fetchAppliedJobs",
+  async ({  search = "", status = "All", page = 1, limit = 10 }, { getState, rejectWithValue }) => {
+    try {
+      const token = getState().user.userInfo?.token || localStorage.getItem("token");
+        const { user } = getState();
+        console.log(user.userInfo )
+      if (!token) throw new Error("No authentication token found");
+const userId=user.userInfo.id
+console.log("Sfsfdf",userId)
+      const params = new URLSearchParams({ id: userId,search, status, page, limit });
+      console.log("Fetching applied jobs with params:", { search, status, page, limit });
+
+      const response = await axiosAuth(token).get(`/applications/user?${params}`);
+      const { jobs, total } = response.data;
+
+      if (!Array.isArray(jobs) || typeof total !== "number") {
+        throw new Error("Invalid API response format: Expected { jobs: Array, total: number }");
+      }
+
+      console.log("Fetched applied jobs:", { jobs, total });
+      return { jobs, total };
+    } catch (err) {
+      console.log("err",err)
+      console.error("fetchAppliedJobs error:", {
+        message: err.message,
+        status: err.response?.status,
+        data: err.response?.data,
+      });
+      return rejectWithValue(err.response?.data?.error || err.response?.data?.message || err.message || "Failed to fetch applied jobs");
+    }
+  }
+);
+
 const initialState = {
   jobs: [],
   total: 0,
@@ -549,6 +523,10 @@ const initialState = {
   jobsError: null,
   categories: [],
   categoriesStatus: 'idle',
+    appliedJobs: [], // Added for fetchAppliedJobs
+  totalAppliedJobs: 0, // Added for fetchAppliedJobs
+  loading: false, // Added for fetchAppliedJobs
+  error: null, // Added for fetchAppliedJobs
   categoriesError: null,
   jobsByCategory: [],
   applications: [],
@@ -657,6 +635,7 @@ const jobsSlice = createSlice({
       state.applicantsStatus = 'idle';
       state.applicantsError = null;
     },
+
   },
   extraReducers: (builder) => {
     builder
@@ -694,33 +673,22 @@ const jobsSlice = createSlice({
         state.jobsStatus = 'failed';
         state.jobsError = action.payload;
       })
-      .addCase(fetchCategories.pending, (state) => {
-        state.categoriesStatus = 'loading';
-        state.categoriesError = null;
-      })
-      .addCase(fetchCategories.fulfilled, (state, action) => {
-        state.categoriesStatus = 'succeeded';
-        state.categories = action.payload || [];
-      })
-      .addCase(fetchCategories.rejected, (state, action) => {
-        state.categoriesStatus = 'failed';
-        state.categoriesError = action.payload;
-        state.categories = [];
-      })
-      // .addCase(fetchJobsByCategory.pending, (state) => {
-      //   state.jobsStatus = 'loading';
-      //   state.jobsError = null;
-      // })
-      // .addCase(fetchJobsByCategory.fulfilled, (state, action) => {
-      //   state.jobsStatus = 'succeeded';
-      //   state.jobsByCategory = action.payload.jobs || [];
-      //   state.total = action.payload.total || 0;
-      // })
-      // .addCase(fetchJobsByCategory.rejected, (state, action) => {
-      //   state.jobsStatus = 'failed';
-      //   state.jobsError = action.payload;
-      //   state.jobsByCategory = [];
-      // })
+   
+      .addCase(fetchAppliedJobs.pending, (state) => {
+      state.loading = true;
+      state.error = null;
+    })
+    .addCase(fetchAppliedJobs.fulfilled, (state, action) => {
+      state.loading = false;
+      state.appliedJobs = action.payload.jobs || [];
+      state.totalAppliedJobs = action.payload.total || 0;
+    })
+    .addCase(fetchAppliedJobs.rejected, (state, action) => {
+      state.loading = false;
+      state.error = action.payload || "Failed to fetch applied jobs";
+    })
+      
+   
       .addCase(fetchUserApplications.pending, (state) => {
         state.jobsStatus = 'loading';
         state.jobsError = null;
@@ -926,7 +894,7 @@ export const {
   setSearchQuery,
   setLocation,
   setStatusFilter,
-  setCategoryFilter,
+setCategoryFilter,
   setSortBy,
   setPage,
   incrementPage,
