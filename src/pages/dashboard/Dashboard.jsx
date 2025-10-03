@@ -73,7 +73,7 @@ const Dashboard = () => {
         <Sidebar className="w-full lg:w-64 bg-white shadow-md" />
 
         <main className="flex-1 p-4 sm:p-6 lg:p-8">
-          <div className="bg-[#89b4d4]/10 p-7 rouded- shadow-md">
+          <div className="bg-[#89b4d4]/10 p-6 rounded-md shadow-md">
           <div className="bg-gradient-to-r from-[#3b4f73] to-[#89b4d4] border-2 border-white p-6 rounded-2xl shadow-sm hover:shadow-md mb-6">
             <h4
               className="text-2xl sm:text-3xl font-bold text-white mb-2"

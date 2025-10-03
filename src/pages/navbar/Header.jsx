@@ -10,6 +10,7 @@ import IHirelogo from "../../../public/assets/MNTechs_logo.png";
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isLoginPopupOpen, setIsLoginPopupOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
   const popupRef = useRef(null);
 
   const dispatch = useDispatch();
@@ -30,6 +31,15 @@ const Header = () => {
       setIsMenuOpen(false);
     }
   }, [userInfo]);
+
+  // Scroll listener
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Focus trapping for login popup
   useEffect(() => {
@@ -77,8 +87,6 @@ const Header = () => {
     );
   }
 
-  // const { logo } = data || {};
-
   const goToProfile = () => {
     if (!userInfo) return;
     const role = userInfo.role?.toLowerCase();
@@ -111,7 +119,11 @@ const Header = () => {
 
   return (
     <div className="bg-[#89b4d4]">
-      <header className="bg-white rounded-b-2xl border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <header
+        className={`bg-white rounded-b-2xl border-b border-gray-200 sticky top-0 z-50 w-full transition-all duration-300 ${
+          isScrolled ? "shadow-md" : "shadow-sm"
+        }`}
+      >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <nav className="flex items-center justify-between h-16">
             {/* Logo */}
@@ -122,9 +134,17 @@ const Header = () => {
               <img
                 src={IHirelogo}
                 alt="MNTechs Logo"
-                className="w-10 h-10 rounded-full"
+                className={`rounded-full transition-all duration-300 ${
+                  isScrolled ? "w-8 h-8" : "w-10 h-10"
+                }`}
               />
-              <span className="text-2xl font-bold text-gray-900">I Hire</span>
+              <span
+                className={`font-bold text-gray-900 transition-all duration-300 ${
+                  isScrolled ? "text-xl" : "text-2xl"
+                }`}
+              >
+                I Hire
+              </span>
             </Link>
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
@@ -224,7 +244,7 @@ const Header = () => {
                       onClick={() => {
                         dispatch(logoutUser());
                         setIsMenuOpen(false);
-                        setTimeout(() => navigate("/"), 50); // redirect safely after logout
+                        setTimeout(() => navigate("/"), 50);
                       }}
                       aria-label="Log out"
                     >
