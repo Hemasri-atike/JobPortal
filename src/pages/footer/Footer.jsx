@@ -2,6 +2,7 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchFooter } from "../../store/footerSlice";
 import { Link } from "react-router-dom";
+import IHirelogo from "../../../public/assets/MNTechs_logo.png";
 
 const Footer = () => {
   const dispatch = useDispatch();
@@ -13,8 +14,10 @@ const Footer = () => {
     }
   }, [status, dispatch]);
 
-  if (status === "loading") return <p className="text-center py-6">Loading footer...</p>;
-  if (status === "failed") return <p className="text-center py-6 text-red-500">Failed: {error}</p>;
+  if (status === "loading")
+    return <p className="text-center py-6">Loading footer...</p>;
+  if (status === "failed")
+    return <p className="text-center py-6 text-red-500">Failed: {error}</p>;
 
   const { cta, companyInfo, sections, bottomLinks } = data;
 
@@ -30,8 +33,8 @@ const Footer = () => {
     "About Us": "/about",
     "Job Page Invoice": "/invoice",
     "Terms Page": "/terms",
-    "Blog": "/blog",
-    "Contact": "/contact",
+    Blog: "/blog",
+    Contact: "/contact",
   };
 
   // Bottom links paths (optional override if needed)
@@ -45,7 +48,9 @@ const Footer = () => {
       {/* CTA Section */}
       {cta && (
         <div className="bg-[#1E93AB] border border-[#1E93AB] shadow-lg rounded-2xl w-full max-w-[1180px] mx-auto mb-10 py-10 px-6 sm:px-12 text-center text-white">
-          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">{cta.title}</h2>
+          <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4">
+            {cta.title}
+          </h2>
           <p className="text-sm sm:text-base mb-6">{cta.subtitle}</p>
           <Link
             to={cta.ctaLink}
@@ -64,15 +69,31 @@ const Footer = () => {
             {companyInfo && (
               <div className="lg:col-span-2 xl:col-span-1">
                 <div className="flex items-center space-x-2 mb-4 sm:mb-6">
-                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white text-blue-600 rounded-full flex items-center justify-center font-bold text-lg sm:text-xl">
-                    I
+                  <div className="rounded-full flex items-center justify-center font-bold text-lg sm:text-xl">
+                    {/* Logo */}
+                    <Link
+                      to="/"
+                      className="flex items-center space-x-3 animate-fade-in"
+                    >
+                      <img
+                        src={IHirelogo}
+                        alt="MNTechs Logo"
+                        className="w-10 h-10 rounded-full"
+                      />
+                    </Link>
                   </div>
-                  <span className="text-xl sm:text-2xl font-bold text-white">hire</span>
+                  <span className="text-xl sm:text-2xl font-bold text-white">
+                    I Hire
+                  </span>
                 </div>
                 <div className="space-y-2 sm:space-y-3 text-gray-300 text-sm sm:text-base">
                   <p className="font-semibold text-white">Call us</p>
-                  <p className="text-white font-semibold">{companyInfo.phone}</p>
-                  <address className="not-italic leading-relaxed">{companyInfo.address}</address>
+                  <p className="text-white font-semibold">
+                    {companyInfo.phone}
+                  </p>
+                  <address className="not-italic leading-relaxed">
+                    {companyInfo.address}
+                  </address>
                   <p className="text-white">{companyInfo.email}</p>
                 </div>
               </div>
@@ -88,7 +109,10 @@ const Footer = () => {
                   <ul className="space-y-2 sm:space-y-3 text-gray-300 text-sm sm:text-base">
                     {links.map((item, idx) => {
                       const name = item.name;
-                      const path = item.path && item.path !== "#" ? item.path : linkPaths[name] || "#";
+                      const path =
+                        item.path && item.path !== "#"
+                          ? item.path
+                          : linkPaths[name] || "#";
                       return (
                         <li key={idx}>
                           <Link
@@ -117,7 +141,11 @@ const Footer = () => {
                 bottomLinks.map((link, idx) => {
                   const path = bottomLinkPaths[link.name] || link.path || "#";
                   return (
-                    <Link key={idx} to={path} className="hover:text-white transition-colors duration-300">
+                    <Link
+                      key={idx}
+                      to={path}
+                      className="hover:text-white transition-colors duration-300"
+                    >
                       {link.name}
                     </Link>
                   );

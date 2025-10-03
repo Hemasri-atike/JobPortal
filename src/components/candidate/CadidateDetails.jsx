@@ -205,7 +205,7 @@ const CandidateDetails = ({ candidateId }) => {
       {/* Main Content */}
       <div className="flex flex-col lg:flex-row">
         {/* Sidebar */}
-        <div className="lg:w-72 text-white shadow-2xl hidden lg:block">
+        <div className="lg:w-72 hidden lg:block">
           <Sidebar role="job_seeker" />
         </div>
         {isSidebarOpen && (
@@ -224,7 +224,7 @@ const CandidateDetails = ({ candidateId }) => {
         )}
 
         {/* Form Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-12 max-w-7xl mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-12 max-w-7xl bg-amber-50 mx-auto w-full">
           {/* Header Section */}
           <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 mb-6 sm:mb-10 hover:shadow-lg transition-all duration-300">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">

@@ -15,7 +15,7 @@ const Header = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const { data, status, error } = useSelector((state) => state.header);
+  const { status, error } = useSelector((state) => state.header);
   const { userInfo } = useSelector((state) => state.user);
 
   // Fetch header data
@@ -77,7 +77,7 @@ const Header = () => {
     );
   }
 
-  const { logo } = data || {};
+  // const { logo } = data || {};
 
   const goToProfile = () => {
     if (!userInfo) return;
@@ -124,9 +124,8 @@ const Header = () => {
                 alt="MNTechs Logo"
                 className="w-10 h-10 rounded-full"
               />
-              <span className="text-2xl font-bold text-gray-900">Hire</span>
+              <span className="text-2xl font-bold text-gray-900">I Hire</span>
             </Link>
-
             {/* Desktop Menu */}
             <div className="hidden md:flex items-center space-x-4">
               <Link
