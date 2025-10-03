@@ -120,8 +120,10 @@ const Header = () => {
   return (
     <div className="bg-[#89b4d4]">
       <header
-        className={`bg-white rounded-b-2xl border-b border-gray-200 sticky top-0 z-50 w-full transition-all duration-300 ${
-          isScrolled ? "shadow-md" : "shadow-sm"
+        className={`fixed top-0 left-0 right-0 z-50 bg-white rounded-b-2xl border-b border-gray-200 w-full transition-all duration-300 ${
+          isScrolled
+            ? "shadow-md bg-opacity-90 backdrop-blur-sm"
+            : "shadow-sm bg-opacity-100"
         }`}
       >
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -135,12 +137,12 @@ const Header = () => {
                 src={IHirelogo}
                 alt="MNTechs Logo"
                 className={`rounded-full transition-all duration-300 ${
-                  isScrolled ? "w-8 h-8" : "w-10 h-10"
+                  isScrolled ? "w-10 h-10" : "w-10 h-10"
                 }`}
               />
               <span
                 className={`font-bold text-gray-900 transition-all duration-300 ${
-                  isScrolled ? "text-xl" : "text-2xl"
+                  isScrolled ? "text-2xl" : "text-2xl"
                 }`}
               >
                 I Hire
@@ -227,7 +229,7 @@ const Header = () => {
                   Find a Job
                 </Link>
                 <Link
-                  to="/login?type=employee"
+                  to="/login?type=employer" // Fixed typo from 'employee' to 'employer'
                   className="bg-purple-500 text-white px-6 py-3 rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors text-base font-semibold"
                   onClick={() => setIsMenuOpen(false)}
                   aria-label="Post a job"
@@ -276,6 +278,12 @@ const Header = () => {
         )}
 
         <style jsx>{`
+          .fixed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+          }
           .animate-fade-in {
             animation: fadeIn 0.5s ease-in-out;
           }

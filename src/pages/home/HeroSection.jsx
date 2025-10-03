@@ -65,7 +65,7 @@ const HeroSection = () => {
   useEffect(() => setLocalLocation(reduxLocation || ""), [reduxLocation]);
 
   return (
-    <section className="relative flex items-center justify-center overflow-hidden bg-[#89b4d4] pt-4">
+    <section className="relative top-12 flex items-center justify-center overflow-hidden bg-[#89b4d4] pt-4">
       {/* Content */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-[22%_77%] gap-4 md:gap-6 max-w-5xl mx-auto items-center">
