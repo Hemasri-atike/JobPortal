@@ -59,39 +59,76 @@ export const fetchUserApplications = createAsyncThunk(
   }
 );
 
-// Fetch applicants by user jobs
+
+
+
+
+
+
 export const fetchApplicantsByUserJobs = createAsyncThunk(
   'jobs/fetchApplicantsByUserJobs',
-  async (userId, { rejectWithValue, getState }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/jobs/applicants?user_id=${userId}`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      const applicants = (response.data || []).map((app) => ({
-        id: app.id,
-        jobId: app.job_id,
-        candidateId: app.candidate_id,
-        fullName: app.full_name || app.fullName || 'N/A',
-        email: app.email || 'N/A',
-        phone: app.phone || app.mobile || 'N/A',
-        location: app.location || 'N/A',
-        experience: app.experience || 'N/A',
-        jobTitle: app.job_title || 'N/A',
-        company: app.company || 'N/A',
-        qualification: app.qualification || 'N/A',
-        specialization: app.specialization || 'N/A',
-        university: app.university || 'N/A',
-        skills: Array.isArray(app.skills) ? app.skills : [],
-        resume: app.resume || null,
-        coverLetter: app.coverLetter || app.cover_letter || null,
-        linkedIn: app.linkedIn || app.linkedin || null,
-        portfolio: app.portfolio || null,
-        status: app.status || 'Applied',
-        createdAt: app.created_at || app.createdAt || new Date().toISOString(),
+      const userId = user.userInfo?.id; // employer ID
+      if (!userId) throw new Error('User ID required');
+
+      const response = await axios.get(
+        `http://localhost:5000/api/applications/jobs/applicants/user/${userId}`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
+      const data = response.data;
+
+      if (!Array.isArray(data) || data.length === 0) {
+        return { all: [] }; // no applicants found
+      }
+
+      // Map applicants with job info
+      const applicants = data.map((row) => ({
+        id: row.id,
+        fullName: row.fullName,
+        email: row.email,
+        phone: row.phone,
+        location: row.location,
+        experience: row.experience,
+        jobTitle: row.jobTitle,
+        company: row.company,
+        qualification: row.qualification,
+        specialization: row.specialization,
+        university: row.university,
+        skills: Array.isArray(row.skills) ? row.skills : [],
+        resume: row.resume,
+        coverLetter: row.coverLetter,
+        linkedIn: row.linkedIn,
+        portfolio: row.portfolio,
+        createdAt: row.createdAt,
+        jobId: row.job_id,
+        candidateUserId: row.user_id,
+        candidateId: row.candidate_id,
+        status: row.status,
+        notes: row.notes,
+        job: {
+          id: row.job_id,
+          title: row.title,
+          description: row.description,
+          location: row.location,
+          salary: row.salary,
+          companyName: row.company_name,
+          userId: row.user_id,
+          createdAt: row.created_at,
+          status: row.status,
+          skills: Array.isArray(row.skills) ? row.skills : [],
+          category: row.category,
+          subcategory: row.subcategory,
+          tags: row.tags,
+        },
       }));
-      // Group applicants by jobId and include in 'all'
+
+      // Group by jobId for easier frontend use
       const groupedApplicants = applicants.reduce((acc, applicant) => {
         const jobId = String(applicant.jobId);
         acc[jobId] = acc[jobId] || [];
@@ -100,13 +137,27 @@ export const fetchApplicantsByUserJobs = createAsyncThunk(
         acc.all.push(applicant);
         return acc;
       }, { all: [] });
+
       return groupedApplicants;
-    } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.message || error.message || 'Failed to fetch applicants';
+    } catch (err) {
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.details ||
+        err.message ||
+        'Failed to fetch applicants';
       return rejectWithValue(errorMessage);
     }
   }
 );
+
+
+
+
+
+
+
+
+
 
 
 // Fetch all applicants
@@ -292,70 +343,56 @@ export const toggleJobStatus = createAsyncThunk(
   }
 );
 
-// export const deleteJob = createAsyncThunk(
-//   "jobs/deleteJob",
-//   async (id, { rejectWithValue, getState }) => {
-//     try {
-//       const { user } = getState();
-//       const token = user.userInfo?.token || localStorage.getItem("token");
-
-//       await axios.delete(`http://localhost:5000/api/jobs/${id}`, {
-//         headers: token ? { Authorization: `Bearer ${token}` } : {},
-//       });
-
-//       return id; // so reducer can remove from state
-//     } catch (err) {
-//       const errorMessage =
-//         err.response?.data?.error ||
-//         err.response?.data?.details ||
-//         err.message ||
-//         "Failed to delete job";
-//       return rejectWithValue(errorMessage);
-//     }
-//   }
-// );
-
-
-// Fetch applicants by job
 export const fetchApplicantsByJob = createAsyncThunk(
   'jobs/fetchApplicantsByJob',
   async ({ jobId }, { rejectWithValue, getState }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      const response = await axios.get(`http://localhost:5000/api/jobs/${jobId}/applicants`, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+
+      const response = await axios.get(
+        `http://localhost:5000/api/jobs/${jobId}/applicants`,
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
       const applicants = (response.data || []).map((app) => ({
         id: app.id,
         jobId: app.job_id,
         candidateId: app.candidate_id,
-        fullName: app.name || app.fullName || 'N/A',
+        fullName: app.full_name || app.name || app.fullName || 'N/A',
         email: app.email || 'N/A',
-        phone: app.phone || 'N/A',
+        phone: app.phone || app.mobile || 'N/A',
         location: app.location || 'N/A',
         experience: app.experience || 'N/A',
-        jobTitle: app.jobTitle || app.position || 'N/A',
+        jobTitle: app.job_title || app.position || 'N/A',
         company: app.company || 'N/A',
         qualification: app.qualification || 'N/A',
         specialization: app.specialization || 'N/A',
         university: app.university || 'N/A',
         skills: Array.isArray(app.skills) ? app.skills : [],
         resume: app.resume || app.resume_url || null,
-        coverLetter: app.coverLetter || app.cover_letter_url || null,
-        linkedIn: app.linkedIn || app.linkedin || null,
+        coverLetter: app.cover_letter || app.coverLetter || app.cover_letter_url || null,
+        linkedIn: app.linkedin || app.linkedIn || null,
         portfolio: app.portfolio || null,
         status: app.status || 'Applied',
         createdAt: app.applied_at || app.createdAt || new Date().toISOString(),
       }));
+
       return { jobId: String(jobId), applicants };
     } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch applicants';
+      const errorMessage =
+        err.response?.data?.error ||
+        err.response?.data?.details ||
+        err.message ||
+        'Failed to fetch applicants';
       console.error('❌ [Thunk Error] Failed to fetch applicants:', err);
       return rejectWithValue(errorMessage);
     }
   }
 );
+
 
 // Fetch analytics
 export const fetchAnalytics = createAsyncThunk(

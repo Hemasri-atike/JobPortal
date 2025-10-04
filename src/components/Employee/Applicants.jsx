@@ -1,37 +1,148 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchApplicantsByJob,
   fetchApplicantsByUserJobs,
+  clearApplicantsState,
 } from "../../store/jobsSlice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 
+// ---------- Applicant Table Row ----------
+const ApplicantRow = ({ applicant, index, showJobId }) => (
+  <tr className="border-t border-gray-200 hover:bg-gray-50">
+    <td className="px-4 py-2">{index + 1}</td>
+    {showJobId && <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>}
+    <td className="px-4 py-2">{applicant.fullName || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.email || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.phone || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.location || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.experience || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.jobTitle || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.company || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.qualification || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.specialization || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.university || "N/A"}</td>
+    <td className="px-4 py-2">{applicant.skills.join(", ") || "N/A"}</td>
+    <td className="px-4 py-2">
+      {applicant.resume ? (
+        <a
+          href={`http://localhost:5000/${applicant.resume}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </td>
+    <td className="px-4 py-2">
+      {applicant.coverLetter ? (
+        <a
+          href={`http://localhost:5000/${applicant.coverLetter}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </td>
+    <td className="px-4 py-2">
+      {applicant.linkedIn ? (
+        <a
+          href={applicant.linkedIn}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </td>
+    <td className="px-4 py-2">
+      {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
+    </td>
+  </tr>
+);
+
+// ---------- Applicant Card ----------
+const ApplicantCard = ({ applicant, showJobId }) => (
+  <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+    {showJobId && <p><strong>Job ID:</strong> {applicant.jobId || "N/A"}</p>}
+    <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
+    <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
+    <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
+    <p><strong>Location:</strong> {applicant.location || "N/A"}</p>
+    <p><strong>Experience:</strong> {applicant.experience || "N/A"}</p>
+    <p><strong>Job Title:</strong> {applicant.jobTitle || "N/A"}</p>
+    <p><strong>Company:</strong> {applicant.company || "N/A"}</p>
+    <p><strong>Qualification:</strong> {applicant.qualification || "N/A"}</p>
+    <p><strong>Specialization:</strong> {applicant.specialization || "N/A"}</p>
+    <p><strong>University:</strong> {applicant.university || "N/A"}</p>
+    <p><strong>Skills:</strong> {applicant.skills.join(", ") || "N/A"}</p>
+    <p>
+      <strong>Resume:</strong>{" "}
+      {applicant.resume ? (
+        <a
+          href={`http://localhost:5000/${applicant.resume}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </p>
+    <p>
+      <strong>Cover Letter:</strong>{" "}
+      {applicant.coverLetter ? (
+        <a
+          href={`http://localhost:5000/${applicant.coverLetter}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </p>
+    <p>
+      <strong>LinkedIn:</strong>{" "}
+      {applicant.linkedIn ? (
+        <a
+          href={applicant.linkedIn}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-indigo-600 hover:underline"
+        >
+          View
+        </a>
+      ) : "N/A"}
+    </p>
+    <p>
+      <strong>Applied On:</strong>{" "}
+      {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
+    </p>
+  </div>
+);
+
+// ---------- Main Applicants Component ----------
 const Applicants = () => {
-  const { jobId } = useParams(); // get jobId from URL
+  const { jobId } = useParams();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-
-  const { userInfo, userType } = useSelector((state) => state.user || {});
-  const applicantsState = useSelector((state) => state.jobs.applicants || []);
-  const applicantsStatus = useSelector(
-    (state) => state.jobs.applicantsStatus || "idle"
-  );
-  const applicantsError = useSelector(
-    (state) => state.jobs.applicantsError || null
-  );
-
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table");
 
-  // DEBUG logs
-  console.log("DEBUG: userInfo:", userInfo);
-  console.log("DEBUG: userType:", userType);
-  console.log("DEBUG: jobId from params:", jobId);
-  console.log("DEBUG: applicants from state:", applicantsState);
+  const { userInfo, userType } = useSelector((state) => state.user || {});
+  const applicantsState = useSelector((state) => state.jobs.applicants || []);
+  const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
+  const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
 
+  // ----------- Fetch Applicants -----------
   useEffect(() => {
     if (!userInfo?.token || userType !== "employer") {
       toast.error("Please log in as an employer to view applicants");
@@ -39,44 +150,53 @@ const Applicants = () => {
       return;
     }
 
-    const fetchApplicants = async () => {
-      try {
-        if (jobId) {
-          console.log(`DEBUG: Fetching applicants for jobId ${jobId}`);
-          await dispatch(fetchApplicantsByJob({ jobId })).unwrap();
-        } else {
-          console.log(`DEBUG: Fetching all applicants for userId ${userInfo.id}`);
-          await dispatch(fetchApplicantsByUserJobs(userInfo.id)).unwrap();
-        }
-      } catch (err) {
-        console.error("DEBUG: Fetch error:", err);
-        toast.error(`Failed to fetch applicants: ${err}`);
-      }
-    };
+    dispatch(clearApplicantsState());
 
-    if (applicantsStatus === "idle") {
-      fetchApplicants();
+    if (jobId) {
+      dispatch(fetchApplicantsByJob({ jobId })).catch((err) =>
+        toast.error(err.message || "Failed to fetch applicants")
+      );
+    } else if (userInfo?.id) {
+      dispatch(fetchApplicantsByUserJobs(userInfo.id)).catch((err) =>
+        toast.error(err.message || "Failed to fetch applicants")
+      );
     }
-  }, [dispatch, jobId, applicantsStatus, userInfo, userType, navigate]);
+  }, [dispatch, jobId, userInfo, userType, navigate]);
 
-  // ensure applicants is an array
-  const applicants = Array.isArray(applicantsState)
-    ? applicantsState
-    : Object.values(applicantsState);
+  // ----------- Normalize & Filter Applicants -----------
+  const normalizedApplicants = useMemo(() => {
+    const arrayForm = Array.isArray(applicantsState)
+      ? applicantsState
+      : Object.values(applicantsState).flat();
 
-  const filteredApplicants = applicants.filter((applicant) =>
-    [
-      applicant.fullName,
-      applicant.email,
-      applicant.skills?.join(","),
-      applicant.jobTitle,
-      applicant.company,
-      applicant.qualification,
-      applicant.specialization,
-      applicant.university,
-    ].some((field) => field?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+    return arrayForm.map((applicant) => ({
+      ...applicant,
+      skills: Array.isArray(applicant.skills)
+        ? applicant.skills
+        : applicant.skills?.replace(/["]/g, "").split(",") || [],
+      resume: applicant.resume?.replace(/\\/g, "/"),
+      coverLetter: applicant.coverLetter?.replace(/\\/g, "/"),
+    }));
+  }, [applicantsState]);
 
+  const filteredApplicants = useMemo(() => {
+    return normalizedApplicants.filter((applicant) =>
+      [
+        applicant.fullName,
+        applicant.email,
+        applicant.skills.join(","),
+        applicant.jobTitle,
+        applicant.company,
+        applicant.qualification,
+        applicant.specialization,
+        applicant.university,
+      ].some((field) =>
+        field?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [normalizedApplicants, searchTerm]);
+
+  // ----------- Access Check -----------
   if (!userInfo?.token || userType !== "employer") {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -87,20 +207,18 @@ const Applicants = () => {
     );
   }
 
-  if (applicantsStatus === "loading") {
-    return <p className="text-gray-600 text-lg">Loading applicants...</p>;
-  }
-
-  if (applicantsStatus === "failed") {
+  // ----------- Loading & Error States -----------
+  if (applicantsStatus === "loading") return <p className="text-gray-600 text-lg">Loading applicants...</p>;
+  if (applicantsStatus === "failed")
     return (
       <p className="text-red-600 text-lg">
         {applicantsError?.includes("404")
-          ? `No ${jobId ? "applicants found for job #" + jobId : "applicants found for your jobs"}`
+          ? `No ${jobId ? `applicants found for job #${jobId}` : "applicants found for your jobs"}`
           : `Error: ${applicantsError}`}
       </p>
     );
-  }
 
+  // ----------- Render UI -----------
   return (
     <div className="min-h-screen bg-gray-50 px-4 sm:px-6 lg:px-8 py-12">
       <div className="max-w-7xl mx-auto">
@@ -166,67 +284,14 @@ const Applicants = () => {
             </thead>
             <tbody>
               {filteredApplicants.map((applicant, index) => (
-                <tr key={applicant.id || index} className="border-t border-gray-200 hover:bg-gray-50">
-                  <td className="px-4 py-2">{index + 1}</td>
-                  {!jobId && <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>}
-                  <td className="px-4 py-2">{applicant.fullName || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.email || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.phone || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.location || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.experience || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.jobTitle || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.company || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.qualification || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.specialization || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.university || "N/A"}</td>
-                  <td className="px-4 py-2">{applicant.skills?.join(", ") || "N/A"}</td>
-                  <td className="px-4 py-2">
-                    {applicant.resume ? (
-                      <a href={`http://localhost:5000/${applicant.resume}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                        View
-                      </a>
-                    ) : "N/A"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {applicant.coverLetter ? (
-                      <a href={`http://localhost:5000/${applicant.coverLetter}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                        View
-                      </a>
-                    ) : "N/A"}
-                  </td>
-                  <td className="px-4 py-2">
-                    {applicant.linkedIn ? (
-                      <a href={applicant.linkedIn} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">
-                        View
-                      </a>
-                    ) : "N/A"}
-                  </td>
-                  <td className="px-4 py-2">{applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}</td>
-                </tr>
+                <ApplicantRow key={applicant.id} applicant={applicant} index={index} showJobId={!jobId} />
               ))}
             </tbody>
           </table>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApplicants.map((applicant) => (
-              <div key={applicant.id || Math.random()} className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-                {!jobId && <p><strong>Job ID:</strong> {applicant.jobId || "N/A"}</p>}
-                <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
-                <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
-                <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
-                <p><strong>Location:</strong> {applicant.location || "N/A"}</p>
-                <p><strong>Experience:</strong> {applicant.experience || "N/A"}</p>
-                <p><strong>Job Title:</strong> {applicant.jobTitle || "N/A"}</p>
-                <p><strong>Company:</strong> {applicant.company || "N/A"}</p>
-                <p><strong>Qualification:</strong> {applicant.qualification || "N/A"}</p>
-                <p><strong>Specialization:</strong> {applicant.specialization || "N/A"}</p>
-                <p><strong>University:</strong> {applicant.university || "N/A"}</p>
-                <p><strong>Skills:</strong> {applicant.skills?.join(", ") || "N/A"}</p>
-                <p><strong>Resume:</strong> {applicant.resume ? <a href={`http://localhost:5000/${applicant.resume}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
-                <p><strong>Cover Letter:</strong> {applicant.coverLetter ? <a href={`http://localhost:5000/${applicant.coverLetter}`} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
-                <p><strong>LinkedIn:</strong> {applicant.linkedIn ? <a href={applicant.linkedIn} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline">View</a> : "N/A"}</p>
-                <p><strong>Applied On:</strong> {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}</p>
-              </div>
+              <ApplicantCard key={applicant.id} applicant={applicant} showJobId={!jobId} />
             ))}
           </div>
         )}
