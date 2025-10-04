@@ -324,24 +324,28 @@ const MyResume = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
-      <div className="flex">
-        <div className="hidden lg:block w-72 text-white shadow-2xl">
-          <Sidebar />
-        </div>
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ease-in-out"
-            onClick={() => setIsSidebarOpen(false)}
-            aria-hidden="true"
-          >
-            <div
-              className="absolute left-0 top-0 h-full w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Sidebar />
-            </div>
+      <div className="flex flex-col lg:flex-row gap-5">
+        {/* Sidebar */}
+        <div className="w-[240px]">
+          <div className="lg:w-72 hidden lg:block">
+            <Sidebar role="job_seeker" />
           </div>
-        )}
+          {isSidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ease-in-out"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-hidden="true"
+            >
+              <div
+                className="absolute left-0 top-0 h-full w-64 sm:w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Sidebar role="job_seeker" />
+              </div>
+            </div>
+          )}
+        </div>
+
         <main className="flex-1 p-6 lg:p-12 max-w-7xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8 mb-10">
             <div className="flex justify-between items-center">

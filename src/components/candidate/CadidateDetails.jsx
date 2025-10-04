@@ -1,19 +1,41 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { ChevronLeft, ChevronRight, User, GraduationCap, Briefcase, MapPin, Upload } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  User,
+  GraduationCap,
+  Briefcase,
+  MapPin,
+  Upload,
+} from "lucide-react";
 import Sidebar from "../../pages/cvdetails/layout/Sidebar.jsx";
 import Header from "../../pages/navbar/Header.jsx";
-import { fetchProfile, clearMessages as clearProfileMessages } from "../../store/profileSlice.js";
-import { loadCandidate, saveCandidate, updateCandidate, clearCandidateMessages } from "../../store/candidateSlice.js";
+import {
+  fetchProfile,
+  clearMessages as clearProfileMessages,
+} from "../../store/profileSlice.js";
+import {
+  loadCandidate,
+  saveCandidate,
+  updateCandidate,
+  clearCandidateMessages,
+} from "../../store/candidateSlice.js";
 import statesWithCities from "../common/Statesncities.jsx";
 
 const CandidateDetails = ({ candidateId }) => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { data: candidateData, loading: candidateLoading, success: candidateSuccess, error: candidateError } = useSelector((state) => state.candidate);
+  const {
+    data: candidateData,
+    loading: candidateLoading,
+    success: candidateSuccess,
+  } = useSelector((state) => state.candidate);
   const { userInfo } = useSelector((state) => state.user);
-  const { profile, loading: profileLoading, error: profileError } = useSelector((state) => state.profile);
+  const { profile, loading: profileLoading } = useSelector(
+    (state) => state.profile
+  );
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [step, setStep] = useState(1);
@@ -68,11 +90,16 @@ const CandidateDetails = ({ candidateId }) => {
       dispatch(fetchProfile(userInfo.id));
     }
     return () => dispatch(clearProfileMessages());
-  }, [dispatch, userInfo?.id]);
+  }, [dispatch, userInfo?.id, userInfo?.role]);
 
   // Load candidate data with retry logic for ECONNRESET
   useEffect(() => {
-    if (candidateId && userInfo?.role === "job_seeker" && userInfo?.id && retryCount < 3) {
+    if (
+      candidateId &&
+      userInfo?.role === "job_seeker" &&
+      userInfo?.id &&
+      retryCount < 3
+    ) {
       dispatch(loadCandidate(userInfo.id)).then((result) => {
         if (result.error && result.error.message.includes("ECONNRESET")) {
           setTimeout(() => setRetryCount(retryCount + 1), 1000 * retryCount);
@@ -80,7 +107,7 @@ const CandidateDetails = ({ candidateId }) => {
       });
     }
     return () => dispatch(clearCandidateMessages());
-  }, [candidateId, dispatch, userInfo?.id, retryCount]);
+  }, [candidateId, dispatch, userInfo?.id, userInfo?.role, retryCount]);
 
   // Merge profile data into formData
   useEffect(() => {
@@ -99,11 +126,17 @@ const CandidateDetails = ({ candidateId }) => {
 
   // Merge candidate data into formData
   useEffect(() => {
-    if (candidateData && typeof candidateData === "object" && candidateData !== null) {
+    if (
+      candidateData &&
+      typeof candidateData === "object" &&
+      candidateData !== null
+    ) {
       console.log("Merging candidate data:", candidateData);
       setFormData((prev) => ({
         ...prev,
-        ...Object.fromEntries(Object.entries(candidateData).map(([key, val]) => [key, val ?? ""])),
+        ...Object.fromEntries(
+          Object.entries(candidateData).map(([key, val]) => [key, val ?? ""])
+        ),
         resume: null, // Reset file input
       }));
     } else {
@@ -124,16 +157,21 @@ const CandidateDetails = ({ candidateId }) => {
     if (step === 1) {
       if (!formData.name) errors.name = "Full Name is required";
       if (!formData.email) errors.email = "Email is required";
-      else if (!/\S+@\S+\.\S+/.test(formData.email)) errors.email = "Invalid email format";
+      else if (!/\S+@\S+\.\S+/.test(formData.email))
+        errors.email = "Invalid email format";
       if (!formData.phone) errors.phone = "Phone is required";
-      else if (!/^\d{10}$/.test(formData.phone)) errors.phone = "Phone must be 10 digits";
+      else if (!/^\d{10}$/.test(formData.phone))
+        errors.phone = "Phone must be 10 digits";
     } else if (step === 2) {
-      if (!formData.graduationDegree) errors.graduationDegree = "Degree is required";
-      if (!formData.graduationState) errors.graduationState = "State is required";
+      if (!formData.graduationDegree)
+        errors.graduationDegree = "Degree is required";
+      if (!formData.graduationState)
+        errors.graduationState = "State is required";
       if (!formData.graduationCity) errors.graduationCity = "City is required";
       if (!formData.graduationYear) errors.graduationYear = "Year is required";
     } else if (step === 5) {
-      if (!formData.resume && !candidateData?.resume) errors.resume = "Resume is required";
+      if (!formData.resume && !candidateData?.resume)
+        errors.resume = "Resume is required";
     }
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -172,7 +210,9 @@ const CandidateDetails = ({ candidateId }) => {
         }
       } catch (err) {
         console.error("Submit error:", err);
-        setFormErrors({ form: err.message || "Failed to submit candidate details" });
+        setFormErrors({
+          form: err.message || "Failed to submit candidate details",
+        });
       }
     }
   };
@@ -191,42 +231,46 @@ const CandidateDetails = ({ candidateId }) => {
         <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
         <div className="flex justify-center items-center h-[calc(100vh-64px)]">
           <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-indigo-600"></div>
-          <p className="ml-4 text-gray-600 text-lg font-medium">Loading your details...</p>
+          <p className="ml-4 text-gray-600 text-lg font-medium">
+            Loading your details...
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-indigo-50">
+    <div className="min-h-screen relative top-16 p-6">
       {/* Header */}
       <Header toggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       {/* Main Content */}
-      <div className="flex flex-col lg:flex-row">
+      <div className="flex flex-col lg:flex-row gap-5">
         {/* Sidebar */}
-        <div className="lg:w-72 hidden lg:block">
-          <Sidebar role="job_seeker" />
-        </div>
-        {isSidebarOpen && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ease-in-out"
-            onClick={() => setIsSidebarOpen(false)}
-            aria-hidden="true"
-          >
-            <div
-              className="absolute left-0 top-0 h-full w-64 sm:w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Sidebar role="job_seeker" />
-            </div>
+        <div className="w-[240px]">
+          <div className="lg:w-72 hidden lg:block">
+            <Sidebar role="job_seeker" />
           </div>
-        )}
+          {isSidebarOpen && (
+            <div
+              className="fixed inset-0 bg-black bg-opacity-75 z-40 lg:hidden transition-opacity duration-300 ease-in-out"
+              onClick={() => setIsSidebarOpen(false)}
+              aria-hidden="true"
+            >
+              <div
+                className="absolute left-0 top-0 h-full w-64 sm:w-72 bg-indigo-900 text-white z-50 transform transition-transform duration-300 ease-in-out"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <Sidebar role="job_seeker" />
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* Form Content */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-12 max-w-7xl bg-amber-50 mx-auto w-full">
+        <main className="flex-1 p-4 sm:p-6 lg:p-6 max-w-7xl top-25 bg-[#89b4d4]/10 rounded-md shadow-md mx-auto w-full">
           {/* Header Section */}
-          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 mb-6 sm:mb-10 hover:shadow-lg transition-all duration-300">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 mb-6 hover:shadow-lg transition-all duration-300">
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 tracking-tight">
               Complete Your Profile
             </h1>
@@ -240,13 +284,19 @@ const CandidateDetails = ({ candidateId }) => {
               {candidateSuccess}
             </div>
           )}
-        
+
           {/* Form */}
-          <form onSubmit={handleSubmit} className="bg-white p-6 sm:p-8 rounded-2xl shadow-md border border-gray-100 hover:shadow-lg transition-all duration-300">
+          <form
+            onSubmit={handleSubmit}
+            className="bg-white p-6 sm:p-8 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300"
+          >
             {/* Progress Steps */}
             <div className="flex flex-row overflow-x-auto sm:flex-wrap sm:gap-2 mb-6 sm:mb-10">
               {steps.map(({ label, icon }, index) => (
-                <div key={label} className="flex-1 flex flex-col items-center relative min-w-[80px] sm:min-w-0">
+                <div
+                  key={label}
+                  className="flex-1 flex flex-col items-center relative min-w-[80px] sm:min-w-0"
+                >
                   <div
                     className={`w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-full transition-all duration-300 shadow-md ${
                       step === index + 1
@@ -258,7 +308,11 @@ const CandidateDetails = ({ candidateId }) => {
                   >
                     {icon}
                   </div>
-                  <p className={`mt-1 sm:mt-2 text-xs sm:text-sm font-medium ${step === index + 1 ? "text-indigo-600" : "text-gray-500"}`}>
+                  <p
+                    className={`mt-1 sm:mt-2 text-xs sm:text-sm font-medium ${
+                      step === index + 1 ? "text-indigo-600" : "text-gray-500"
+                    }`}
+                  >
                     {label}
                   </p>
                   {index < steps.length - 1 && (
@@ -276,7 +330,10 @@ const CandidateDetails = ({ candidateId }) => {
             {step === 1 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
-                  <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="name"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Full Name <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -289,14 +346,21 @@ const CandidateDetails = ({ candidateId }) => {
                       formErrors.name ? "border-red-500" : "border-gray-200"
                     } text-sm sm:text-base`}
                     aria-required="true"
-                    aria-describedby={formErrors.name ? "name-error" : undefined}
+                    aria-describedby={
+                      formErrors.name ? "name-error" : undefined
+                    }
                   />
                   {formErrors.name && (
-                    <p id="name-error" className="text-red-500 text-xs mt-1">{formErrors.name}</p>
+                    <p id="name-error" className="text-red-500 text-xs mt-1">
+                      {formErrors.name}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="email"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Email <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -309,14 +373,21 @@ const CandidateDetails = ({ candidateId }) => {
                       formErrors.email ? "border-red-500" : "border-gray-200"
                     } text-sm sm:text-base`}
                     aria-required="true"
-                    aria-describedby={formErrors.email ? "email-error" : undefined}
+                    aria-describedby={
+                      formErrors.email ? "email-error" : undefined
+                    }
                   />
                   {formErrors.email && (
-                    <p id="email-error" className="text-red-500 text-xs mt-1">{formErrors.email}</p>
+                    <p id="email-error" className="text-red-500 text-xs mt-1">
+                      {formErrors.email}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="phone"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Phone <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -330,14 +401,21 @@ const CandidateDetails = ({ candidateId }) => {
                       formErrors.phone ? "border-red-500" : "border-gray-200"
                     } text-sm sm:text-base`}
                     aria-required="true"
-                    aria-describedby={formErrors.phone ? "phone-error" : undefined}
+                    aria-describedby={
+                      formErrors.phone ? "phone-error" : undefined
+                    }
                   />
                   {formErrors.phone && (
-                    <p id="phone-error" className="text-red-500 text-xs mt-1">{formErrors.phone}</p>
+                    <p id="phone-error" className="text-red-500 text-xs mt-1">
+                      {formErrors.phone}
+                    </p>
                   )}
                 </div>
                 <div>
-                  <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="address"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Address
                   </label>
                   <input
@@ -350,7 +428,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="linkedin" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="linkedin"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     LinkedIn
                   </label>
                   <input
@@ -363,7 +444,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="github" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="github"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     GitHub
                   </label>
                   <input
@@ -376,7 +460,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div className="sm:col-span-2">
-                  <label htmlFor="objective" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="objective"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Objective
                   </label>
                   <textarea
@@ -397,10 +484,15 @@ const CandidateDetails = ({ candidateId }) => {
               <div className="space-y-6">
                 {/* Graduation */}
                 <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Graduation</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Graduation
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label htmlFor="graduationDegree" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationDegree"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Degree <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -410,17 +502,31 @@ const CandidateDetails = ({ candidateId }) => {
                         onChange={handleChange}
                         placeholder="Degree"
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
-                          formErrors.graduationDegree ? "border-red-500" : "border-gray-200"
+                          formErrors.graduationDegree
+                            ? "border-red-500"
+                            : "border-gray-200"
                         } text-sm sm:text-base`}
                         aria-required="true"
-                        aria-describedby={formErrors.graduationDegree ? "graduationDegree-error" : undefined}
+                        aria-describedby={
+                          formErrors.graduationDegree
+                            ? "graduationDegree-error"
+                            : undefined
+                        }
                       />
                       {formErrors.graduationDegree && (
-                        <p id="graduationDegree-error" className="text-red-500 text-xs mt-1">{formErrors.graduationDegree}</p>
+                        <p
+                          id="graduationDegree-error"
+                          className="text-red-500 text-xs mt-1"
+                        >
+                          {formErrors.graduationDegree}
+                        </p>
                       )}
                     </div>
                     <div>
-                      <label htmlFor="graduationState" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationState"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         State <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -429,10 +535,16 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.graduationState}
                         onChange={handleChange}
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
-                          formErrors.graduationState ? "border-red-500" : "border-gray-200"
+                          formErrors.graduationState
+                            ? "border-red-500"
+                            : "border-gray-200"
                         } text-sm sm:text-base`}
                         aria-required="true"
-                        aria-describedby={formErrors.graduationState ? "graduationState-error" : undefined}
+                        aria-describedby={
+                          formErrors.graduationState
+                            ? "graduationState-error"
+                            : undefined
+                        }
                       >
                         <option value="">Select State</option>
                         {Object.keys(statesWithCities).map((state) => (
@@ -442,11 +554,19 @@ const CandidateDetails = ({ candidateId }) => {
                         ))}
                       </select>
                       {formErrors.graduationState && (
-                        <p id="graduationState-error" className="text-red-500 text-xs mt-1">{formErrors.graduationState}</p>
+                        <p
+                          id="graduationState-error"
+                          className="text-red-500 text-xs mt-1"
+                        >
+                          {formErrors.graduationState}
+                        </p>
                       )}
                     </div>
                     <div>
-                      <label htmlFor="graduationCity" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationCity"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         City <span className="text-red-500">*</span>
                       </label>
                       <select
@@ -455,24 +575,40 @@ const CandidateDetails = ({ candidateId }) => {
                         value={formData.graduationCity}
                         onChange={handleChange}
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
-                          formErrors.graduationCity ? "border-red-500" : "border-gray-200"
+                          formErrors.graduationCity
+                            ? "border-red-500"
+                            : "border-gray-200"
                         } text-sm sm:text-base`}
                         aria-required="true"
-                        aria-describedby={formErrors.graduationCity ? "graduationCity-error" : undefined}
+                        aria-describedby={
+                          formErrors.graduationCity
+                            ? "graduationCity-error"
+                            : undefined
+                        }
                       >
                         <option value="">Select City</option>
-                        {statesWithCities[formData.graduationState]?.map((city) => (
-                          <option key={city} value={city}>
-                            {city}
-                          </option>
-                        ))}
+                        {statesWithCities[formData.graduationState]?.map(
+                          (city) => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          )
+                        )}
                       </select>
                       {formErrors.graduationCity && (
-                        <p id="graduationCity-error" className="text-red-500 text-xs mt-1">{formErrors.graduationCity}</p>
+                        <p
+                          id="graduationCity-error"
+                          className="text-red-500 text-xs mt-1"
+                        >
+                          {formErrors.graduationCity}
+                        </p>
                       )}
                     </div>
                     <div>
-                      <label htmlFor="graduationUniversity" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationUniversity"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         University
                       </label>
                       <input
@@ -485,7 +621,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="graduationCollege" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationCollege"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         College
                       </label>
                       <input
@@ -498,7 +637,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="graduationYear" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="graduationYear"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Year <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -508,13 +650,24 @@ const CandidateDetails = ({ candidateId }) => {
                         onChange={handleChange}
                         placeholder="Year"
                         className={`w-full p-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm ${
-                          formErrors.graduationYear ? "border-red-500" : "border-gray-200"
+                          formErrors.graduationYear
+                            ? "border-red-500"
+                            : "border-gray-200"
                         } text-sm sm:text-base`}
                         aria-required="true"
-                        aria-describedby={formErrors.graduationYear ? "graduationYear-error" : undefined}
+                        aria-describedby={
+                          formErrors.graduationYear
+                            ? "graduationYear-error"
+                            : undefined
+                        }
                       />
                       {formErrors.graduationYear && (
-                        <p id="graduationYear-error" className="text-red-500 text-xs mt-1">{formErrors.graduationYear}</p>
+                        <p
+                          id="graduationYear-error"
+                          className="text-red-500 text-xs mt-1"
+                        >
+                          {formErrors.graduationYear}
+                        </p>
                       )}
                     </div>
                   </div>
@@ -522,10 +675,15 @@ const CandidateDetails = ({ candidateId }) => {
 
                 {/* Intermediate */}
                 <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Intermediate</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    Intermediate
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label htmlFor="interBoard" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interBoard"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Board
                       </label>
                       <input
@@ -538,7 +696,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="interState" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interState"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         State
                       </label>
                       <select
@@ -557,7 +718,10 @@ const CandidateDetails = ({ candidateId }) => {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="interStateBoard" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interStateBoard"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         State Board
                       </label>
                       <input
@@ -570,7 +734,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="interCity" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interCity"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         City
                       </label>
                       <select
@@ -589,7 +756,10 @@ const CandidateDetails = ({ candidateId }) => {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="interCollege" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interCollege"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         College
                       </label>
                       <input
@@ -602,7 +772,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="interStream" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interStream"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Stream
                       </label>
                       <input
@@ -615,7 +788,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="interYear" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="interYear"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Year
                       </label>
                       <input
@@ -632,10 +808,15 @@ const CandidateDetails = ({ candidateId }) => {
 
                 {/* 10th */}
                 <div className="p-4 sm:p-6 bg-white rounded-xl shadow-md border border-gray-100">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">10th</h3>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                    10th
+                  </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                     <div>
-                      <label htmlFor="tenthBoard" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="tenthBoard"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Board
                       </label>
                       <input
@@ -648,7 +829,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="tenthState" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="tenthState"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         State
                       </label>
                       <select
@@ -667,7 +851,10 @@ const CandidateDetails = ({ candidateId }) => {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="tenthCity" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="tenthCity"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         City
                       </label>
                       <select
@@ -686,7 +873,10 @@ const CandidateDetails = ({ candidateId }) => {
                       </select>
                     </div>
                     <div>
-                      <label htmlFor="tenthSchool" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="tenthSchool"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         School
                       </label>
                       <input
@@ -699,7 +889,10 @@ const CandidateDetails = ({ candidateId }) => {
                       />
                     </div>
                     <div>
-                      <label htmlFor="tenthYear" className="block text-sm font-medium text-gray-700 mb-1">
+                      <label
+                        htmlFor="tenthYear"
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                      >
                         Year
                       </label>
                       <input
@@ -720,7 +913,10 @@ const CandidateDetails = ({ candidateId }) => {
             {step === 3 && (
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="experience" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="experience"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Years of Experience
                   </label>
                   <input
@@ -733,7 +929,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="companyName" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="companyName"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Company Name
                   </label>
                   <input
@@ -746,7 +945,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="jobTitle" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="jobTitle"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Job Title
                   </label>
                   <input
@@ -759,7 +961,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="duration" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="duration"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Duration
                   </label>
                   <input
@@ -772,7 +977,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="responsibilities" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="responsibilities"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Responsibilities
                   </label>
                   <textarea
@@ -792,7 +1000,10 @@ const CandidateDetails = ({ candidateId }) => {
             {step === 4 && (
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="currentLocation" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="currentLocation"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Current Location
                   </label>
                   <input
@@ -805,7 +1016,10 @@ const CandidateDetails = ({ candidateId }) => {
                   />
                 </div>
                 <div>
-                  <label htmlFor="preferredLocation" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="preferredLocation"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Preferred Location
                   </label>
                   <input
@@ -824,7 +1038,10 @@ const CandidateDetails = ({ candidateId }) => {
             {step === 5 && (
               <div className="space-y-6">
                 <div>
-                  <label htmlFor="resume" className="block text-sm font-medium text-gray-700 mb-1">
+                  <label
+                    htmlFor="resume"
+                    className="block text-sm font-medium text-gray-700 mb-1"
+                  >
                     Upload Resume <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -837,17 +1054,31 @@ const CandidateDetails = ({ candidateId }) => {
                       formErrors.resume ? "border-red-500" : "border-gray-200"
                     } text-sm sm:text-base`}
                     aria-required="true"
-                    aria-describedby={formErrors.resume ? "resume-error" : undefined}
+                    aria-describedby={
+                      formErrors.resume ? "resume-error" : undefined
+                    }
                   />
                   {formErrors.resume && (
-                    <p id="resume-error" className="text-red-500 text-xs mt-1">{formErrors.resume}</p>
+                    <p id="resume-error" className="text-red-500 text-xs mt-1">
+                      {formErrors.resume}
+                    </p>
                   )}
                   {formData.resume && (
-                    <p className="text-sm text-gray-600 mt-1">Selected: {formData.resume.name}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Selected: {formData.resume.name}
+                    </p>
                   )}
                   {candidateData?.resume && !formData.resume && (
                     <p className="text-sm text-gray-600 mt-1">
-                      Current resume: <a href={candidateData.resume} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:text-indigo-800">View Resume</a>
+                      Current resume:{" "}
+                      <a
+                        href={candidateData.resume}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-indigo-600 hover:text-indigo-800"
+                      >
+                        View Resume
+                      </a>
                     </p>
                   )}
                 </div>
@@ -884,7 +1115,9 @@ const CandidateDetails = ({ candidateId }) => {
                   aria-label="Submit form"
                   disabled={candidateLoading || profileLoading}
                 >
-                  {candidateLoading || profileLoading ? "Submitting..." : "Submit"}
+                  {candidateLoading || profileLoading
+                    ? "Submitting..."
+                    : "Submit"}
                 </button>
               )}
             </div>
