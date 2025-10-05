@@ -60,11 +60,6 @@ export const fetchUserApplications = createAsyncThunk(
 );
 
 
-
-
-
-
-
 export const fetchApplicantsByUserJobs = createAsyncThunk(
   'jobs/fetchApplicantsByUserJobs',
   async (_, { getState, rejectWithValue }) => {
@@ -149,17 +144,6 @@ export const fetchApplicantsByUserJobs = createAsyncThunk(
     }
   }
 );
-
-
-
-
-
-
-
-
-
-
-
 // Fetch all applicants
 export const fetchAllApplicants = createAsyncThunk(
   'jobs/fetchAllApplicants',
@@ -461,25 +445,39 @@ export const applyForJob = createAsyncThunk(
   }
 );
 
-// Update applicant status
+
+
 export const updateApplicantStatus = createAsyncThunk(
   'jobs/updateApplicantStatus',
-  async ({ applicationId, status, interviewDate }, { getState, rejectWithValue }) => {
+  async ({ applicationId, status, interviewDate = null }, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      if (!token || user.userType !== 'employer') throw new Error('Authentication required or unauthorized access');
-      const response = await axios.put(`http://localhost:5000/api/applications/${applicationId}/status`, { status, interviewDate }, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      return { applicationId, status: response.data.status, interviewDate: response.data.interviewDate };
+
+      if (!token) throw new Error('Authentication required or unauthorized access');
+
+      const payload = { status };
+      if (interviewDate) payload.interviewDate = interviewDate;
+
+      const response = await axiosAuth(token).put(`/applications/${applicationId}/status`, payload);
+
+      return {
+        applicationId,
+        status: response.data.status || status,
+        interviewDate: response.data.interviewDate || interviewDate,
+      };
     } catch (error) {
-      const errorMessage = error.response?.data?.error || error.response?.data?.details || error.message || 'Failed to update applicant status';
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        error.message ||
+        'Failed to update applicant status';
       return rejectWithValue(errorMessage);
     }
   }
 );
 
+///for applied jobs
 export const fetchAppliedJobs = createAsyncThunk(
   "jobs/fetchAppliedJobs",
   async ({  search = "", status = "All", page = 1, limit = 10 }, { getState, rejectWithValue }) => {

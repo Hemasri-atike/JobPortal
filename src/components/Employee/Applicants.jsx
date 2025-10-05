@@ -5,13 +5,14 @@ import {
   fetchApplicantsByJob,
   fetchApplicantsByUserJobs,
   clearApplicantsState,
+  updateApplicantStatus, // <-- import thunk here
 } from "../../store/jobsSlice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { FaSearch, FaList, FaTh } from "react-icons/fa";
 
 // ---------- Applicant Table Row ----------
-const ApplicantRow = ({ applicant, index, showJobId }) => (
+const ApplicantRow = ({ applicant, index, showJobId, onAction }) => (
   <tr className="border-t border-gray-200 hover:bg-gray-50">
     <td className="px-4 py-2">{index + 1}</td>
     {showJobId && <td className="px-4 py-2">{applicant.jobId || "N/A"}</td>}
@@ -36,7 +37,9 @@ const ApplicantRow = ({ applicant, index, showJobId }) => (
         >
           View
         </a>
-      ) : "N/A"}
+      ) : (
+        "N/A"
+      )}
     </td>
     <td className="px-4 py-2">
       {applicant.coverLetter ? (
@@ -48,7 +51,9 @@ const ApplicantRow = ({ applicant, index, showJobId }) => (
         >
           View
         </a>
-      ) : "N/A"}
+      ) : (
+        "N/A"
+      )}
     </td>
     <td className="px-4 py-2">
       {applicant.linkedIn ? (
@@ -60,18 +65,61 @@ const ApplicantRow = ({ applicant, index, showJobId }) => (
         >
           View
         </a>
-      ) : "N/A"}
+      ) : (
+        "N/A"
+      )}
     </td>
     <td className="px-4 py-2">
-      {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
+      {applicant.createdAt
+        ? new Date(applicant.createdAt).toLocaleDateString()
+        : "N/A"}
+    </td>
+    <td className="px-4 py-2 font-medium">
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          applicant.status === "Shortlisted"
+            ? "bg-green-100 text-green-700"
+            : applicant.status === "Interview Scheduled"
+            ? "bg-blue-100 text-blue-700"
+            : applicant.status === "Rejected"
+            ? "bg-red-100 text-red-700"
+            : "bg-gray-100 text-gray-700"
+        }`}
+      >
+        {applicant.status || "Pending"}
+      </span>
+    </td>
+    <td className="px-4 py-2 flex gap-2">
+      <button
+        onClick={() => onAction(applicant, "Shortlisted")}
+        className="px-2 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+      >
+        Shortlist
+      </button>
+      <button
+        onClick={() => onAction(applicant, "Interview Scheduled")}
+        className="px-2 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+      >
+        Interview
+      </button>
+      <button
+        onClick={() => onAction(applicant, "Rejected")}
+        className="px-2 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+      >
+        Reject
+      </button>
     </td>
   </tr>
 );
 
 // ---------- Applicant Card ----------
-const ApplicantCard = ({ applicant, showJobId }) => (
+const ApplicantCard = ({ applicant, showJobId, onAction }) => (
   <div className="bg-white shadow-md rounded-lg p-6 border border-gray-200 hover:shadow-lg transition-shadow">
-    {showJobId && <p><strong>Job ID:</strong> {applicant.jobId || "N/A"}</p>}
+    {showJobId && (
+      <p>
+        <strong>Job ID:</strong> {applicant.jobId || "N/A"}
+      </p>
+    )}
     <p><strong>Name:</strong> {applicant.fullName || "N/A"}</p>
     <p><strong>Email:</strong> {applicant.email || "N/A"}</p>
     <p><strong>Phone:</strong> {applicant.phone || "N/A"}</p>
@@ -83,49 +131,44 @@ const ApplicantCard = ({ applicant, showJobId }) => (
     <p><strong>Specialization:</strong> {applicant.specialization || "N/A"}</p>
     <p><strong>University:</strong> {applicant.university || "N/A"}</p>
     <p><strong>Skills:</strong> {applicant.skills.join(", ") || "N/A"}</p>
+
     <p>
-      <strong>Resume:</strong>{" "}
-      {applicant.resume ? (
-        <a
-          href={`http://localhost:5000/${applicant.resume}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-indigo-600 hover:underline"
-        >
-          View
-        </a>
-      ) : "N/A"}
+      <strong>Status:</strong>{" "}
+      <span
+        className={`px-2 py-1 rounded-full text-xs ${
+          applicant.status === "Shortlisted"
+            ? "bg-green-100 text-green-700"
+            : applicant.status === "Interview Scheduled"
+            ? "bg-blue-100 text-blue-700"
+            : applicant.status === "Rejected"
+            ? "bg-red-100 text-red-700"
+            : "bg-gray-100 text-gray-700"
+        }`}
+      >
+        {applicant.status || "Pending"}
+      </span>
     </p>
-    <p>
-      <strong>Cover Letter:</strong>{" "}
-      {applicant.coverLetter ? (
-        <a
-          href={`http://localhost:5000/${applicant.coverLetter}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-indigo-600 hover:underline"
-        >
-          View
-        </a>
-      ) : "N/A"}
-    </p>
-    <p>
-      <strong>LinkedIn:</strong>{" "}
-      {applicant.linkedIn ? (
-        <a
-          href={applicant.linkedIn}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-indigo-600 hover:underline"
-        >
-          View
-        </a>
-      ) : "N/A"}
-    </p>
-    <p>
-      <strong>Applied On:</strong>{" "}
-      {applicant.createdAt ? new Date(applicant.createdAt).toLocaleDateString() : "N/A"}
-    </p>
+
+    <div className="flex gap-2 mt-4">
+      <button
+        onClick={() => onAction(applicant, "Shortlisted")}
+        className="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600"
+      >
+        Shortlist
+      </button>
+      <button
+        onClick={() => onAction(applicant, "Interview Scheduled")}
+        className="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600"
+      >
+        Interview
+      </button>
+      <button
+        onClick={() => onAction(applicant, "Rejected")}
+        className="px-3 py-1 bg-red-500 text-white rounded text-sm hover:bg-red-600"
+      >
+        Reject
+      </button>
+    </div>
   </div>
 );
 
@@ -136,11 +179,16 @@ const Applicants = () => {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [viewMode, setViewMode] = useState("table");
+  const [localApplicants, setLocalApplicants] = useState([]);
 
   const { userInfo, userType } = useSelector((state) => state.user || {});
   const applicantsState = useSelector((state) => state.jobs.applicants || []);
-  const applicantsStatus = useSelector((state) => state.jobs.applicantsStatus || "idle");
-  const applicantsError = useSelector((state) => state.jobs.applicantsError || null);
+  const applicantsStatus = useSelector(
+    (state) => state.jobs.applicantsStatus || "idle"
+  );
+  const applicantsError = useSelector(
+    (state) => state.jobs.applicantsError || null
+  );
 
   // ----------- Fetch Applicants -----------
   useEffect(() => {
@@ -169,18 +217,55 @@ const Applicants = () => {
       ? applicantsState
       : Object.values(applicantsState).flat();
 
-    return arrayForm.map((applicant) => ({
+    const normalized = arrayForm.map((applicant) => ({
       ...applicant,
       skills: Array.isArray(applicant.skills)
         ? applicant.skills
         : applicant.skills?.replace(/["]/g, "").split(",") || [],
       resume: applicant.resume?.replace(/\\/g, "/"),
       coverLetter: applicant.coverLetter?.replace(/\\/g, "/"),
+      status: applicant.status || "Pending",
     }));
+
+    setLocalApplicants(normalized);
+    return normalized;
   }, [applicantsState]);
 
+  // ----------- Handle Applicant Action -----------
+  const handleApplicantAction = async (applicant, newStatus) => {
+    try {
+      // Optimistic UI update
+      setLocalApplicants((prev) =>
+        prev.map((a) =>
+          a.id === applicant.id ? { ...a, status: newStatus } : a
+        )
+      );
+
+      // Dispatch updateApplicantStatus thunk
+      await dispatch(
+        updateApplicantStatus({
+          applicationId: applicant.id,
+          status: newStatus,
+        })
+      ).unwrap();
+
+      toast.success(`${applicant.fullName} has been marked as ${newStatus}.`);
+    } catch (error) {
+      toast.error(
+        error || `Failed to update status for ${applicant.fullName}`
+      );
+      // Revert UI if error occurs
+      setLocalApplicants((prev) =>
+        prev.map((a) =>
+          a.id === applicant.id ? { ...a, status: applicant.status } : a
+        )
+      );
+    }
+  };
+
+  // ----------- Filter -----------
   const filteredApplicants = useMemo(() => {
-    return normalizedApplicants.filter((applicant) =>
+    return localApplicants.filter((applicant) =>
       [
         applicant.fullName,
         applicant.email,
@@ -194,7 +279,7 @@ const Applicants = () => {
         field?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     );
-  }, [normalizedApplicants, searchTerm]);
+  }, [localApplicants, searchTerm]);
 
   // ----------- Access Check -----------
   if (!userInfo?.token || userType !== "employer") {
@@ -208,7 +293,8 @@ const Applicants = () => {
   }
 
   // ----------- Loading & Error States -----------
-  if (applicantsStatus === "loading") return <p className="text-gray-600 text-lg">Loading applicants...</p>;
+  if (applicantsStatus === "loading")
+    return <p className="text-gray-600 text-lg">Loading applicants...</p>;
   if (applicantsStatus === "failed")
     return (
       <p className="text-red-600 text-lg">
@@ -241,13 +327,21 @@ const Applicants = () => {
           <div className="flex gap-2">
             <button
               onClick={() => setViewMode("table")}
-              className={`p-2 rounded-lg ${viewMode === "table" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
+              className={`p-2 rounded-lg ${
+                viewMode === "table"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
             >
               <FaList />
             </button>
             <button
               onClick={() => setViewMode("card")}
-              className={`p-2 rounded-lg ${viewMode === "card" ? "bg-indigo-600 text-white" : "bg-gray-200 text-gray-700"}`}
+              className={`p-2 rounded-lg ${
+                viewMode === "card"
+                  ? "bg-indigo-600 text-white"
+                  : "bg-gray-200 text-gray-700"
+              }`}
             >
               <FaTh />
             </button>
@@ -264,34 +358,85 @@ const Applicants = () => {
             <thead className="bg-gray-100">
               <tr>
                 <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">#</th>
-                {!jobId && <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job ID</th>}
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Name</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Email</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Phone</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Location</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Experience</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Job Title</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Company</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Qualification</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Specialization</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">University</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Skills</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Resume</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Cover Letter</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">LinkedIn</th>
-                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">Applied On</th>
+                {!jobId && (
+                  <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                    Job ID
+                  </th>
+                )}
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Name
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Email
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Phone
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Location
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Experience
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Job Title
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Company
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Qualification
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Specialization
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  University
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Skills
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Resume
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Cover Letter
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  LinkedIn
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Applied On
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Status
+                </th>
+                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody>
               {filteredApplicants.map((applicant, index) => (
-                <ApplicantRow key={applicant.id} applicant={applicant} index={index} showJobId={!jobId} />
+                <ApplicantRow
+                  key={applicant.id}
+                  applicant={applicant}
+                  index={index}
+                  showJobId={!jobId}
+                  onAction={handleApplicantAction} // <-- pass thunk handler
+                />
               ))}
             </tbody>
           </table>
         ) : (
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {filteredApplicants.map((applicant) => (
-              <ApplicantCard key={applicant.id} applicant={applicant} showJobId={!jobId} />
+              <ApplicantCard
+                key={applicant.id}
+                applicant={applicant}
+                showJobId={!jobId}
+                onAction={handleApplicantAction} // <-- pass thunk handler
+              />
             ))}
           </div>
         )}
