@@ -4,13 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { ChevronRight, Mail, Download, FileText } from "lucide-react";
 import Sidebar from "../cvdetails/layout/Sidebar.jsx";
 import Header from "../navbar/Header";
-import { fetchCandidateDashboard } from "../../store/dashboardSlice.js";
-
-// Optional: Uncomment the following imports if you want to integrate Chart.js for the profile views chart
-// import { Line } from "react-chartjs-2";
-// import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend } from "chart.js";
-// ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend);
-
+import { fetchCandidateDashboard } from "../../store/dashboardSlice.js";   
 import { useState } from "react";
 
 const Dashboard = () => {
@@ -169,53 +163,8 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Profile Views */}
-            <div className="bg-white p-6 rounded-xl shadow-sm mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h5 className="text-lg font-semibold text-[#3b4f73]">
-                  Your Profile Views
-                </h5>
-                <select
-                  className="p-2 border border-[#89b4d4]/50 rounded text-base text-[#3b4f73] focus:outline-none focus:ring-2 focus:ring-[#89b4d4]"
-                  aria-label="Select profile views timeframe"
-                >
-                  <option>Last 30 Days</option>
-                  <option>Last 6 Months</option>
-                  <option>Last Year</option>
-                </select>
-              </div>
-              <div className="flex justify-center">
-                <div className="w-full h-48">
-                  {/* Placeholder for chart */}
-                  <div
-                    className="bg-[#89b4d4]/10 h-full rounded flex items-center justify-center text-[#3b4f73]/80"
-                    aria-label="Profile views chart (data for selected timeframe)"
-                  >
-                    Chart Placeholder (Profile Views)
-                  </div>
-                  {/* Optional: Uncomment to use Chart.js for profile views */}
-                  {/*
-                <Line
-                  data={{
-                    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-                    datasets: [{
-                      label: "Profile Views",
-                      data: [65, 59, 80, 81, 56, 55],
-                      borderColor: "#3b4f73",
-                      backgroundColor: "#89b4d4",
-                      fill: false,
-                    }],
-                  }}
-                  options={{
-                    responsive: true,
-                    plugins: { legend: { display: false } },
-                    scales: { y: { beginAtZero: true } },
-                  }}
-                />
-                */}
-                </div>
-              </div>
-            </div>
+            
+           
 
             {/* Notifications */}
             <div className="bg-white p-6 rounded-xl shadow-sm mb-6">

@@ -9,28 +9,49 @@ const axiosAuth = (token) =>
     timeout: 10000,
   });
 
-// Fetch jobs
+
+
+
 export const fetchJobs = createAsyncThunk(
   'jobs/fetchJobs',
-  async ({ statusFilter = 'All', searchQuery = '', page = 1, jobsPerPage = 10, category_id, subcategory_id }, { getState, rejectWithValue }) => {
+  async (
+    {
+      statusFilter = 'All',
+      searchQuery = '',
+      page = 1,
+      jobsPerPage = 10,
+      category,
+      sortBy,
+      userId,
+      postedByUser = false,   // ✅ include this
+    },
+    { rejectWithValue }
+  ) => {
     try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
-      const params = { statusFilter, searchQuery, page, jobsPerPage, ...(category_id && { category_id }), ...(subcategory_id && { subcategory_id }) };
-      const response = await axiosAuth(token).get('/jobs/getalljobs', { params });
-      return {
-        jobs: response.data.jobs || [],
-        total: response.data.total || 0,
-        page: response.data.page || page,
-        jobsPerPage: response.data.limit || jobsPerPage,
-      };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to fetch jobs';
-      if (err.response?.status === 404) return { jobs: [], total: 0, page, jobsPerPage };
-      return rejectWithValue(errorMessage);
+      const params = new URLSearchParams({
+        statusFilter,
+        searchQuery,
+        page,
+        jobsPerPage,
+        category,
+        sortBy,
+        userId,
+        postedByUser, // ✅ send to backend
+      });
+
+      const response = await axios.get(
+        `http://localhost:5000/api/jobs?${params.toString()}`
+      );
+
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        error.response?.data?.message || 'Failed to fetch jobs'
+      );
     }
   }
 );
+
 
 export const fetchJobById = createAsyncThunk(
   'jobs/fetchJobById',

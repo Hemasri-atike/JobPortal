@@ -5,7 +5,6 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import {
   fetchJobs,
-
   deleteJob,
   bulkDeleteJobs,
   toggleJobStatus,
@@ -21,21 +20,7 @@ import { useDebounce } from 'use-debounce';
 const JobListing = () => {
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  // const {
-  //   jobs = [],
-  //   total = 0,
-  //   page = 1,
-  //   jobsPerPage = 10,
-  //   searchQuery = '',
-  //   statusFilter = 'All',
-  //   categoryFilter = '',
-  //   sortBy = 'createdAt-desc',
-  //   jobsStatus = 'idle',
-  //   jobsError = null,
-  //   categories = [],
-  //   categoriesStatus = 'idle',
-  //   categoriesError = null,
-  // } = useSelector((state) => state.jobs || {});
+ 
 
   const {
   jobs = [],
@@ -59,38 +44,34 @@ const {
   const [selectedJobs, setSelectedJobs] = useState([]);
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
 
-  useEffect(() => {
-    if (!userInfo || !userType) {
-      toast.error('Please login to view your job postings.', { position: 'top-right', autoClose: 3000 });
-      navigate('/login');
-    } else if (userType !== 'employer' && userType !== 'admin') {
-      toast.info('Redirecting to job search for job seekers.', { position: 'top-right', autoClose: 3000 });
-      navigate('/jobsearch');
-    }
-  }, [userInfo, userType, navigate]);
+useEffect(() => {
+  if (!userInfo || (userType !== 'employer' && userType !== 'admin')) return;
 
-  useEffect(() => {
-    if (userInfo && (userType === 'employer' || userType === 'admin')) {
-      dispatch(fetchCategories());
-    }
-  }, [dispatch, userInfo, userType]);
+  dispatch(
+    fetchJobs({
+      statusFilter,
+      searchQuery: debouncedSearchQuery,
+      page,
+      jobsPerPage,
+      category: categoryFilter,
+      sortBy,
+      userId: userInfo.id,
+      postedByUser: true,
+    })
+  );
+}, [
+  dispatch,
+  page,
+  debouncedSearchQuery,
+  statusFilter,
+  categoryFilter,
+  sortBy,
+  jobsPerPage,
+  userInfo,
+  userType,
+]);
 
-  useEffect(() => {
-    if (userInfo && (userType === 'employer' || userType === 'admin')) {
-      dispatch(
-        fetchJobs({
-          statusFilter,
-          searchQuery: debouncedSearchQuery,
-          location: '',
-          page,
-          jobsPerPage,
-          category: categoryFilter,
-          sortBy,
-          userId: userInfo.id,
-        })
-      );
-    }
-  }, [dispatch, page, debouncedSearchQuery, statusFilter, categoryFilter, sortBy, jobsPerPage, userInfo, userType]);
+
 
   const handleDelete = async (id) => {
     if (!window.confirm('Are you sure you want to delete this job?')) return;
