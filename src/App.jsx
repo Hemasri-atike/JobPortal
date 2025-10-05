@@ -22,6 +22,7 @@ import EmpDashboard from './components/Employee/EmpDashboard';
 import EmpPosting from './components/Employee/EmpPosting';
 import CmpProfile from './components/Employee/CmpProfile';
 import Applicants from './components/Employee/Applicants';
+import ApplicantsPage from './components/Employee/ApplicantsPage';
 
 import JobSearch from './components/job/JobSearch';
 import CadidateDetails from './components/candidate/CadidateDetails';
@@ -72,6 +73,7 @@ const App = () => {
           {/* <Route path="/applicants" element={<Applicants />} /> */}
 
           <Route path="/applicants" element={<Applicants />} />
+           <Route path="/jobs/:jobId/applicants" element={<ApplicantsPage />} />
         
         </Route>
 

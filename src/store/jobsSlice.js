@@ -23,7 +23,7 @@ export const fetchJobs = createAsyncThunk(
       category,
       sortBy,
       userId,
-      postedByUser = false,   // ✅ include this
+      postedByUser = false, 
     },
     { rejectWithValue }
   ) => {
@@ -36,7 +36,7 @@ export const fetchJobs = createAsyncThunk(
         category,
         sortBy,
         userId,
-        postedByUser, // ✅ send to backend
+        postedByUser,
       });
 
       const response = await axios.get(

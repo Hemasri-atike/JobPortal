@@ -5,7 +5,7 @@ import {
   fetchApplicantsByJob,
   fetchApplicantsByUserJobs,
   clearApplicantsState,
-  updateApplicantStatus, // <-- import thunk here
+  updateApplicantStatus, 
 } from "../../store/jobsSlice";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
