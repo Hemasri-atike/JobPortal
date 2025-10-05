@@ -5,7 +5,7 @@ import { loginUser } from "../store/userSlice";
 import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { Eye, EyeOff } from "lucide-react";
-import IHireBoy from "../../public/assets/LoginBG.png";
+import IHireBoy from "../assets/LoginBG.png";
 
 const Login = () => {
   const [mobile, setMobile] = useState("");

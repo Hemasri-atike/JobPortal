@@ -6,7 +6,7 @@ import {
   setSearchQuery,
   setLocation,
 } from "../../store/jobsSlice.js";
-import IHirePeople from "../../../public/assets/IHire-boy.jpg";
+import IHirePeople from  "../../assets/IHire-boy.jpg";
 
 const HeroSection = () => {
   const dispatch = useDispatch();

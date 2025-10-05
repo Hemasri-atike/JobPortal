@@ -2,7 +2,7 @@ import React, { useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchFooter } from "../../store/footerSlice";
 import { Link } from "react-router-dom";
-import IHirelogo from "../../../public/assets/MNTechs_logo.png";
+import IHirelogo from "../../assets/MNTechs_logo.png";
 
 const Footer = () => {
   const dispatch = useDispatch();

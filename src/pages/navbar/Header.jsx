@@ -5,7 +5,7 @@ import { fetchHeader } from "../../store/headerSlice";
 import { logoutUser } from "../../store/userSlice";
 import UserType from "../../login/UserType";
 import { X, User, Menu } from "lucide-react";
-import IHirelogo from "../../../public/assets/MNTechs_logo.png";
+import IHirelogo from "../../assets/MNTechs_logo.png";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);

@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { User, Briefcase } from "lucide-react";
-import IHireboy from "../../public/assets/SignIn.jpg";
+import IHireboy from "../../src/assets/IHire-boy.jpg";
 
 const UserType = () => {
   return (
