@@ -51,15 +51,31 @@ export const fetchSubcategories = createAsyncThunk(
   }
 );
 
+// Fetch skills
+export const fetchSkills = createAsyncThunk(
+  'categories/fetchSkills',
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/jobs/skills');
+      return Array.isArray(response.data) ? response.data : [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.error || err.message || 'Error fetching skills');
+    }
+  }
+);
+
 const categoriesSlice = createSlice({
   name: 'categories',
   initialState: {
     categories: [],
     subcategories: [],
-    status: 'idle',
+    skills: [],              // ✅ initialize skills here
+    status: 'idle',          // for categories
     subcategoriesStatus: 'idle',
-    error: null,
+    skillsStatus: 'idle',    // separate status for skills
+    error: null,             // categories error
     subcategoriesError: null,
+    skillsError: null,       // separate error for skills
   },
   reducers: {
     addCategory: (state, action) => {
@@ -69,6 +85,11 @@ const categoriesSlice = createSlice({
       state.subcategories = [];
       state.subcategoriesStatus = 'idle';
       state.subcategoriesError = null;
+    },
+    resetSkills: (state) => {
+      state.skills = [];
+      state.skillsStatus = 'idle';
+      state.skillsError = null;
     },
   },
   extraReducers: (builder) => {
@@ -98,9 +119,22 @@ const categoriesSlice = createSlice({
       .addCase(fetchSubcategories.rejected, (state, action) => {
         state.subcategoriesStatus = 'failed';
         state.subcategoriesError = action.payload;
+      })
+      // Skills
+      .addCase(fetchSkills.pending, (state) => {
+        state.skillsStatus = 'loading';
+        state.skillsError = null;
+      })
+      .addCase(fetchSkills.fulfilled, (state, action) => {
+        state.skillsStatus = 'succeeded';
+        state.skills = action.payload;
+      })
+      .addCase(fetchSkills.rejected, (state, action) => {
+        state.skillsStatus = 'failed';
+        state.skillsError = action.payload;
       });
   },
 });
 
-export const { addCategory, resetSubcategories } = categoriesSlice.actions;
+export const { addCategory, resetSubcategories, resetSkills } = categoriesSlice.actions;
 export default categoriesSlice.reducer;

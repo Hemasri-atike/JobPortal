@@ -10,7 +10,7 @@ import {
   clearAddJobState     
 } from '../../store/jobsSlice.js';
 
-import { fetchCategories, fetchSubcategories } from '../../store/categoriesSlice.js';
+import { fetchCategories, fetchSubcategories,fetchSkills } from '../../store/categoriesSlice.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
@@ -22,14 +22,25 @@ const EmpPosting = () => {
   const { id } = useParams();
   const { state } = useLocation();
   const job = state?.job || {};
-
   const {
-    categories = [],
-    categoriesStatus = 'idle',
-    subcategories = [],
-    subcategoriesStatus = 'idle',
-    error: categoriesError = null,
-  } = useSelector((state) => state.categories || {});
+  categories = [],
+  categoriesStatus = 'idle',
+  subcategories = [],
+  subcategoriesStatus = 'idle',
+  skills = [],
+  skillsStatus = 'idle',
+  error: categoriesError = null,
+  skillsError = null,
+} = useSelector((state) => state.categories || {});
+
+
+  // const {
+  //   categories = [],
+  //   categoriesStatus = 'idle',
+  //   subcategories = [],
+  //   subcategoriesStatus = 'idle',
+  //   error: categoriesError = null,
+  // } = useSelector((state) => state.categories || {});
   const {
     jobsStatus = 'idle',
     jobsError = null,
@@ -47,8 +58,8 @@ const EmpPosting = () => {
     company_name: '',
     location: '',
     description: '',
-    category_id: '',
-    subcategory_id: '',
+   category_name: '',
+subcategory_name: '',
     salary: 0,
     type: '',
     experience: '',
@@ -61,36 +72,17 @@ const EmpPosting = () => {
     vacancies: 1,
   });
   const [errors, setErrors] = useState({});
-  const [availableSkills, setAvailableSkills] = useState([]);
-  const [skillsStatus, setSkillsStatus] = useState('idle');
+  
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch skills
-  useEffect(() => {
-    const fetchSkills = async () => {
-      setSkillsStatus('loading');
-      try {
-        const response = await axios.get('http://localhost:5000/api/jobs/skills');
-        console.log('Skills fetched:', response.data);
-        const skills = Array.isArray(response.data) ? response.data : [];
-        setAvailableSkills(skills);
-        setSkillsStatus('succeeded');
-      } catch (err) {
-        console.error('Error fetching skills:', {
-          message: err.message,
-          status: err.response?.status,
-          data: err.response?.data,
-        });
-        toast.error(err.response?.data?.error || 'Failed to fetch skills.', {
-          position: 'top-right',
-          autoClose: 3000,
-        });
-        setAvailableSkills([]);
-        setSkillsStatus('failed');
-      }
-    };
-    fetchSkills();
-  }, []);
+ 
+useEffect(() => {
+  if (skillsStatus === 'idle') {
+    dispatch(fetchSkills());
+  }
+}, [dispatch, skillsStatus]);
+
+
 
   // Check authentication and fetch categories
   useEffect(() => {
@@ -105,13 +97,14 @@ const EmpPosting = () => {
   }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
 
   // Fetch subcategories when category_id changes
-  useEffect(() => {
-    if (formData.category_id) {
-      dispatch(fetchSubcategories(formData.category_id));
-    } else {
-      dispatch({ type: 'categories/resetSubcategories' });
-    }
-  }, [dispatch, formData.category_id]);
+useEffect(() => {
+  if (formData.category_name) {
+    dispatch(fetchSubcategories(formData.category_name));
+  } else {
+    dispatch({ type: 'categories/resetSubcategories' });
+  }
+}, [formData.category_name]);
+
 
   // Populate form for editing
   useEffect(() => {
@@ -153,7 +146,7 @@ const EmpPosting = () => {
         dispatch(fetchSubcategories(category.id));
       }
     }
-  }, [id, job, categories, subcategories, dispatch, availableSkills, skillsStatus]);
+  }, [id, job, categories, subcategories, dispatch, skills, skillsStatus]);
 
   // Handle success and error states
   useEffect(() => {
@@ -174,8 +167,8 @@ const EmpPosting = () => {
         company_name: '',
         location: '',
         description: '',
-        category_id: '',
-        subcategory_id: '',
+        category_name: '',
+        subcategory_name: '',
         salary: 0,
         type: '',
         experience: '',
@@ -218,16 +211,21 @@ const EmpPosting = () => {
     navigate,
   ]);
 
-  // Handle input changes
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: name === 'category_id' || name === 'subcategory_id' ? String(value) : value,
-      ...(name === 'category_id' ? { subcategory_id: '' } : {}),
-    }));
-    setErrors((prev) => ({ ...prev, [name]: '', ...(name === 'category_id' ? { subcategory_id: '' } : {}) }));
-  };
+const handleChange = (e) => {
+  const { name, value } = e.target;
+  setFormData(prev => {
+    const updated = { ...prev, [name]: value };
+    if (name === 'category_name') updated.subcategory_name = ''; // reset subcategory if category changes
+    return updated;
+  });
+  setErrors(prev => {
+    const updatedErrors = { ...prev, [name]: '' };
+    if (name === 'category_name') updatedErrors.subcategory_name = '';
+    return updatedErrors;
+  });
+};
+
+
 
   // Handle skills change
   const handleSkillsChange = (selectedOptions) => {
@@ -244,9 +242,9 @@ const EmpPosting = () => {
     if (!formData.company_name) newErrors.company_name = 'Company Name is required';
     if (!formData.location) newErrors.location = 'Location is required';
     if (!formData.description) newErrors.description = 'Job Description is required';
-    if (!formData.category_id) newErrors.category_id = 'Category is required';
-    if (!formData.subcategory_id && formData.category_id && subcategories.length > 0)
-      newErrors.subcategory_id = 'Subcategory is required';
+    if (!formData.category_name) newErrors.category_name = 'Category is required';
+    if (!formData.subcategory_name&& formData.category_name&& subcategories.length > 0)
+      newErrors.subcategory_name = 'Subcategory is required';
     if (!formData.type) newErrors.type = 'Job Type is required';
     if (!formData.deadline) newErrors.deadline = 'Application Deadline is required';
     if (formData.deadline && formData.deadline < today)
@@ -270,14 +268,12 @@ const EmpPosting = () => {
       return;
     }
     try {
-      const payload = {
-        ...formData,
-        userId: userInfo?.id || 1,
-        salary: Number(formData.salary),
-        vacancies: Number(formData.vacancies),
-        category_id: formData.category_id ? Number(formData.category_id) : null,
-        subcategory_id: formData.subcategory_id ? Number(formData.subcategory_id) : null,
-      };
+     const payload = {
+  ...formData,
+  category_name: formData.category_name,
+  subcategory_name: formData.subcategory_name,
+};
+
       console.log('Submitting payload:', { id, ...payload });
       if (id) {
         await dispatch(updateJob({ id, ...payload })).unwrap();
@@ -418,26 +414,27 @@ const EmpPosting = () => {
                 <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
                   Category <span className="text-red-500">*</span>
                 </label>
-                <select
-                  id="category_id"
-                  name="category_id"
-                  value={formData.category_id}
-                  onChange={handleChange}
-                  disabled={categoriesStatus === 'loading' || categories.length === 0 || jobsStatus === 'loading'}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
-                    errors.category_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  aria-invalid={!!errors.category_id}
-                  aria-describedby={errors.category_id ? 'category_id-error' : undefined}
-                  aria-required="true"
-                >
-                  <option value="">Select a category</option>
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
+     <select
+  name="category_id"
+  value={formData.category_id}
+  onChange={(e) => {
+    const selectedCat = categories.find(c => c.id === Number(e.target.value));
+    setFormData(prev => ({
+      ...prev,
+      category_id: selectedCat ? selectedCat.id : '',
+      category_name: selectedCat ? selectedCat.name : '',
+      subcategory_id: '', // reset subcategory
+      subcategory_name: ''
+    }));
+  }}
+>
+  <option value="">Select a category</option>
+  {categories.map(cat => (
+    <option key={cat.id} value={cat.id}>{cat.name}</option>
+  ))}
+</select>
+
+
                 {categoriesStatus === 'loading' && (
                   <p className="mt-1 text-sm text-gray-500">Loading categories...</p>
                 )}
@@ -451,26 +448,25 @@ const EmpPosting = () => {
                 <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700 mb-1">
                   Subcategory <span className="text-red-500">*</span>
                 </label>
-                <select
-                  id="subcategory_id"
-                  name="subcategory_id"
-                  value={formData.subcategory_id}
-                  onChange={handleChange}
-                  disabled={subcategoriesStatus === 'loading' || subcategories.length === 0 || !formData.category_id || jobsStatus === 'loading'}
-                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
-                    errors.subcategory_id ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  aria-invalid={!!errors.subcategory_id}
-                  aria-describedby={errors.subcategory_id ? 'subcategory_id-error' : undefined}
-                  aria-required="true"
-                >
-                  <option value="">Select a subcategory</option>
-                  {subcategories.map((sub) => (
-                    <option key={sub.id} value={sub.id}>
-                      {sub.name}
-                    </option>
-                  ))}
-                </select>
+  <select
+  name="subcategory_id"
+  value={formData.subcategory_id}
+  onChange={(e) => {
+    const selectedSub = subcategories.find(s => s.id === Number(e.target.value));
+    setFormData(prev => ({
+      ...prev,
+      subcategory_id: selectedSub ? selectedSub.id : '',
+      subcategory_name: selectedSub ? selectedSub.name : ''
+    }));
+  }}
+>
+  <option value="">Select a subcategory</option>
+  {subcategories.map(sub => (
+    <option key={sub.id} value={sub.id}>{sub.name}</option>
+  ))}
+</select>
+
+
                 {subcategoriesStatus === 'loading' && (
                   <p className="mt-1 text-sm text-gray-500">Loading subcategories...</p>
                 )}
@@ -512,21 +508,22 @@ const EmpPosting = () => {
               </label>
               {skillsStatus === 'loading' ? (
                 <p className="mt-1 text-sm text-gray-500">Loading skills...</p>
-              ) : Array.isArray(availableSkills) && availableSkills.length > 0 ? (
-                <Select
-                  isMulti
-                  name="skills"
-                  options={availableSkills.map((skill) => ({ value: skill, label: skill }))}
-                  value={formData.skills.map((skill) => ({ value: skill, label: skill }))}
-                  onChange={handleSkillsChange}
-                  className="basic-multi-select"
-                  classNamePrefix="select"
-                  placeholder="Select skills..."
-                  isDisabled={skillsStatus !== 'succeeded' || jobsStatus === 'loading'}
-                  aria-invalid={!!errors.skills}
-                  aria-describedby={errors.skills ? 'skills-error' : undefined}
-                  aria-required="true"
-                />
+              ) : Array.isArray(skills) && skills.length > 0 ? (
+             <Select
+  isMulti
+  name="skills"
+  options={skills.map((skill) => ({ value: skill, label: skill }))}
+  value={formData.skills.map((skill) => ({ value: skill, label: skill }))}
+  onChange={handleSkillsChange}
+  className="basic-multi-select"
+  classNamePrefix="select"
+  placeholder="Select skills..."
+  isDisabled={skillsStatus !== 'succeeded' || jobsStatus === 'loading'}
+  aria-invalid={!!errors.skills}
+  aria-describedby={errors.skills ? 'skills-error' : undefined}
+  aria-required="true"
+/>
+
               ) : (
                 <p className="mt-1 text-sm text-red-500">No skills available. Please contact support.</p>
               )}
