@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo,useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -191,25 +191,47 @@ const Applicants = () => {
   );
 
   // ----------- Fetch Applicants -----------
-  useEffect(() => {
-    if (!userInfo?.token || userType !== "employer") {
-      toast.error("Please log in as an employer to view applicants");
-      navigate("/login");
-      return;
-    }
+  // useEffect(() => {
+  //   if (!userInfo?.token || userType !== "employer") {
+  //     toast.error("Please log in as an employer to view applicants");
+  //     navigate("/login");
+  //     return;
+  //   }
 
-    dispatch(clearApplicantsState());
+  //   dispatch(clearApplicantsState());
 
-    if (jobId) {
-      dispatch(fetchApplicantsByJob({ jobId })).catch((err) =>
-        toast.error(err.message || "Failed to fetch applicants")
-      );
-    } else if (userInfo?.id) {
-      dispatch(fetchApplicantsByUserJobs(userInfo.id)).catch((err) =>
-        toast.error(err.message || "Failed to fetch applicants")
-      );
-    }
-  }, [dispatch, jobId, userInfo, userType, navigate]);
+  //   if (jobId) {
+  //     dispatch(fetchApplicantsByJob({ jobId })).catch((err) =>
+  //       toast.error(err.message || "Failed to fetch applicants")
+  //     );
+  //   } else if (userInfo?.id) {
+  //     dispatch(fetchApplicantsByUserJobs(userInfo.id)).catch((err) =>
+  //       toast.error(err.message || "Failed to fetch applicants")
+  //     );
+  //   }
+  // }, [dispatch, jobId, userInfo, userType, navigate]);
+
+
+  const fetchedRef = useRef(false);
+
+useEffect(() => {
+  if (fetchedRef.current) return;
+  if (!userInfo?.token || userType !== "employer") {
+    toast.error("Please log in as an employer to view applicants");
+    navigate("/login");
+    return;
+  }
+
+  fetchedRef.current = true;
+  dispatch(clearApplicantsState());
+
+  if (jobId) {
+    dispatch(fetchApplicantsByJob({ jobId }));
+  } else if (userInfo?.id) {
+    dispatch(fetchApplicantsByUserJobs(userInfo.id));
+  }
+}, [dispatch, jobId, userInfo, userType, navigate]);
+
 
   // ----------- Normalize & Filter Applicants -----------
   const normalizedApplicants = useMemo(() => {
@@ -217,7 +239,7 @@ const Applicants = () => {
       ? applicantsState
       : Object.values(applicantsState).flat();
 
-    const normalized = arrayForm.map((applicant) => ({
+    let normalized = arrayForm.map((applicant) => ({
       ...applicant,
       skills: Array.isArray(applicant.skills)
         ? applicant.skills
@@ -226,6 +248,16 @@ const Applicants = () => {
       coverLetter: applicant.coverLetter?.replace(/\\/g, "/"),
       status: applicant.status || "Pending",
     }));
+
+    // Deduplicate by id to prevent duplicate keys
+    const uniqueMap = new Map();
+    normalized = normalized.filter((applicant) => {
+      if (uniqueMap.has(applicant.id)) {
+        return false;
+      }
+      uniqueMap.set(applicant.id, true);
+      return true;
+    });
 
     setLocalApplicants(normalized);
     return normalized;

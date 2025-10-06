@@ -45,20 +45,25 @@ const {
   const [debouncedSearchQuery] = useDebounce(searchQuery, 500);
 
 useEffect(() => {
+  dispatch(fetchCategories());
+}, [dispatch]);
+
+useEffect(() => {
   if (!userInfo || (userType !== 'employer' && userType !== 'admin')) return;
 
-  dispatch(
-    fetchJobs({
-      statusFilter,
-      searchQuery: debouncedSearchQuery,
-      page,
-      jobsPerPage,
-      category: categoryFilter,
-      sortBy,
-      userId: userInfo.id,
-      postedByUser: true,
-    })
-  );
+dispatch(
+  fetchJobs({
+    statusFilter,
+    searchQuery: debouncedSearchQuery,
+    page,
+    jobsPerPage,
+    category: categoryFilter ? Number(categoryFilter) : undefined,
+    sortBy,
+    userId: userInfo.id,
+    postedByUser: true,
+  })
+);
+
 }, [
   dispatch,
   page,
@@ -70,6 +75,7 @@ useEffect(() => {
   userInfo,
   userType,
 ]);
+
 
 
 
@@ -161,6 +167,12 @@ useEffect(() => {
     }
   };
 
+  const categoryName = (catId) => {
+    if (!catId) return 'Not specified';
+    const cat = categories.find(c => c.id === parseInt(catId));
+    return cat ? cat.name : catId;
+  };
+
   if (userType !== 'employer' && userType !== 'admin') {
     return null;
   }
@@ -221,9 +233,9 @@ useEffect(() => {
           >
             <option value="">All Categories</option>
             {categoriesStatus === 'loading' ? (
-              <option>Loading...</option>
+              <option disabled>Loading...</option>
             ) : categories.length === 0 ? (
-              <option>No categories available</option>
+              <option disabled>No categories available</option>
             ) : (
               categories.map((category) => (
                 <option key={category.id} value={category.id}>
@@ -276,12 +288,12 @@ useEffect(() => {
                   fetchJobs({
                     statusFilter,
                     searchQuery: debouncedSearchQuery,
-                    location: '',
                     page,
                     jobsPerPage,
-                    category: categoryFilter,
+                    category: categoryFilter ? Number(categoryFilter) : undefined,
                     sortBy,
                     userId: userInfo.id,
+                    postedByUser: true,
                   })
                 )
               }
@@ -335,7 +347,7 @@ useEffect(() => {
                     </p>
                     <div className="mt-4 text-sm text-gray-600 space-y-2">
                       <p>
-                        <span className="font-semibold">Category:</span> {job.category || 'Not specified'}
+                        <span className="font-semibold">Category:</span> {categoryName(job.category)}
                       </p>
                       <p>
                         <span className="font-semibold">Subcategory:</span> {job.subcategory || 'Not specified'}

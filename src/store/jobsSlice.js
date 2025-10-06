@@ -348,27 +348,38 @@ export const toggleJobStatus = createAsyncThunk(
   }
 );
 
+
 export const fetchApplicantsByJob = createAsyncThunk(
   'jobs/fetchApplicantsByJob',
   async ({ jobId }, { rejectWithValue, getState }) => {
     try {
-      const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
+      if (!jobId) throw new Error('Job ID is required.');
 
-      const response = await axios.get(
-        `http://localhost:5000/api/jobs/${jobId}/applicants`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
+      const state = getState();
+      const token = state.user?.userInfo?.token || localStorage.getItem('token');
+      const userId = state.user?.userInfo?.id || localStorage.getItem('userId');
+
+      if (!userId) throw new Error('User ID is required.');
+
+      const headers = {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      };
+
+      const url = `http://localhost:5000/api/jobs/${jobId}/applicants`;
+
+      const response = await axios.get(url, {
+        headers,
+        params: { userId },
+      });
 
       const applicants = (response.data || []).map((app) => ({
         id: app.id,
         jobId: app.job_id,
         candidateId: app.candidate_id,
-        fullName: app.full_name || app.name || app.fullName || 'N/A',
+        fullName: app.full_name || app.name || 'N/A',
         email: app.email || 'N/A',
-        phone: app.phone || app.mobile || 'N/A',
+        phone: app.phone || 'N/A',
         location: app.location || 'N/A',
         experience: app.experience || 'N/A',
         jobTitle: app.job_title || app.position || 'N/A',
@@ -378,8 +389,8 @@ export const fetchApplicantsByJob = createAsyncThunk(
         university: app.university || 'N/A',
         skills: Array.isArray(app.skills) ? app.skills : [],
         resume: app.resume || app.resume_url || null,
-        coverLetter: app.cover_letter || app.coverLetter || app.cover_letter_url || null,
-        linkedIn: app.linkedin || app.linkedIn || null,
+        coverLetter: app.cover_letter || app.cover_letter_url || null,
+        linkedIn: app.linkedin || null,
         portfolio: app.portfolio || null,
         status: app.status || 'Applied',
         createdAt: app.applied_at || app.createdAt || new Date().toISOString(),
@@ -387,17 +398,16 @@ export const fetchApplicantsByJob = createAsyncThunk(
 
       return { jobId: String(jobId), applicants };
     } catch (err) {
+      console.error('❌ [Thunk Error] Failed to fetch applicants:', err);
       const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.details ||
         err.message ||
         'Failed to fetch applicants';
-      console.error('❌ [Thunk Error] Failed to fetch applicants:', err);
       return rejectWithValue(errorMessage);
     }
   }
 );
-
 
 // Fetch analytics
 export const fetchAnalytics = createAsyncThunk(
