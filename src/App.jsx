@@ -33,6 +33,7 @@ import Application from './components/job/Application';
 
 import ProtectedRoute from "./login/ProtectedRoute";
 import ForgotPassword from './login/ForgotPassword';
+import Jobs from './components/job/Jobs';
 
 const App = () => {
   return (
@@ -47,7 +48,9 @@ const App = () => {
         <Route path="/companies" element={<Company />} />
         <Route path="/joblistings" element={<Joblisting />} />
         <Route path="/category" element={<Category />} />
-        <Route path="/categories/:id" element={<Subcategories />} />
+     <Route path="/categories/:name" element={<Subcategories />} />
+        <Route path="/jobs" element={<Jobs />} />
+
         <Route path="/unauthorized" element={<Unauthorized />} />
          <Route path="/forgot-password" element={<ForgotPassword />} />
         

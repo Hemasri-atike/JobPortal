@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import axios from 'axios';
 
+// Axios instance with optional auth token
 const axiosAuth = (token) =>
   axios.create({
     baseURL: 'http://localhost:5000/api',
@@ -11,15 +12,16 @@ const axiosAuth = (token) =>
     timeout: 10000,
   });
 
-// Fetch categories from backend
+// Fetch all categories
 export const fetchCategories = createAsyncThunk(
   'categories/fetchCategories',
-  async (params = {}, { getState, rejectWithValue }) => {
+  async (_, { getState, rejectWithValue }) => {
     try {
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
-      const axiosInstance = token ? axiosAuth(token) : axios; // Use axiosAuth if token exists
-      const res = await axiosInstance.get('http://localhost:5000/api/categories/getCategories');
+      const axiosInstance = token ? axiosAuth(token) : axios;
+
+      const res = await axiosInstance.get('/categories/getCategories');
       return Array.isArray(res.data) ? res.data : [];
     } catch (err) {
       return rejectWithValue(err.response?.data?.error || err.message || 'Error fetching categories');
@@ -27,21 +29,22 @@ export const fetchCategories = createAsyncThunk(
   }
 );
 
-// Fetch subcategories for a specific category
+// Fetch subcategories based on category name
 export const fetchSubcategories = createAsyncThunk(
   'categories/fetchSubcategories',
-  async (categoryId, { getState, rejectWithValue }) => {
+  async (categoryName, { getState, rejectWithValue }) => {
     try {
-      if (!categoryId || isNaN(parseInt(categoryId))) {
-        return rejectWithValue('Invalid category ID');
-      }
+      if (!categoryName) return rejectWithValue('Invalid category name');
+
       const { user } = getState();
       const token = user.userInfo?.token || localStorage.getItem('token');
       const axiosInstance = token ? axiosAuth(token) : axios;
-      const res = await axiosInstance.get('http://localhost:5000/api/subcategories', {
-        params: { category_id: parseInt(categoryId) },
+
+      const res = await axiosInstance.get('/subcategories', {
+        params: { category_name: categoryName },
       });
-      return Array.isArray(res.data) ? res.data : res.data.subcategories || [];
+
+      return Array.isArray(res.data.subcategories) ? res.data.subcategories : [];
     } catch (err) {
       return rejectWithValue(err.response?.data?.error || err.message || 'Error fetching subcategories');
     }

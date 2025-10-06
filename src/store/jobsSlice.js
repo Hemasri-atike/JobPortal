@@ -10,6 +10,24 @@ const axiosAuth = (token) =>
   });
 
 
+  // Fetch jobs by category or subcategory name
+export const fetchJobsByCategoryOrSubcategory = createAsyncThunk(
+  'jobs/fetchJobsByCategoryOrSubcategory',
+  async ({ categoryName, subcategoryName }, { rejectWithValue }) => {
+    try {
+      const params = {};
+      if (categoryName) params.category_name = categoryName;
+      if (subcategoryName) params.subcategory_name = subcategoryName;
+
+      const res = await axios.get('http://localhost:5000/api/jobs/by-category', { params });
+      return res.data.jobs || [];
+    } catch (err) {
+      return rejectWithValue(err.response?.data?.error || err.message);
+    }
+  }
+);
+
+
 
 
 export const fetchJobs = createAsyncThunk(
@@ -920,7 +938,22 @@ const jobsSlice = createSlice({
       .addCase(updateApplicantStatus.rejected, (state, action) => {
         state.updateStatusStatus = 'failed';
         state.updateStatusError = action.payload;
+      })
+      .addCase(fetchJobsByCategoryOrSubcategory.pending, (state) => {
+        state.status = 'loading';
+      })
+        .addCase(fetchJobsByCategoryOrSubcategory.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        state.jobs = action.payload;
+      })
+         .addCase(fetchJobsByCategoryOrSubcategory.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       });
+      
+
+
+      
   },
 });
 

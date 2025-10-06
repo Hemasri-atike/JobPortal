@@ -1,47 +1,30 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchSubcategories } from '../../store/categoriesSlice.js';
 
 const Subcategories = () => {
-  const { id } = useParams();
+  const { name } = useParams(); // ✅ Category name from URL
   const dispatch = useDispatch();
-  const { categories, subcategories = [], subcategoriesStatus, subcategoriesError } = useSelector(
+
+  const { subcategories = [], subcategoriesStatus, subcategoriesError } = useSelector(
     (state) => state.categories
   );
-  const [categoryName, setCategoryName] = useState('');
 
   useEffect(() => {
-    dispatch(fetchSubcategories(id));
-
-    // Fetch category name only if not in Redux store
-    const category = categories.find((cat) => cat.id.toString() === id);
-    if (category) {
-      setCategoryName(category.name || 'Category');
-    } else {
-      const fetchCategoryName = async () => {
-        try {
-          const res = await fetch(`http://localhost:5000/api/categories/${id}`, {
-            headers: {
-              'Cache-Control': 'no-cache',
-            },
-          });
-          if (!res.ok) throw new Error('Failed to fetch category');
-          const data = await res.json();
-          setCategoryName(data.name || 'Category');
-        } catch (err) {
-          setCategoryName('Category');
-        }
-      };
-      fetchCategoryName();
+    if (name) {
+      console.log('Fetching subcategories for category:', name);
+      dispatch(fetchSubcategories(name));
     }
-  }, [id, dispatch, categories]);
+  }, [name, dispatch]);
+
+  console.log('Subcategories state:', subcategories, subcategoriesStatus, subcategoriesError);
 
   return (
     <section className="py-12 sm:py-16 lg:py-20 bg-gray-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <h2 className="text-2xl sm:text-3xl font-bold mb-8 text-gray-900">
-          {categoryName} Subcategories
+          {name} Subcategories
         </h2>
 
         {subcategoriesStatus === 'loading' && (
@@ -71,17 +54,13 @@ const Subcategories = () => {
         )}
 
         {subcategoriesStatus === 'failed' && (
-          <p
-            className="text-center text-red-600 p-4 bg-red-50 rounded-md"
-            role="alert"
-            aria-live="assertive"
-          >
-            {subcategoriesError || 'Failed to load subcategories. Please try again later.'}
+          <p className="text-center text-red-600 p-4 bg-red-50 rounded-md" role="alert">
+            {subcategoriesError || 'Failed to load subcategories.'}
           </p>
         )}
 
         {subcategoriesStatus === 'succeeded' && subcategories.length === 0 && (
-          <p className="text-center text-gray-600 p-4 bg-white rounded-md shadow-sm" aria-live="polite">
+          <p className="text-center text-gray-600 p-4 bg-white rounded-md shadow-sm">
             No subcategories available.
           </p>
         )}
@@ -91,7 +70,7 @@ const Subcategories = () => {
             {subcategories.map((sub) => (
               <Link
                 key={sub.id || `subcategory-${sub.name}`}
-                to={`/jobs?subcategory=${sub.id}`}
+                to={`/jobs?subcategory=${encodeURIComponent(sub.name)}`} // ✅ fixed here
                 className="p-4 sm:p-6 bg-white rounded-xl shadow-md hover:shadow-lg transition duration-300 block focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 aria-label={`View jobs in ${sub.name} subcategory with ${sub.open_positions ?? 0} open positions`}
               >
