@@ -34,8 +34,8 @@ import Application from "./components/job/Application";
 import ProtectedRoute from "./login/ProtectedRoute";
 import ForgotPassword from "./login/ForgotPassword";
 import Jobs from "./components/job/Jobs";
-import JobDescrition from "./components/job/JobDescrition";
-import SidebarJobSuggest from "./components/job/SidebarJobSuggest";
+import JobDescrition from "./components/Employee/JobDescription";
+import SidebarJobSuggest from "./components/Employee/SidebarJobSuggest";
 
 const App = () => {
   return (
