@@ -108,16 +108,16 @@ useEffect(() => {
 
   // Populate form for editing
   useEffect(() => {
-    if (id && job && skillsStatus === 'succeeded' && availableSkills.length > 0) {
+    if (id && job && skillsStatus === 'succeeded' && skills.length > 0) {
       const category = categories.find((cat) => cat.id === job.category_id);
       const subcategory = subcategories.find((sub) => sub.id === job.subcategory_id);
       const validSkills = Array.isArray(job.skills)
-        ? job.skills.filter((skill) => availableSkills.includes(skill))
+        ? job.skills.filter((skill) => skills.includes(skill))
         : [];
       console.log('Initializing formData for job:', {
         jobId: job.id,
         jobSkills: job.skills,
-        availableSkills,
+       skills,
         validSkills,
       });
       setFormData({
@@ -125,8 +125,9 @@ useEffect(() => {
         company_name: job.company_name || '',
         location: job.location || '',
         description: job.description || '',
-        category_id: category ? String(category.id) : '',
-        subcategory_id: subcategory ? String(subcategory.id) : '',
+        
+        category_id: category ? String(category.name) : '',
+        subcategory_id: subcategory ? String(subcategory.name) : '',
         salary: job.salary || 0,
         type: job.type || '',
         experience: job.experience || '',
@@ -215,7 +216,7 @@ const handleChange = (e) => {
   const { name, value } = e.target;
   setFormData(prev => {
     const updated = { ...prev, [name]: value };
-    if (name === 'category_name') updated.subcategory_name = ''; // reset subcategory if category changes
+    if (name === 'category_name') updated.subcategory_name = ''; 
     return updated;
   });
   setErrors(prev => {

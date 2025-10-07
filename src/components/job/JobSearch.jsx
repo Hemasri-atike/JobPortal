@@ -1,8 +1,8 @@
 // src/pages/jobs/JobSearch.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchJobs,  } from "../../store/jobsSlice.js";
-import {  fetchCategories } from "../../store/categoriesSlice.js";
+import { fetchJobs, setPage } from "../../store/jobsSlice.js";
+import { fetchSkills } from "../../store/categoriesSlice.js";
 
 import Header from "../../pages/navbar/Header";
 import Footer from "../../pages/footer/Footer";
@@ -24,6 +24,12 @@ const JobSearch = () => {
     jobsPerPage,
   } = useSelector((state) => state.jobs);
 
+  const {
+    skills = [],
+    skillsStatus,
+    skillsError,
+  } = useSelector((state) => state.categories);
+
   // Ensure jobs is always an array
   const jobs = Array.isArray(jobsArray) ? jobsArray : [];
 
@@ -38,7 +44,6 @@ const JobSearch = () => {
     skills: [],
     workMode: [],
     companyName: "",
-    vacancies: "",
   });
 
   const [citySearch, setCitySearch] = useState("");
@@ -47,84 +52,63 @@ const JobSearch = () => {
 
   const jobTypes = ["Full Time", "Part Time", "Contract", "Internship", "Work From Home"];
   const workModes = ["Remote", "On-site", "Hybrid"];
-  const skillsList = ["React", "Node.js", "JavaScript", "Python", "Java", "SQL"];
 
-  // Fetch jobs initially & when filters/search/page changes
+  // Fetch skills on mount
   useEffect(() => {
-    dispatch(
-      fetchJobs({
-        statusFilter: "All",
-        searchQuery: searchInput,
-        location: filters.city || filters.state || "",
-        page,
-        jobsPerPage,
-      })
-    );
-  }, [dispatch, filters, searchInput, page, jobsPerPage]);
+    if (skillsStatus === "idle") {
+      dispatch(fetchSkills());
+    }
+  }, [skillsStatus, dispatch]);
 
-  // Fetch categories
+  // Memoized fetch parameters
+  const fetchParams = useMemo(() => ({
+    statusFilter: "All",
+    searchQuery: searchInput,
+    location: filters.city || filters.state || "",
+    jobRole: filters.jobRole,
+    companyName: filters.companyName,
+    experience: filters.experience,
+    salary: filters.salary,
+    postedDate: filters.postedDate,
+    jobType: filters.jobType,
+    workMode: filters.workMode,
+    skills: filters.skills,
+  }), [
+    searchInput,
+    filters.state,
+    filters.city,
+    filters.jobRole,
+    filters.companyName,
+    filters.experience,
+    filters.salary,
+    filters.postedDate,
+    filters.jobType,
+    filters.workMode,
+    filters.skills,
+  ]);
+
+  // Fetch jobs when parameters change
   useEffect(() => {
-    dispatch(fetchCategories());
-  }, [dispatch]);
+    dispatch(fetchJobs({ ...fetchParams, page, jobsPerPage }));
+  }, [dispatch, fetchParams, page, jobsPerPage]);
 
-  // Filter jobs locally for skills, workMode, jobType arrays
-  const filteredJobs = jobs.filter((job) => {
-    const title = job.title?.toLowerCase() || "";
-    const loc = job.location?.toLowerCase() || "";
-    const company = job.company?.toLowerCase() || "";
-    const skills = Array.isArray(job.skills)
-      ? job.skills.map((s) => s.toLowerCase())
-      : [];
-
-    const matchesSearch = searchInput
-      ? title.includes(searchInput.toLowerCase())
-      : true;
-    const matchesState = filters.state
-      ? loc.includes(filters.state.toLowerCase())
-      : true;
-    const matchesCity = filters.city
-      ? loc.includes(filters.city.toLowerCase())
-      : true;
-    const matchesJobRole = filters.jobRole
-      ? title.includes(filters.jobRole.toLowerCase())
-      : true;
-    const matchesJobType =
-      filters.jobType.length > 0 ? filters.jobType.includes(job.jobType) : true;
-    const matchesWorkMode =
-      filters.workMode.length > 0 ? filters.workMode.includes(job.workMode) : true;
-    const matchesSkills =
-      filters.skills.length > 0
-        ? filters.skills.some((skill) => skills.includes(skill.toLowerCase()))
-        : true;
-    const matchesCompanyName = filters.companyName
-      ? company.includes(filters.companyName.toLowerCase())
-      : true;
-    const matchesExperience = filters.experience
-      ? job.experienceLevel === filters.experience
-      : true;
-    const matchesSalary = filters.salary
-      ? Number(job.salaryMin || 0) >= Number(filters.salary)
-      : true;
-    const matchesPostedDate =
-      filters.postedDate && job.postedDate
-        ? new Date(job.postedDate) >=
-          new Date(Date.now() - Number(filters.postedDate) * 24 * 60 * 60 * 1000)
-        : true;
-
-    return (
-      matchesSearch &&
-      matchesState &&
-      matchesCity &&
-      matchesJobRole &&
-      matchesJobType &&
-      matchesWorkMode &&
-      matchesSkills &&
-      matchesCompanyName &&
-      matchesExperience &&
-      matchesSalary &&
-      matchesPostedDate
-    );
-  });
+  // Reset to page 1 when filters or search change
+  useEffect(() => {
+    dispatch(setPage(1));
+  }, [
+    dispatch,
+    searchInput,
+    filters.state,
+    filters.city,
+    filters.jobRole,
+    filters.companyName,
+    filters.experience,
+    filters.salary,
+    filters.postedDate,
+    JSON.stringify(filters.jobType),
+    JSON.stringify(filters.workMode),
+    JSON.stringify(filters.skills),
+  ]);
 
   // Handle city select
   const handleCitySelect = (city) => {
@@ -153,7 +137,13 @@ const JobSearch = () => {
           </h2>
 
           {/* Search */}
-          <form className="flex flex-col sm:flex-row gap-3 items-center mb-6">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              dispatch(setPage(1));
+            }}
+            className="flex flex-col sm:flex-row gap-3 items-center mb-6"
+          >
             <input
               type="text"
               placeholder="Search Jobs by Title..."
@@ -162,8 +152,7 @@ const JobSearch = () => {
               className="flex-1 h-12 border rounded-md px-3 text-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <button
-              type="button"
-              onClick={() => {}}
+              type="submit"
               className="h-12 w-full sm:w-32 flex items-center justify-center bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700"
             >
               <Search size={18} className="mr-1" /> Search
@@ -211,9 +200,9 @@ const JobSearch = () => {
                   <ul className="absolute z-50 bg-white border border-gray-300 w-full mt-1 max-h-40 overflow-y-auto rounded-md shadow-lg">
                     {(statesWithCities[filters.state] || [])
                       .filter((city) => city.toLowerCase().includes(citySearch.toLowerCase()))
-                      .map((city, index) => (
+                      .map((city) => (
                         <li
-                          key={city + index}
+                          key={city}
                           onClick={() => handleCitySelect(city)}
                           className="px-3 py-2 cursor-pointer hover:bg-blue-100 text-sm"
                         >
@@ -227,6 +216,18 @@ const JobSearch = () => {
                     )}
                   </ul>
                 )}
+              </div>
+
+              {/* Job Role */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Job Role</label>
+                <input
+                  type="text"
+                  value={filters.jobRole}
+                  onChange={(e) => setFilters({ ...filters, jobRole: e.target.value })}
+                  placeholder="Enter job role"
+                  className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
+                />
               </div>
 
               {/* Job Type */}
@@ -268,19 +269,34 @@ const JobSearch = () => {
               {/* Skills */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Skills</label>
-                <div className="mt-1 space-y-1 max-h-36 overflow-y-auto">
-                  {skillsList.map((skill) => (
-                    <label key={skill} className="flex items-center space-x-2 text-sm">
-                      <input
-                        type="checkbox"
-                        checked={filters.skills.includes(skill)}
-                        onChange={() => toggleCheckbox("skills", skill)}
-                        className="h-4 w-4 border-gray-300 rounded"
-                      />
-                      <span>{skill}</span>
-                    </label>
-                  ))}
-                </div>
+                {skillsStatus === "loading" ? (
+                  <p className="mt-1 text-sm text-gray-500">Loading skills...</p>
+                ) : skillsStatus === "failed" ? (
+                  <p className="mt-1 text-sm text-red-500">
+                    Failed to load skills: {skillsError || "Unknown error"}
+                  </p>
+                ) : (
+                  <div className="mt-1 space-y-1 max-h-36 overflow-y-auto">
+                    {skills.length > 0 ? (
+                      skills.map((skill, index) => (
+                        <label
+                          key={skill.id || skill.name || index}
+                          className="flex items-center space-x-2 text-sm"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={filters.skills.includes(skill.name)}
+                            onChange={() => toggleCheckbox("skills", skill.name)}
+                            className="h-4 w-4 border-gray-300 rounded"
+                          />
+                          <span>{skill.name}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <p className="mt-1 text-sm text-gray-500">No skills available</p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Experience */}
@@ -329,16 +345,13 @@ const JobSearch = () => {
               {/* Company */}
               <div>
                 <label className="block text-sm font-medium text-gray-700">Company</label>
-                <select
+                <input
+                  type="text"
                   value={filters.companyName}
                   onChange={(e) => setFilters({ ...filters, companyName: e.target.value })}
+                  placeholder="Enter company name"
                   className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 text-sm"
-                >
-                  <option value="">Select Company</option>
-                  {jobs.map((c, idx) => (
-                    <option key={c.id || c._id || idx} value={c.company}>{c.company}</option>
-                  ))}
-                </select>
+                />
               </div>
 
               {/* Clear Filters */}
@@ -356,7 +369,6 @@ const JobSearch = () => {
                     skills: [],
                     workMode: [],
                     companyName: "",
-                    vacancies: "",
                   });
                   setCitySearch("");
                   setShowCityDropdown(false);
@@ -371,15 +383,38 @@ const JobSearch = () => {
             {/* Job List */}
             <main className="lg:col-span-3 space-y-4">
               {status === "loading" ? (
-                <BarLoader className="mt-4 mx-auto" width="100%" color="#36d7b7" />
-              ) : filteredJobs.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredJobs.map((job, index) => (
-                    <JobCard key={job.id || job._id || index} job={job} />
-                  ))}
-                </div>
+                <BarLoader className="mt-4 mx-auto" width="100%" color="#3B82F6" />
+              ) : jobs.length > 0 ? (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {jobs.map((job, index) => (
+                      <JobCard key={job.id || job._id || job.title || index} job={job} />
+                    ))}
+                  </div>
+                  {total > jobsPerPage && (
+                    <div className="flex justify-center space-x-2 mt-8 p-4">
+                      <button
+                        onClick={() => dispatch(setPage(page - 1))}
+                        disabled={page === 1}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      <span className="px-4 py-2 text-gray-700">
+                        Page {page} of {Math.ceil(total / jobsPerPage)}
+                      </span>
+                      <button
+                        onClick={() => dispatch(setPage(page + 1))}
+                        disabled={page * jobsPerPage >= total}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </>
               ) : (
-                <div className="text-center text-gray-600 col-span-full">
+                <div className="text-center text-gray-600">
                   No Jobs Found 😢
                 </div>
               )}

@@ -87,52 +87,10 @@ const Jobs = () => {
         {/* Filters */}
         <div className="bg-white p-4 rounded-xl shadow-md mb-8 flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           {/* Category */}
-          <div className="flex flex-col w-full sm:w-1/4">
-            <label className="text-gray-700 font-medium mb-1">Category</label>
-            <select
-              value={filters.category}
-              onChange={handleCategoryChange}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Categories</option>
-              {categories.map(cat => (
-                <option key={cat.id || cat.name} value={cat.name}>{cat.name}</option>
-              ))}
-            </select>
-          </div>
+       
+        
 
-          {/* Subcategory */}
-          {filters.category && (
-            <div className="flex flex-col w-full sm:w-1/4">
-              <label className="text-gray-700 font-medium mb-1">Subcategory</label>
-              <select
-                value={filters.subcategory}
-                onChange={handleSubcategoryChange}
-                className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">All Subcategories</option>
-                {subcategories.map(sub => (
-                  <option key={sub.id || sub.name} value={sub.name}>{sub.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          {/* Role */}
-          <div className="flex flex-col w-full sm:w-1/4">
-            <label className="text-gray-700 font-medium mb-1">Role</label>
-            <select
-              value={filters.role}
-              onChange={handleRoleChange}
-              className="border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">All Roles</option>
-              <option value="Developer">Developer</option>
-              <option value="Designer">Designer</option>
-              <option value="Manager">Manager</option>
-              <option value="Tester">Tester</option>
-            </select>
-          </div>
+         
 
           {/* Skills */}
           <div className="flex flex-col w-full sm:w-1/4">

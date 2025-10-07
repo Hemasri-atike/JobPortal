@@ -5,10 +5,10 @@ import axios from "axios";
 const linkPaths = {
   "Browse Jobs": "/jobs",
   "Browse Categories": "/categories",
-  "Candidate Dashboard": "/candidate-dashboard",
+  "Candidate Dashboard": "/dashboard",
   "Browse Candidates": "/candidates",
-  "Employer Dashboard": "/employer-dashboard",
-  "Add Job": "/add-job",
+  "Employer Dashboard": "/empdashboard",
+  "Add Job": "/empostind",
   "About Us": "/about",
   "Job Page Invoice": "/invoice",
   "Terms Page": "/terms",
@@ -33,7 +33,7 @@ export const fetchFooter = createAsyncThunk("footer/fetchFooter", async (_, { re
         title: "Find the Right Job for You",
         subtitle: "Thousands of jobs from top companies are waiting",
         ctaText: "Get Started",
-        ctaLink: "/jobs",
+        ctaLink: "/jobsearch",
       },
       companyInfo: {
         phone: "+91 9876543210",

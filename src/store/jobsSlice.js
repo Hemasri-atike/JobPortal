@@ -427,7 +427,7 @@ export const fetchApplicantsByJob = createAsyncThunk(
 
       return { jobId: String(jobId), applicants };
     } catch (err) {
-      console.error('❌ [Thunk Error] Failed to fetch applicants:', err);
+      console.error(' [Thunk Error] Failed to fetch applicants:', err);
       const errorMessage =
         err.response?.data?.error ||
         err.response?.data?.details ||
