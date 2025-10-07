@@ -347,24 +347,35 @@ export const bulkDeleteJobs = createAsyncThunk(
   }
 );
 
-// Toggle job status
 export const toggleJobStatus = createAsyncThunk(
   'jobs/toggleJobStatus',
   async ({ id, currentStatus }, { rejectWithValue, getState }) => {
     try {
       const { user } = getState();
-      const token = user.userInfo?.token || localStorage.getItem('token');
+      const token = user?.userInfo?.token || localStorage.getItem('token');
       const newStatus = currentStatus === 'Active' ? 'Closed' : 'Active';
-      await axios.patch(`http://localhost:5000/api/jobs/${id}`, { status: newStatus }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
+
+      // 👇 Clearer, descriptive API route
+      await axios.patch(
+        `http://localhost:5000/api/jobs/${id}/toggle-status`,
+        { status: newStatus },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        }
+      );
+
       return { id, status: newStatus };
-    } catch (err) {
-      const errorMessage = err.response?.data?.error || err.response?.data?.details || err.message || 'Failed to toggle job status';
+    } catch (error) {
+      const errorMessage =
+        error.response?.data?.error ||
+        error.response?.data?.details ||
+        error.message ||
+        'Failed to toggle job status';
       return rejectWithValue(errorMessage);
     }
   }
 );
+
 
 
 export const fetchApplicantsByJob = createAsyncThunk(
