@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import statesWithCities from '../common/Statesncities.jsx';
+
 import { 
   createJob, 
   updateJob, 
@@ -10,7 +12,7 @@ import {
   clearAddJobState     
 } from '../../store/jobsSlice.js';
 
-import { fetchCategories, fetchSubcategories,fetchSkills } from '../../store/categoriesSlice.js';
+import { fetchCategories, fetchSubcategories, fetchSkills } from '../../store/categoriesSlice.js';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
@@ -23,24 +25,16 @@ const EmpPosting = () => {
   const { state } = useLocation();
   const job = state?.job || {};
   const {
-  categories = [],
-  categoriesStatus = 'idle',
-  subcategories = [],
-  subcategoriesStatus = 'idle',
-  skills = [],
-  skillsStatus = 'idle',
-  error: categoriesError = null,
-  skillsError = null,
-} = useSelector((state) => state.categories || {});
+    categories = [],
+    categoriesStatus = 'idle',
+    subcategories = [],
+    subcategoriesStatus = 'idle',
+    skills = [],
+    skillsStatus = 'idle',
+    error: categoriesError = null,
+    skillsError = null,
+  } = useSelector((state) => state.categories || {});
 
-
-  // const {
-  //   categories = [],
-  //   categoriesStatus = 'idle',
-  //   subcategories = [],
-  //   subcategoriesStatus = 'idle',
-  //   error: categoriesError = null,
-  // } = useSelector((state) => state.categories || {});
   const {
     jobsStatus = 'idle',
     jobsError = null,
@@ -53,13 +47,20 @@ const EmpPosting = () => {
   } = useSelector((state) => state.jobs || {});
   const { userInfo = null, userType = null } = useSelector((state) => state.user || {});
 
+  const stateOptions = Object.keys(statesWithCities).sort();
+
   const [formData, setFormData] = useState({
     title: '',
     company_name: '',
+    about_company: '',
+    education_required: '',
+    required_skills_text: '',
+    state: '',
+    city: '',
     location: '',
     description: '',
-   category_name: '',
-subcategory_name: '',
+    category_name: '',
+    subcategory_name: '',
     salary: 0,
     type: '',
     experience: '',
@@ -75,14 +76,13 @@ subcategory_name: '',
   
   const [isDeleting, setIsDeleting] = useState(false);
 
- 
-useEffect(() => {
-  if (skillsStatus === 'idle') {
-    dispatch(fetchSkills());
-  }
-}, [dispatch, skillsStatus]);
+  const cityOptions = formData.state ? (statesWithCities[formData.state] || []).sort() : [];
 
-
+  useEffect(() => {
+    if (skillsStatus === 'idle') {
+      dispatch(fetchSkills());
+    }
+  }, [dispatch, skillsStatus]);
 
   // Check authentication and fetch categories
   useEffect(() => {
@@ -96,15 +96,14 @@ useEffect(() => {
     }
   }, [dispatch, userInfo, userType, navigate, categoriesStatus, categories.length]);
 
-  // Fetch subcategories when category_id changes
-useEffect(() => {
-  if (formData.category_name) {
-    dispatch(fetchSubcategories(formData.category_name));
-  } else {
-    dispatch({ type: 'categories/resetSubcategories' });
-  }
-}, [formData.category_name]);
-
+  // Fetch subcategories when category_name changes
+  useEffect(() => {
+    if (formData.category_name) {
+      dispatch(fetchSubcategories(formData.category_name));
+    } else {
+      dispatch({ type: 'categories/resetSubcategories' });
+    }
+  }, [formData.category_name, dispatch]);
 
   // Populate form for editing
   useEffect(() => {
@@ -117,17 +116,21 @@ useEffect(() => {
       console.log('Initializing formData for job:', {
         jobId: job.id,
         jobSkills: job.skills,
-       skills,
+        skills,
         validSkills,
       });
       setFormData({
         title: job.title || '',
         company_name: job.company_name || '',
+        about_company: job.about_company || '',
+        education_required: job.education_required || '',
+        required_skills_text: job.required_skills_text || '',
+        state: job.state || '',
+        city: job.city || '',
         location: job.location || '',
         description: job.description || '',
-        
-        category_id: category ? String(category.name) : '',
-        subcategory_id: subcategory ? String(subcategory.name) : '',
+        category_name: category ? category.name : '',
+        subcategory_name: subcategory ? subcategory.name : '',
         salary: job.salary || 0,
         type: job.type || '',
         experience: job.experience || '',
@@ -143,8 +146,8 @@ useEffect(() => {
           : '',
         vacancies: job.vacancies || 1,
       });
-      if (category && !subcategories.length && formData.category_id) {
-        dispatch(fetchSubcategories(category.id));
+      if (category && !subcategories.length && category.name) {
+        dispatch(fetchSubcategories(category.name));
       }
     }
   }, [id, job, categories, subcategories, dispatch, skills, skillsStatus]);
@@ -166,6 +169,11 @@ useEffect(() => {
       setFormData({
         title: '',
         company_name: '',
+        about_company: '',
+        education_required: '',
+        required_skills_text: '',
+        state: '',
+        city: '',
         location: '',
         description: '',
         category_name: '',
@@ -212,21 +220,19 @@ useEffect(() => {
     navigate,
   ]);
 
-const handleChange = (e) => {
-  const { name, value } = e.target;
-  setFormData(prev => {
-    const updated = { ...prev, [name]: value };
-    if (name === 'category_name') updated.subcategory_name = ''; 
-    return updated;
-  });
-  setErrors(prev => {
-    const updatedErrors = { ...prev, [name]: '' };
-    if (name === 'category_name') updatedErrors.subcategory_name = '';
-    return updatedErrors;
-  });
-};
-
-
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      if (name === 'category_name') updated.subcategory_name = ''; 
+      return updated;
+    });
+    setErrors(prev => {
+      const updatedErrors = { ...prev, [name]: '' };
+      if (name === 'category_name') updatedErrors.subcategory_name = '';
+      return updatedErrors;
+    });
+  };
 
   // Handle skills change
   const handleSkillsChange = (selectedOptions) => {
@@ -244,13 +250,17 @@ const handleChange = (e) => {
     if (!formData.location) newErrors.location = 'Location is required';
     if (!formData.description) newErrors.description = 'Job Description is required';
     if (!formData.category_name) newErrors.category_name = 'Category is required';
-    if (!formData.subcategory_name&& formData.category_name&& subcategories.length > 0)
+    if (!formData.subcategory_name && formData.category_name && subcategories.length > 0)
       newErrors.subcategory_name = 'Subcategory is required';
     if (!formData.type) newErrors.type = 'Job Type is required';
     if (!formData.deadline) newErrors.deadline = 'Application Deadline is required';
     if (formData.deadline && formData.deadline < today)
       newErrors.deadline = 'Deadline must be a future date';
     if (formData.salary < 0) newErrors.salary = 'Salary cannot be negative';
+    if (!formData.about_company) newErrors.about_company = 'About Company is required';
+    if (!formData.education_required) newErrors.education_required = 'Education details are required';
+    if (!formData.state) newErrors.state = 'State is required';
+    if (!formData.city) newErrors.city = 'City is required';
     if (formData.vacancies < 1) newErrors.vacancies = 'Vacancies must be at least 1';
     if (!formData.skills || formData.skills.length === 0)
       newErrors.skills = 'At least one skill is required';
@@ -269,11 +279,11 @@ const handleChange = (e) => {
       return;
     }
     try {
-     const payload = {
-  ...formData,
-  category_name: formData.category_name,
-  subcategory_name: formData.subcategory_name,
-};
+      const payload = {
+        ...formData,
+        category_name: formData.category_name,
+        subcategory_name: formData.subcategory_name,
+      };
 
       console.log('Submitting payload:', { id, ...payload });
       if (id) {
@@ -303,6 +313,38 @@ const handleChange = (e) => {
       const errorMessage = err.message || 'Failed to delete job.';
       toast.error(errorMessage, { position: 'top-right', autoClose: 5000 });
     }
+  };
+
+  // Category change handler
+  const handleCategoryChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      category_name: value,
+      subcategory_name: ''
+    }));
+    setErrors(prev => ({ ...prev, category_name: '', subcategory_name: '' }));
+  };
+
+  // Subcategory change handler
+  const handleSubcategoryChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      subcategory_name: value
+    }));
+    setErrors(prev => ({ ...prev, subcategory_name: '' }));
+  };
+
+  // State change handler
+  const handleStateChange = (e) => {
+    const value = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      state: value,
+      city: ''
+    }));
+    setErrors(prev => ({ ...prev, state: '', city: '' }));
   };
 
   return (
@@ -385,7 +427,78 @@ const handleChange = (e) => {
                 )}
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-6">
+              <h2 className="text-lg font-semibold text-gray-800">Company & Education Details</h2>
+              
+              <div>
+                <label htmlFor="about_company" className="block text-sm font-medium text-gray-700 mb-1">
+                  About Company <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="about_company"
+                  name="about_company"
+                  value={formData.about_company}
+                  onChange={handleChange}
+                  rows="4"
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.about_company ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Write a brief about the company culture, mission, and values..."
+                  aria-invalid={!!errors.about_company}
+                  aria-describedby={errors.about_company ? 'about_company-error' : undefined}
+                  aria-required="true"
+                />
+                {errors.about_company && (
+                  <p id="about_company-error" className="mt-1 text-sm text-red-500">
+                    {errors.about_company}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="education_required" className="block text-sm font-medium text-gray-700 mb-1">
+                  Education Required <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  id="education_required"
+                  name="education_required"
+                  value={formData.education_required}
+                  onChange={handleChange}
+                  rows="3"
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.education_required ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="e.g., B.Tech in Computer Science, MBA, etc."
+                  aria-invalid={!!errors.education_required}
+                  aria-describedby={errors.education_required ? 'education_required-error' : undefined}
+                  aria-required="true"
+                />
+                {errors.education_required && (
+                  <p id="education_required-error" className="mt-1 text-sm text-red-500">
+                    {errors.education_required}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label htmlFor="required_skills_text" className="block text-sm font-medium text-gray-700 mb-1">
+                  Required Skills (Description)
+                </label>
+                <textarea
+                  id="required_skills_text"
+                  name="required_skills_text"
+                  value={formData.required_skills_text}
+                  onChange={handleChange}
+                  rows="3"
+                  disabled={jobsStatus === 'loading'}
+                  className="w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100"
+                  placeholder="Describe required skills beyond the checklist above..."
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div>
                 <label htmlFor="location" className="block text-sm font-medium text-gray-700 mb-1">
                   Location <span className="text-red-500">*</span>
@@ -412,68 +525,126 @@ const handleChange = (e) => {
                 )}
               </div>
               <div>
-                <label htmlFor="category_id" className="block text-sm font-medium text-gray-700 mb-1">
-                  Category <span className="text-red-500">*</span>
+                <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-1">
+                  State <span className="text-red-500">*</span>
                 </label>
-     <select
-  name="category_id"
-  value={formData.category_id}
-  onChange={(e) => {
-    const selectedCat = categories.find(c => c.id === Number(e.target.value));
-    setFormData(prev => ({
-      ...prev,
-      category_id: selectedCat ? selectedCat.id : '',
-      category_name: selectedCat ? selectedCat.name : '',
-      subcategory_id: '', // reset subcategory
-      subcategory_name: ''
-    }));
-  }}
->
-  <option value="">Select a category</option>
-  {categories.map(cat => (
-    <option key={cat.id} value={cat.id}>{cat.name}</option>
-  ))}
-</select>
-
-
-                {categoriesStatus === 'loading' && (
-                  <p className="mt-1 text-sm text-gray-500">Loading categories...</p>
-                )}
-                {errors.category_id && (
-                  <p id="category_id-error" className="mt-1 text-sm text-red-500">
-                    {errors.category_id}
+                <select
+                  id="state"
+                  name="state"
+                  value={formData.state}
+                  onChange={handleStateChange}
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.state ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.state}
+                  aria-describedby={errors.state ? 'state-error' : undefined}
+                  aria-required="true"
+                >
+                  <option value="">Select State</option>
+                  {stateOptions.map((state) => (
+                    <option key={state} value={state}>
+                      {state}
+                    </option>
+                  ))}
+                </select>
+                {errors.state && (
+                  <p id="state-error" className="mt-1 text-sm text-red-500">
+                    {errors.state}
                   </p>
                 )}
               </div>
               <div>
-                <label htmlFor="subcategory_id" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-1">
+                  City <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="city"
+                  name="city"
+                  value={formData.city}
+                  onChange={handleChange}
+                  disabled={!formData.state || jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.city ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.city}
+                  aria-describedby={errors.city ? 'city-error' : undefined}
+                  aria-required="true"
+                >
+                  <option value="">Select City</option>
+                  {cityOptions.map((city) => (
+                    <option key={city} value={city}>
+                      {city}
+                    </option>
+                  ))}
+                </select>
+                {errors.city && (
+                  <p id="city-error" className="mt-1 text-sm text-red-500">
+                    {errors.city}
+                  </p>
+                )}
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label htmlFor="category_name" className="block text-sm font-medium text-gray-700 mb-1">
+                  Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  id="category_name"
+                  name="category_name"
+                  value={formData.category_name}
+                  onChange={handleCategoryChange}
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.category_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.category_name}
+                  aria-describedby={errors.category_name ? 'category_name-error' : undefined}
+                  aria-required="true"
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(cat => (
+                    <option key={cat.id} value={cat.name}>{cat.name}</option>
+                  ))}
+                </select>
+                {categoriesStatus === 'loading' && (
+                  <p className="mt-1 text-sm text-gray-500">Loading categories...</p>
+                )}
+                {errors.category_name && (
+                  <p id="category_name-error" className="mt-1 text-sm text-red-500">
+                    {errors.category_name}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label htmlFor="subcategory_name" className="block text-sm font-medium text-gray-700 mb-1">
                   Subcategory <span className="text-red-500">*</span>
                 </label>
-  <select
-  name="subcategory_id"
-  value={formData.subcategory_id}
-  onChange={(e) => {
-    const selectedSub = subcategories.find(s => s.id === Number(e.target.value));
-    setFormData(prev => ({
-      ...prev,
-      subcategory_id: selectedSub ? selectedSub.id : '',
-      subcategory_name: selectedSub ? selectedSub.name : ''
-    }));
-  }}
->
-  <option value="">Select a subcategory</option>
-  {subcategories.map(sub => (
-    <option key={sub.id} value={sub.id}>{sub.name}</option>
-  ))}
-</select>
-
-
+                <select
+                  id="subcategory_name"
+                  name="subcategory_name"
+                  value={formData.subcategory_name}
+                  onChange={handleSubcategoryChange}
+                  disabled={jobsStatus === 'loading'}
+                  className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all shadow-sm disabled:bg-gray-100 ${
+                    errors.subcategory_name ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  aria-invalid={!!errors.subcategory_name}
+                  aria-describedby={errors.subcategory_name ? 'subcategory_name-error' : undefined}
+                  aria-required="true"
+                >
+                  <option value="">Select a subcategory</option>
+                  {subcategories.map(sub => (
+                    <option key={sub.id} value={sub.name}>{sub.name}</option>
+                  ))}
+                </select>
                 {subcategoriesStatus === 'loading' && (
                   <p className="mt-1 text-sm text-gray-500">Loading subcategories...</p>
                 )}
-                {errors.subcategory_id && (
-                  <p id="subcategory_id-error" className="mt-1 text-sm text-red-500">
-                    {errors.subcategory_id}
+                {errors.subcategory_name && (
+                  <p id="subcategory_name-error" className="mt-1 text-sm text-red-500">
+                    {errors.subcategory_name}
                   </p>
                 )}
               </div>
@@ -510,21 +681,20 @@ const handleChange = (e) => {
               {skillsStatus === 'loading' ? (
                 <p className="mt-1 text-sm text-gray-500">Loading skills...</p>
               ) : Array.isArray(skills) && skills.length > 0 ? (
-             <Select
-  isMulti
-  name="skills"
-  options={skills.map((skill) => ({ value: skill, label: skill }))}
-  value={formData.skills.map((skill) => ({ value: skill, label: skill }))}
-  onChange={handleSkillsChange}
-  className="basic-multi-select"
-  classNamePrefix="select"
-  placeholder="Select skills..."
-  isDisabled={skillsStatus !== 'succeeded' || jobsStatus === 'loading'}
-  aria-invalid={!!errors.skills}
-  aria-describedby={errors.skills ? 'skills-error' : undefined}
-  aria-required="true"
-/>
-
+                <Select
+                  isMulti
+                  name="skills"
+                  options={skills.map((skill) => ({ value: skill, label: skill }))}
+                  value={formData.skills.map((skill) => ({ value: skill, label: skill }))}
+                  onChange={handleSkillsChange}
+                  className="basic-multi-select"
+                  classNamePrefix="select"
+                  placeholder="Select skills..."
+                  isDisabled={skillsStatus !== 'succeeded' || jobsStatus === 'loading'}
+                  aria-invalid={!!errors.skills}
+                  aria-describedby={errors.skills ? 'skills-error' : undefined}
+                  aria-required="true"
+                />
               ) : (
                 <p className="mt-1 text-sm text-red-500">No skills available. Please contact support.</p>
               )}

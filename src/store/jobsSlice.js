@@ -244,8 +244,6 @@ export const createJob = createAsyncThunk(
         ...jobData,
         userId: user.userInfo?.id || 1,
         skills: Array.isArray(jobData.skills) ? jobData.skills : [],
-        category_id: jobData.category_id || null,
-        subcategory_id: jobData.subcategory_id || null,
       };
       const response = await axios.post('http://localhost:5000/api/jobs/create-job', payload, {
         headers: token ? { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' } : { 'Cache-Control': 'no-cache' },
@@ -276,8 +274,6 @@ export const updateJob = createAsyncThunk(
       const payload = {
         ...jobData,
         skills: Array.isArray(jobData.skills) ? jobData.skills : [],
-        category_id: jobData.category_id || null,
-        subcategory_id: jobData.subcategory_id || null,
       };
       const response = await axios.put(`http://localhost:5000/api/jobs/${id}/updatejob`, payload, {
         headers: token ? { Authorization: `Bearer ${token}`, 'Cache-Control': 'no-cache' } : { 'Cache-Control': 'no-cache' },
@@ -375,9 +371,6 @@ export const toggleJobStatus = createAsyncThunk(
     }
   }
 );
-
-
-
 export const fetchApplicantsByJob = createAsyncThunk(
   'jobs/fetchApplicantsByJob',
   async ({ jobId }, { rejectWithValue, getState }) => {

@@ -1,140 +1,86 @@
-import React from "react";
+import React, { useEffect, useState } from "react"; // useState comes from React
+import { useDispatch, useSelector } from "react-redux"; // react-redux only has these
+import { useParams } from "react-router-dom";
+
+import { fetchJobById } from "../../store/jobsSlice";
 import SidebarJobSuggest from "../Employee/SidebarJobSuggest";
 import Header from "../../pages/navbar/Header";
-import IHireGroup from "../../../src/assets/MNTechs_logo.png";
-import { FaBriefcase, FaMapMarkerAlt, FaTasks, FaCode, FaGraduationCap } from "react-icons/fa";
-import { Star } from "lucide-react";
+import Application from "../job/Application";
 import Footer from "../../pages/footer/Footer";
+import { FaBriefcase, FaMapMarkerAlt, FaTasks, FaCode, FaGraduationCap, FaDollarSign, FaClock, FaUsers, FaEnvelope } from "react-icons/fa";
+import { Star } from "lucide-react";
 
-// Sample jobData (replace with API data in a real application)
-const defaultJobData = {
-  title: "Security Architect",
-  company: {
-    name: "Accenture",
-    logo: IHireGroup,
-    rating: 4,
-    reviews: 390,
-  },
-  experience: "5+ Years Experience",
-  location: "Bengaluru",
-  posted: "1 Week Ago",
-  openings: 3,
-  applicants: 24,
-  aboutCompany: {
-    name: "TechCorp",
-    description:
-      "TechCorp is a leading technology company dedicated to building cutting-edge solutions that empower businesses worldwide. With a focus on innovation, collaboration, and excellence, we create products that transform industries. Join us to be part of a dynamic team shaping the future of technology.",
-  },
-  overview: {
-    role: "Senior Software Engineer",
-    type: "Full-time, Permanent",
-    experience: "5+ Years",
-    location: "Remote (US-based preferred)",
-    salary: "$120,000 - $160,000 per year",
-  },
-  roleDetails: {
-    responsibilities: [
-      "Design, develop, and maintain scalable web applications.",
-      "Collaborate with cross-functional teams to define and implement new features.",
-      "Optimize applications for performance and scalability.",
-      "Mentor junior engineers and contribute to code reviews.",
-      "Ensure the technical feasibility of UI/UX designs.",
-      "Stay updated with emerging technologies and industry trends.",
-    ],
-    requiredSkills: [
-      "Proficiency in JavaScript, React, and Node.js.",
-      "Experience with RESTful APIs and GraphQL.",
-      "Strong understanding of responsive design and CSS frameworks (e.g., Tailwind CSS).",
-      "Familiarity with version control systems like Git.",
-      "Excellent problem-solving and debugging skills.",
-      "Strong communication and teamwork abilities.",
-    ],
-    education: [
-      "Bachelor’s degree in Computer Science, Engineering, or related field (or equivalent experience).",
-      "5+ years of professional software development experience.",
-      "Proven track record of delivering high-quality software projects.",
-      "Experience with cloud platforms (AWS, Azure, or GCP) is a plus.",
-    ],
-  },
-  perks: [
-    "Competitive salary and equity options.",
-    "Comprehensive health, dental, and vision insurance.",
-    "Flexible remote work policy.",
-    "Generous paid time off and parental leave.",
-    "Professional development stipend for courses and conferences.",
-    "Collaborative and inclusive work culture.",
-  ],
-};
 
-const JobDescription = ({ jobData = defaultJobData }) => {
+const JobDescription = () => {
+  const { jobId } = useParams(); // <-- get jobId from route
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  
+  const dispatch = useDispatch();
+  const { jobs, jobsStatus, jobsError } = useSelector((state) => state.jobs);
+  
+ 
+  const jobData = jobs.find((job) => job.id === Number(jobId));
+
+
+  useEffect(() => {
+    if (!jobData && jobId) {
+      dispatch(fetchJobById(jobId));
+    }
+  }, [dispatch, jobId, jobData]);
+  
+  
+
+
+
+
+
+
+  if (jobsStatus === "loading") return <p>Loading job details...</p>;
+  if (jobsStatus === "failed") return <p>Error: {jobsError}</p>;
+  if (!jobData) return <p>Job not found</p>;
+
+  // Handle potential field name variations (e.g., company_name vs companyName)
+  const companyName = jobData.company_name || jobData.companyName || "Company";
+  const rating = jobData.rating || 4.2; // Default if not available
+
   return (
     <section className="min-h-screen font-sans bg-[#89b4d4]/10">
       <Header />
-      {/* Container */}
       <div className="relative top-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 ">
         {/* Header */}
         <header className="max-w-7xl mx-auto mb-7">
           <div className="job-card bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm hover:shadow-md p-4 flex flex-col sm:flex-row justify-between items-start sm:items-center">
             <div className="flex-1">
-              <h1 className="text-2xl font-bold text-[#3b4f73] mb-2">
-                {jobData.title}
-              </h1>
+              <h1 className="text-2xl font-bold text-[#3b4f73] mb-2">{jobData.title}</h1>
               <div className="text-[#3b4f73]/80 flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-2">
-                <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{jobData.company.name}</span>
+                <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{companyName}</span>
                 <div className="flex items-center">
                   {[...Array(5)].map((_, index) => (
                     <Star
                       key={index}
                       className={`w-4 h-4 ${
-                        index < Math.round(jobData.company.rating)
+                        index < Math.round(rating)
                           ? "text-[#89b4d4] fill-[#89b4d4]"
                           : "text-gray-300"
                       }`}
                     />
                   ))}
-                  <span className="text-sm pl-1 text-[#3b4f73]">{jobData.company.rating}</span>
+                  <span className="text-sm pl-1 text-[#3b4f73]">{rating}</span>
                 </div>
-                <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                  <span>| </span>({jobData.company.reviews}) Reviews
-                </span>
               </div>
               <div className="flex flex-col sm:flex-row gap-2 mb-2">
                 <span className="flex items-center font-normal text-sm text-[#3b4f73] leading-relaxed">
-                  <FaBriefcase color="#89b4d4"  className="mr-1" /> {jobData.experience}
+                  <FaBriefcase color="#89b4d4" className="mr-1" /> {jobData.experience || "N/A"}
                 </span>
                 <span className="flex items-center font-normal text-sm text-[#3b4f73] leading-relaxed">
-                  <span className="mr-1"> | </span>
-                  <FaMapMarkerAlt color="#89b4d4" className="mr-1" /> {jobData.location}
-                </span>
-              </div>
-              <div className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                <span className="font-medium text-[#3b4f73]">
-                  Posted: <span className="font-normal">{jobData.posted}, </span>
-                </span>
-                <span className="font-medium text-[#3b4f73]">
-                  Openings: <span className="font-normal">{jobData.openings}, </span>
-                </span>
-                <span className="font-medium text-[#3b4f73]">
-                  Applicants: <span className="font-normal">{jobData.applicants} </span>
+                  <FaMapMarkerAlt color="#89b4d4" className="mr-1" /> {jobData.city}, {jobData.state || "N/A"}
                 </span>
               </div>
             </div>
-            <div>
-              <div className="w-full flex-shrink-0 justify-center items-center mb-5">
-                <img
-                  src={jobData.company.logo}
-                  alt="Company Logo"
-                  className="w-full max-w-[90px] rounded-lg border border-[#89b4d4]/20 p-1 h-auto object-contain"
-                />
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2 mt-4 sm:mt-0">
-                <button className="inline-block text-xs font-medium text-[#3b4f73] bg-[#89b4d4]/10 px-4 py-2 rounded-full hover:bg-[#89b4d4] hover:text-[#ffffff] transition-all duration-300">
-                  Register to apply
-                </button>
-                <button className="inline-block text-xs font-medium px-4 py-2 rounded-full bg-[#89b4d4] text-[#ffffff] transition-all duration-300">
-                  Login to apply
-                </button>
-              </div>
+            <div className="mt-4 sm:mt-0">
+              <button className="bg-[#89b4d4] hover:bg-[#3b4f73] text-white px-6 py-2 rounded-lg font-medium transition-colors">
+                Apply Now
+              </button>
             </div>
           </div>
         </header>
@@ -142,129 +88,140 @@ const JobDescription = ({ jobData = defaultJobData }) => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Company Info */}
-            <section className="bg-[#ffffff] border border-[#89b4d4]/20 rounded-2xl shadow-sm hover:shadow-md p-6 sm:p-8 transition-all">
-              <h2 className="text-base font-medium text-[#3b4f73] mb-4">
-                About {jobData.aboutCompany.name}
-              </h2>
-              <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                {jobData.aboutCompany.description}
-              </p>
-            </section>
-
             {/* Job Overview */}
-            <section className="bg-[#ffffff] border border-[#89b4d4]/20 rounded-2xl shadow-sm hover:shadow-md p-6 sm:p-8 transition-all">
-              <h2 className="text-base font-medium text-[#3b4f73] mb-4">
+            <section className="bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-[#3b4f73] mb-4 flex items-center">
+                <FaBriefcase className="mr-2 text-[#89b4d4]" />
                 Job Overview
               </h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="space-y-3">
-                  <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                    <span className="font-medium text-[#3b4f73]">Role:</span> {jobData.overview.role}
-                  </p>
-                  <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                    <span className="font-medium text-[#3b4f73]">Type:</span> {jobData.overview.type}
-                  </p>
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <FaDollarSign className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Salary</p>
+                    <p className="text-[#3b4f73]/80">{jobData.salary ? `₹${jobData.salary.toLocaleString()}` : "Not specified"}</p>
+                  </div>
                 </div>
-                <div className="space-y-3">
-                  <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                    <span className="font-medium text-[#3b4f73]">Experience:</span> {jobData.overview.experience}
-                  </p>
-                  <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                    <span className="font-medium text-[#3b4f73]">Location:</span> {jobData.overview.location}
-                  </p>
+                <div className="flex items-start">
+                  <FaClock className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Job Type</p>
+                    <p className="text-[#3b4f73]/80">{jobData.type || "N/A"}</p>
+                  </div>
                 </div>
-                <div className="sm:col-span-2">
-                  <p className="font-normal text-sm text-[#3b4f73] leading-relaxed">
-                    <span className="font-medium text-[#3b4f73]">Salary:</span> {jobData.overview.salary}
-                  </p>
+                <div className="flex items-start">
+                  <FaUsers className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Vacancies</p>
+                    <p className="text-[#3b4f73]/80">{jobData.vacancies || 1}</p>
+                  </div>
                 </div>
-              </div>
-            </section>
-
-            {/* Role Details */}
-            <section className="bg-[#ffffff] border border-[#89b4d4]/20 rounded-2xl shadow-sm hover:shadow-md p-6 sm:p-8 transition-all">
-              <h2 className="text-base font-medium text-[#3b4f73] mb-6">
-                Role Details
-              </h2>
-              <div className="space-y-6">
-                {/* Responsibilities Subsection */}
-                <div>
-                  <h3 className="text-base font-medium text-[#3b4f73] mb-3 flex items-center cursor-pointer hover:text-[#89b4d4] transition-colors duration-200">
-                    <FaTasks color="#89b4d4" className="mr-2" /> Responsibilities
-                  </h3>
-                  <ul className="list-none space-y-2 pl-4">
-                    {jobData.roleDetails.responsibilities.map((item, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-[#89b4d4] mr-2">•</span>
-                        <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="flex items-start">
+                  <FaEnvelope className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Contact Person</p>
+                    <p className="text-[#3b4f73]/80">{jobData.contactPerson || "N/A"}</p>
+                  </div>
                 </div>
-
-                {/* Required Skills Subsection */}
-                <div>
-                  <h3 className="text-base font-medium text-[#3b4f73] mb-3 flex items-center cursor-pointer hover:text-[#89b4d4] transition-colors duration-200">
-                    <FaCode color="#89b4d4" className="mr-2" /> Required Skills
-                  </h3>
-                  <ul className="list-none space-y-2 pl-4">
-                    {jobData.roleDetails.requiredSkills.map((item, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-[#89b4d4] mr-2">•</span>
-                        <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="flex items-start">
+                  <FaClock className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Application Deadline</p>
+                    <p className="text-[#3b4f73]/80">{jobData.deadline || "N/A"}</p>
+                  </div>
                 </div>
-
-                {/* Education & Qualifications Subsection */}
-                <div>
-                  <h3 className="text-base font-medium text-[#3b4f73] mb-3 flex items-center cursor-pointer hover:text-[#89b4d4] transition-colors duration-200">
-                    <FaGraduationCap color="#89b4d4" className="mr-2" /> Education & Qualifications
-                  </h3>
-                  <ul className="list-none space-y-2 pl-4">
-                    {jobData.roleDetails.education.map((item, index) => (
-                      <li key={index} className="flex items-start">
-                        <span className="text-[#89b4d4] mr-2">•</span>
-                        <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
+                <div className="flex items-start">
+                  <FaClock className="mt-1 mr-3 text-[#89b4d4] flex-shrink-0" />
+                  <div>
+                    <p className="font-medium text-[#3b4f73]">Start Date</p>
+                    <p className="text-[#3b4f73]/80">{jobData.startDate || "Immediate"}</p>
+                  </div>
                 </div>
               </div>
             </section>
 
-            {/* Perks & Benefits */}
-            <section className="bg-[#ffffff] border border-[#89b4d4]/20 rounded-2xl shadow-sm hover:shadow-md p-6 sm:p-8 transition-all">
-              <h2 className="text-base font-medium text-[#3b4f73] mb-4">
-                Perks & Benefits
+            {/* About Company */}
+            <section className="bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-[#3b4f73] mb-4 flex items-center">
+                <FaGraduationCap className="mr-2 text-[#89b4d4]" />
+                About Company
               </h2>
-              <ul className="list-none space-y-3">
-                {jobData.perks.map((item, index) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-[#89b4d4] mr-2">•</span>
-                    <span className="font-normal text-sm text-[#3b4f73] leading-relaxed">{item}</span>
-                  </li>
+              <p className="text-[#3b4f73]/80 leading-relaxed">{jobData.about_company || "Company description not available."}</p>
+            </section>
+
+            {/* Education Required */}
+            <section className="bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-[#3b4f73] mb-4 flex items-center">
+                <FaGraduationCap className="mr-2 text-[#89b4d4]" />
+                Education Required
+              </h2>
+              <p className="text-[#3b4f73]/80 leading-relaxed">{jobData.education_required || "N/A"}</p>
+            </section>
+
+            {/* Required Skills */}
+            <section className="bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-[#3b4f73] mb-4 flex items-center">
+                <FaCode className="mr-2 text-[#89b4d4]" />
+                Required Skills
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {(jobData.skills || []).map((skill, index) => (
+                  <span
+                    key={index}
+                    className="bg-[#89b4d4]/10 text-[#3b4f73] px-3 py-1 rounded-full text-sm"
+                  >
+                    {skill}
+                  </span>
                 ))}
-              </ul>
+              </div>
+              {jobData.required_skills_text && (
+                <p className="mt-4 text-[#3b4f73]/80 leading-relaxed">{jobData.required_skills_text}</p>
+              )}
             </section>
 
-            {/* Apply Now */}
-            <section className="bg-gradient-to-r border border-[#89b4d4]/20 from-[#3b4f73] to-[#89b4d4] rounded-2xl shadow-sm hover:shadow-md p-6 sm:p-8 text-center transition-all">
-              <h2 className="text-base font-medium uppercase text-[#ffffff] mb-2">
-                Ready to Join Us?
+            {/* Job Description */}
+            <section className="bg-white rounded-lg border border-[#89b4d4]/30 shadow-sm p-6">
+              <h2 className="text-xl font-semibold text-[#3b4f73] mb-4 flex items-center">
+                <FaTasks className="mr-2 text-[#89b4d4]" />
+                Job Description
               </h2>
-              <p className="font-normal text-sm text-[#ffffff] leading-relaxed mb-6">
-                If you’re excited about building innovative solutions and growing with a passionate team, we’d love to hear from you!
-              </p>
-              <a
-                href="/jobapplication"
-                className="inline-block bg-[#ffffff] text-base font-medium text-[#3b4f73] py-2 px-6 rounded-full hover:bg-[#89b4d4] hover:text-[#ffffff] transition-all duration-300 transform hover:-translate-y-1"
-              >
-                Apply Now
-              </a>
+              <p className="text-[#3b4f73]/80 leading-relaxed whitespace-pre-line">{jobData.description || "Job description not available."}</p>
             </section>
+            <button 
+  className="bg-[#89b4d4] hover:bg-[#3b4f73] text-white px-6 py-2 rounded-lg font-medium transition-colors"
+  onClick={() => setIsModalOpen(true)}
+>
+  Apply Now
+</button>
+{isModalOpen && (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60 p-4"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="application-modal-title"
+  >
+    <div className="bg-white rounded-2xl w-full max-w-lg sm:max-w-2xl lg:max-w-3xl max-h-[90vh] overflow-y-auto">
+      <div className="p-5 sm:p-6 border-b border-gray-200 flex justify-between items-center">
+        <h2
+          id="application-modal-title"
+          className="text-xl sm:text-2xl font-bold text-gray-900"
+        >
+          Apply for {jobData.title} at {companyName}
+        </h2>
+        <button
+          onClick={() => setIsModalOpen(false)}
+          className="text-gray-500 hover:text-gray-700 text-xl font-medium"
+          aria-label="Close application modal"
+        >
+          ✕
+        </button>
+      </div>
+      <Application job={jobData} onClose={() => setIsModalOpen(false)} />
+    </div>
+  </div>
+)}
+
+
           </div>
 
           {/* Sidebar */}
@@ -273,7 +230,7 @@ const JobDescription = ({ jobData = defaultJobData }) => {
           </div>
         </div>
       </div>
-      <div className="pt-9"><Footer /></div>
+      <Footer />
     </section>
   );
 };

@@ -34,7 +34,7 @@ import Application from "./components/job/Application";
 import ProtectedRoute from "./login/ProtectedRoute";
 import ForgotPassword from "./login/ForgotPassword";
 import Jobs from "./components/job/Jobs";
-import JobDescrition from "./components/Employee/JobDescription";
+import JobDescription from "./components/Employee/JobDescription";
 import SidebarJobSuggest from "./components/Employee/SidebarJobSuggest";
 
 const App = () => {
@@ -55,7 +55,7 @@ const App = () => {
 
         <Route path="/unauthorized" element={<Unauthorized />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/jobdescription/:id" element={<JobDescrition />} />
+        <Route path="/jobdescription/:jobId" element={<JobDescription/>} />
         <Route path="/sidebar-jobsuggest" element={<SidebarJobSuggest />} />
 
         {/* Protected Routes */}
